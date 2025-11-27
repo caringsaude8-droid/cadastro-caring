@@ -1,0 +1,42 @@
+/* Using Tailwind classes in the HTML template, minimal CSS needed */
+.bg-background {
+  background-color: #f9fafb;
+}
+
+.flex {
+  display: flex;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.flex-1 {
+  flex: 1;
+  margin-left: 256px; /* Largura da sidebar expandida */
+  transition: margin-left 0.3s ease-in-out;
+}
+
+/* Quando a sidebar está colapsada */
+main.sidebar-collapsed {
+  margin-left: 80px !important;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+/* Ajuste para quando a sidebar estiver colapsada em mobile */
+@media (max-width: 768px) {
+  .flex-1 {
+    margin-left: 80px; /* Largura da sidebar colapsada */
+  }
+  
+  main.sidebar-collapsed {
+    margin-left: 80px !important;
+  }
+}

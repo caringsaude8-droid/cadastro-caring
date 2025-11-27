@@ -1,0 +1,13 @@
+<section class="page-header">
+  <div class="header-content">
+    <h1 class="header-title">{{title}}</h1>
+    <p *ngIf="subtitle" class="header-subtitle">{{subtitle}}</p>
+    <p *ngIf="secondaryText" class="header-secondary">{{secondaryText}}</p>
+  </div>
+  <div class="header-image">
+    <div class="image-placeholder">
+      <i [class]="'icon-' + icon"></i>
+    </div>
+  </div>
+</section>
+

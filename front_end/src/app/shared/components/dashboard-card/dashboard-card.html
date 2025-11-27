@@ -1,0 +1,21 @@
+<ui-card 
+  [className]="getCardClasses()"
+  (click)="onCardClick()"
+>
+  <ui-card-header className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <ui-card-title className="text-sm font-medium text-muted-foreground">
+      {{ title }}
+    </ui-card-title>
+    <i [class]="'icon-' + icon" [ngClass]="getIconClasses()"></i>
+  </ui-card-header>
+  
+  <ui-card-content>
+    <div class="text-2xl font-bold text-foreground">{{ value }}</div>
+    <p *ngIf="trend" class="text-xs text-muted-foreground mt-1">
+      <span class="font-medium" [ngClass]="getTrendClasses()">
+        {{ getTrendPrefix() }}{{ trend.value }}%
+      </span>
+      {{ trend.label }}
+    </p>
+  </ui-card-content>
+</ui-card>

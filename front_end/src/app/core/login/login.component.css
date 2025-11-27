@@ -1,0 +1,107 @@
+/* === LOGIN MINIMALISTA === */
+
+/* Layout */
+.min-h-screen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--caring-red-light), rgba(194, 17, 26, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Card - usa classe base do sistema */
+.card {
+  max-width: 400px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid rgba(194, 17, 26, 0.2);
+  box-shadow: 0 10px 25px rgba(194, 17, 26, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(194, 17, 26, 0.15);
+}
+
+/* Header */
+.card-header {
+  padding: 2rem 1.5rem 1rem;
+}
+
+/* Logo - centralizada acima do título */
+.caring-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.caring-logo-img {
+  height: 80px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+/* Título - logo abaixo da logo */
+.caring-title {
+  color: var(--caring-red);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.text-muted-foreground {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Conteúdo */
+.card-content {
+  padding: 0 1.5rem 2rem;
+}
+
+/* Classes utilitárias do HTML */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.text-center { text-align: center; }
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.w-full { width: 100%; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.font-bold { font-weight: 700; }
+
+/* Labels */
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .card {
+    margin: 0.5rem;
+    border-radius: 8px;
+  }
+  
+  .card-header {
+    padding: 1.5rem 1rem 0.5rem;
+  }
+  
+  .card-content {
+    padding: 0 1rem 1.5rem;
+  }
+  
+  .caring-logo-img {
+    height: 60px;
+    max-width: 150px;
+  }
+  
+  .caring-title {
+    font-size: 1.25rem;
+  }
+}

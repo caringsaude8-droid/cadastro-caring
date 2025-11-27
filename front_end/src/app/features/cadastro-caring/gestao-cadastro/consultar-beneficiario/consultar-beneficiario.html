@@ -1,0 +1,82 @@
+<div class="page-container">
+  <app-page-header [title]="'Consultar Beneficiário'" [subtitle]="'Informe o número e pesquise detalhes'" [icon]="'search'"></app-page-header>
+
+  <div class="consult-card">
+    <div class="line-title">Número do Beneficiário:</div>
+    <div class="search-line">
+      <ui-input [(ngModel)]="numeroBeneficiario" name="numeroBeneficiario" placeholder="Número do Beneficiário"></ui-input>
+      <button class="btn-icon" (click)="abrirModal()">🔎</button>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <div *ngIf="showModal" class="modal-backdrop" (click)="fecharModal()"></div>
+  <div *ngIf="showModal" class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Pesquisa de Beneficiário</h3>
+      <button class="modal-close" (click)="fecharModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Contrato</label>
+          <ui-input [(ngModel)]="contrato" name="contrato" placeholder="Contra"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>&nbsp;</label>
+          <button class="btn-icon">🔎</button>
+        </div>
+        <div class="form-group third">
+          <label>&nbsp;</label>
+          <ui-input [disabled]="true" placeholder=""></ui-input>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Empresa</label>
+          <select class="form-select" [(ngModel)]="empresaCodigo" name="empresaCodigo">
+            <option value="">Selecione</option>
+            <option *ngFor="let c of clinicas" [value]="c.codigo">{{c.nome}}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>CPF</label>
+          <ui-input [(ngModel)]="cpf" name="cpf" placeholder="000.000.000-00"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Nome</label>
+          <ui-input [(ngModel)]="nome" name="nome"></ui-input>
+        </div>
+        <div class="form-group third"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo de Produto</label>
+          <div class="chip-group">
+            <button class="chip" [class.active]="tipoProduto==='medico'" (click)="tipoProduto='medico'">Médico</button>
+            <button class="chip" [class.active]="tipoProduto==='dental'" (click)="tipoProduto='dental'">Dental</button>
+            <button class="chip" [class.active]="tipoProduto==='ambos'" (click)="tipoProduto='ambos'">Ambos</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tipo proposta</label>
+          <div class="chip-group">
+            <button class="chip" [class.active]="tipoProposta==='adesao'" (click)="tipoProposta='adesao'">Adesão</button>
+            <button class="chip" [class.active]="tipoProposta==='pme'" (click)="tipoProposta='pme'">PME</button>
+            <button class="chip" [class.active]="tipoProposta==='ambos'" (click)="tipoProposta='ambos'">Ambos</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="fecharModal()">Cancelar</button>
+      <button class="btn-primary" (click)="pesquisar()">Pesquisar</button>
+    </div>
+  </div>
+</div>
+

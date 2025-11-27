@@ -1,0 +1,269 @@
+<div class="page-container">
+
+  <app-page-header 
+    [title]="'Cadastro Caring — Inclusão de Beneficiário'" 
+    [subtitle]="'Preencha os dados obrigatórios marcados com *'" 
+    [icon]="'users'">
+  </app-page-header>
+
+  <div class="form-card">
+    <form class="benef-form" (ngSubmit)="salvar()">
+      <div class="section-title-bar">Dados do Beneficiário</div>
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Relação Dep. *</label>
+          <select class="form-select" [(ngModel)]="form.relacaoDep" name="relacaoDep" required (change)="onRelacaoChanged()">
+            <option value="">Selecione</option>
+            <option *ngFor="let r of relacionamentos" [value]="r.value">{{r.label}}</option>
+          </select>
+        </div>
+        <div class="form-group third"></div>
+        <div class="form-group third" *ngIf="(form.relacaoDep || '').toLowerCase() === 'dependente'">
+          <div class="selection-card">
+            <div class="selection-header">Selecionar Titular por CPF</div>
+            <div class="selection-body">
+              <div class="selection-row">
+                <ui-input [(ngModel)]="titularCpfSearch" name="titularCpfSearch" placeholder="000.000.000-00" (input)="filterTitulares()"></ui-input>
+              </div>
+              <div class="selection-row" *ngIf="titularesFiltrados.length > 0">
+                <div class="selection-result">{{titularesFiltrados[0].cpf}} — {{titularesFiltrados[0].nome}}</div>
+              </div>
+              <div class="selection-row" *ngIf="titularCpfSearch && titularesFiltrados.length === 0">
+                <small class="not-found">CPF não encontrado</small>
+              </div>
+              <div class="selection-info" *ngIf="selectedTitular">
+                <small>Vinculado a: {{selectedTitular.nome}} • Matrícula: {{selectedTitular.matricula_beneficiario}}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Data Nascimento *</label>
+          <ui-input type="date" [(ngModel)]="form.dataNascimento" name="dataNascimento" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Sexo *</label>
+          <select class="form-select" [(ngModel)]="form.sexo" name="sexo" required>
+            <option value="">Selecione</option>
+            <option *ngFor="let s of sexos" [value]="s.value">{{s.label}}</option>
+          </select>
+        </div>
+        <div class="form-group third">
+          <label>Estado Civil *</label>
+          <select class="form-select" [(ngModel)]="form.estadoCivil" name="estadoCivil" required>
+            <option value="">Selecione</option>
+            <option *ngFor="let e of estadosCivis" [value]="e.value">{{e.label}}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Data Inclusão *</label>
+          <ui-input type="date" [(ngModel)]="form.dataInclusaoExclusao" name="dataInclusaoExclusao" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Plano/ Prod *</label>
+          <select class="form-select" [(ngModel)]="form.planoProd" name="planoProd" required>
+            <option value="">Selecione</option>
+            <option *ngFor="let p of planos" [value]="p.value">{{p.label}}</option>
+          </select>
+        </div>
+        <div class="form-group third">
+          <label>Nome Segurado *</label>
+          <ui-input [(ngModel)]="form.nomeSegurado" name="nomeSegurado" [required]="true"></ui-input>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>CPF *</label>
+          <ui-input [(ngModel)]="form.cpf" name="cpf" [required]="true" placeholder="000.000.000-00"></ui-input>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Admissão *</label>
+          <ui-input type="date" [(ngModel)]="form.admissao" name="admissao" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Nome da Mãe *</label>
+          <ui-input [(ngModel)]="form.nomeMae" name="nomeMae" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Matrícula *</label>
+          <ui-input [(ngModel)]="form.matricula" name="matricula" [required]="true"></ui-input>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Declaração Nascido Vivo</label>
+          <ui-input [(ngModel)]="form.declaracaoNascidoVivo" name="declaracaoNascidoVivo"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Cartão Nacional de Saúde</label>
+          <ui-input [(ngModel)]="form.cns" name="cns"></ui-input>
+        </div>
+        <div class="form-group third"></div>
+      </div>
+
+      <div class="section-title-bar">Endereço</div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Endereço *</label>
+          <ui-input [(ngModel)]="form.endereco" name="endereco" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third"></div>
+        <div class="form-group third"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Número *</label>
+          <ui-input [(ngModel)]="form.numero" name="numero" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Complemento *</label>
+          <ui-input [(ngModel)]="form.complemento" name="complemento" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Bairro *</label>
+          <ui-input [(ngModel)]="form.bairro" name="bairro" [required]="true"></ui-input>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>CEP *</label>
+          <ui-input [(ngModel)]="form.cep" name="cep" placeholder="00000-000" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>PIS/PASEP</label>
+          <ui-input [(ngModel)]="form.pisPasep" name="pisPasep"></ui-input>
+        </div>
+        <div class="form-group third"></div>
+      </div>
+
+      
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Lotação do Func.</label>
+          <ui-input [(ngModel)]="form.lotacaoFuncionario" name="lotacaoFuncionario"></ui-input>
+        </div>
+        <div class="form-group third"></div>
+        <div class="form-group third"></div>
+      </div>
+
+      <div class="section-title-bar">Contato</div>
+      <div class="form-row">
+        <div class="form-group third">
+          <label>DDD Celular *</label>
+          <ui-input [(ngModel)]="form.dddCelular" name="dddCelular" [required]="true" placeholder="11"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Receber comunicação por email? *</label>
+          <select class="form-select" [(ngModel)]="form.receberComunicacaoEmail" name="receberComunicacaoEmail" required>
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+          </select>
+        </div>
+        <div class="form-group third">
+          <label>Celular *</label>
+          <ui-input [(ngModel)]="form.celular" name="celular" [required]="true" placeholder="(11) 99999-9999"></ui-input>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>E-mail *</label>
+          <ui-input type="email" [(ngModel)]="form.email" name="email" [required]="true"></ui-input>
+        </div>
+        <div class="form-group third"></div>
+        <div class="form-group third"></div>
+      </div>
+
+
+      <div class="section-title-bar">Dados Complementares</div>
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Data Casamento</label>
+          <ui-input type="date" [(ngModel)]="form.dataCasamento" name="dataCasamento"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Indicador Pessoa Trans</label>
+          <select class="form-select" [(ngModel)]="form.indicadorPessoaTrans" name="indicadorPessoaTrans">
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+          </select>
+        </div>
+        <div class="form-group third">
+          <label>Nome Social</label>
+          <ui-input [(ngModel)]="form.nomeSocial" name="nomeSocial"></ui-input>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Identidade de Gênero</label>
+          <select class="form-select" [(ngModel)]="form.identidadeGenero" name="identidadeGenero">
+            <option value="">Selecione</option>
+            <option *ngFor="let g of generos" [value]="g.value">{{g.label}}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title-bar">Anexos</div>
+      <div class="form-row">
+        <div class="form-group third">
+          <label>Tipo de Documento</label>
+          <select class="form-select" [(ngModel)]="docTipo" name="docTipo">
+            <option value="">Selecione</option>
+            <option *ngFor="let t of docTipos" [value]="t">{{t}}</option>
+          </select>
+        </div>
+        <div class="form-group third">
+          <label>Arquivo</label>
+          <input type="file" (change)="onFileSelected($event)">
+        </div>
+        <div class="form-group third"></div>
+      </div>
+
+      <div class="attachments">
+        <table class="attachments-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Arquivo</th>
+              <th>Tamanho</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of anexos; let i = index">
+              <td>{{a.tipo}}</td>
+              <td>{{a.nome}}</td>
+              <td>{{(a.size/1024) | number:'1.0-0'}} KB</td>
+              <td class="file-actions">
+                <button type="button" class="btn-secondary" (click)="baixarAnexo(i)">Baixar</button>
+                <button type="button" class="btn-danger" (click)="removerAnexo(i)">Remover</button>
+              </td>
+            </tr>
+            <tr *ngIf="anexos.length===0"><td colspan="4" class="empty">Nenhum anexo adicionado</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Salvar</button>
+        <button type="button" class="btn-secondary">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+      

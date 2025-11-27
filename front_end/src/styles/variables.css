@@ -1,0 +1,73 @@
+/* === CARING DESIGN SYSTEM - VARIÁVEIS === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Caring Brand Colors */
+  --caring-red: #c2111a;
+  --caring-red-dark: #a01017;
+  --caring-red-light: #e11d48;
+  --caring-teal: #549aa1;
+  --caring-red-alpha-10: rgba(194, 17, 26, 0.1);
+  --caring-red-alpha-20: rgba(194, 17, 26, 0.2);
+  --caring-red-alpha-30: rgba(194, 17, 26, 0.3);
+  --caring-teal-light: rgba(84, 154, 161, 0.1);
+  
+  /* Semantic Colors */
+  --success: #10b981;
+  --success-light: #d1fae5;
+  --warning: #f59e0b;
+  --warning-light: #fef3c7;
+  --error: #ef4444;
+  --error-light: #fee2e2;
+  --info: #6366f1;
+  --info-light: #e0e7ff;
+  
+  /* Gray Scale */
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  
+  /* Core System */
+  --background: #fafafa;
+  --foreground: var(--gray-800);
+  --card: #ffffff;
+  --border: var(--gray-200);
+  --border-light: var(--gray-100);
+  --muted: var(--gray-500);
+  --muted-foreground: var(--gray-400);
+  
+  /* Radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 50%;
+  
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-caring: 0 4px 12px var(--caring-red-alpha-10);
+  --shadow-caring-lg: 0 8px 25px var(--caring-red-alpha-30);
+  
+  /* Transitions */
+  --transition: all 0.2s ease;
+  --transition-fast: all 0.15s ease;
+  --transition-slow: all 0.3s ease;
+}

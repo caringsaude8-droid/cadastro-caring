@@ -1,0 +1,28 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">{{pageTitle}}</h1>
+    <p class="page-subtitle">Gestão de beneficiários do Cadastro Caring</p>
+  </div>
+
+<div class="content-card" *ngIf="!loading">
+  <div class="actions-section">
+    <h2 class="section-title">Movimentações</h2>
+    <div class="actions-grid">
+      <div 
+        *ngFor="let action of actions" 
+        class="action-card"
+        [class]="'action-card action-' + action.color"
+        [class.clickable]="true"
+        [class.selected]="selectedAction===action.id"
+        (click)="selectAction(action.id)">
+        <div class="action-icon"><i [class]="'icon-' + action.icon"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">{{action.title}}</h3>
+          <p class="action-description">Ação de movimentação de beneficiário</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>

@@ -1,0 +1,72 @@
+/* Dashboard Card Component Styles */
+.caring-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+}
+
+.caring-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.card-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.card-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.card-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.card-icon {
+  flex-shrink: 0;
+}
+
+/* Variant styles */
+.border-caring-red\/20 {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.bg-caring-red-light\/50 {
+  background-color: rgba(254, 226, 226, 0.5);
+}
+
+.text-caring-red {
+  color: #ef4444;
+}
+
+.border-caring-teal\/20 {
+  border-color: rgba(6, 182, 212, 0.2);
+}
+
+.bg-caring-teal-light\/50 {
+  background-color: rgba(207, 250, 254, 0.5);
+}
+
+.text-caring-teal {
+  color: #06b6d4;
+}

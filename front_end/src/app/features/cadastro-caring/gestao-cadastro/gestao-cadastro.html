@@ -1,0 +1,86 @@
+<div class="page-container">
+  <app-page-header
+    [title]="'Cadastro Caring — Gestão Cadastro'"
+    [subtitle]="'Atalhos para módulos de cadastro e beneficiários'"
+    [icon]="'settings'">
+  </app-page-header>
+
+  <div class="actions-grid">
+    <a class="card-link" [routerLink]="'/cadastro-caring/empresa'">
+      <div class="action-card action-orange clickable">
+        <div class="action-icon"><i class="icon-building"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">Empresas</h3>
+          <p class="action-description">Gerenciar empresas: seleção, criação e edição.</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </a>
+
+    <a class="card-link" [routerLink]="'/cadastro-caring/beneficiarios/inclusao'">
+      <div class="action-card action-teal clickable">
+        <div class="action-icon"><i class="icon-users"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">Inclusão de Beneficiário</h3>
+          <p class="action-description">Cadastrar novos beneficiários.</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </a>
+
+    <a class="card-link" [routerLink]="'/cadastro-caring/beneficiarios'">
+      <div class="action-card action-blue clickable">
+        <div class="action-icon"><i class="icon-briefcase"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">Alteração Cadastral</h3>
+          <p class="action-description">Pesquisar e alterar dados de beneficiários.</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </a>
+
+    <a class="card-link" [routerLink]="'/cadastro-caring/beneficiarios/listagem-cadastral'">
+      <div class="action-card action-blue clickable">
+        <div class="action-icon"><i class="icon-list"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">Listagem Cadastral</h3>
+          <p class="action-description">Lista todos os beneficiários cadastrados.</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </a>
+
+    <a class="card-link" [routerLink]="'/cadastro-caring/gestao-cadastro/consultar-beneficiario'">
+      <div class="action-card action-teal clickable">
+        <div class="action-icon"><i class="icon-search"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">Consultar Beneficiário</h3>
+          <p class="action-description">Pesquisar por número e filtrar por empresa.</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </a>
+
+    <a class="card-link" [routerLink]="'/cadastro-caring/gestao-cadastro/usuarios'">
+      <div class="action-card action-blue clickable">
+        <div class="action-icon"><i class="icon-users"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">Gestão de Usuários</h3>
+          <p class="action-description">Criar, editar e visualizar usuários do sistema.</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </a>
+
+    <a class="card-link" [routerLink]="'/cadastro-caring/gestao-cadastro/aprovacao-cadastro'">
+      <div class="action-card action-orange clickable">
+        <div class="action-icon"><i class="icon-check-circle"></i></div>
+        <div class="action-content">
+          <h3 class="action-title">Aprovação de Cadastro</h3>
+          <p class="action-description">Revisar e concluir solicitações do sistema.</p>
+        </div>
+        <div class="action-arrow"><i class="icon-arrow-right"></i></div>
+      </div>
+    </a>
+  </div>
+</div>

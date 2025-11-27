@@ -1,0 +1,52 @@
+<app-page-header title="Aprovação de Cadastro" subtitle="Revisar solicitações de inclusão, alteração e exclusão"></app-page-header>
+
+<div class="aprovacao-container">
+  <div class="filters caring-card">
+    <input class="input" [(ngModel)]="termo" placeholder="Pesquisar por identificador, descrição ou solicitante">
+    <select class="form-select" [(ngModel)]="filtroTipo">
+      <option value="">Todos os tipos</option>
+      <option value="inclusao">Inclusão</option>
+      <option value="alteracao">Alteração</option>
+      <option value="exclusao">Exclusão</option>
+    </select>
+    <select class="form-select" [(ngModel)]="filtroStatus">
+      <option value="">Todos os status</option>
+      <option value="pendente">Pendente</option>
+      <option value="concluida">Concluída</option>
+    </select>
+  </div>
+
+  <div class="caring-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Tipo</th>
+          <th>Entidade</th>
+          <th>Identificador</th>
+          <th>Solicitante</th>
+          <th>Descrição</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of lista">
+          <td>{{ s.data | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ s.tipo }}</td>
+          <td>{{ s.entidade }}</td>
+          <td>{{ s.identificador }}</td>
+          <td>{{ s.solicitante }} <span *ngIf="s.codigoEmpresa">({{ s.codigoEmpresa }})</span></td>
+          <td>{{ s.descricao }}</td>
+          <td>
+            <span class="badge" [class]="s.status === 'pendente' ? 'status-pendente' : 'status-concluida'">{{ s.status }}</span>
+          </td>
+          <td class="actions">
+            <button class="btn btn-secondary btn-sm" (click)="pendente(s.id)"><i class="icon-refresh"></i>Pendente</button>
+            <button class="btn btn-primary btn-sm" (click)="aprovar(s.id)"><i class="icon-check-circle"></i>Concluir</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,102 @@
+<div class="usuarios-container">
+  <div class="usuarios-header">
+    <div class="header-info">
+      <h1 class="usuarios-title">Gestão de Usuários</h1>
+      <p class="usuarios-subtitle">Gerenciar usuários, perfis e permissões do sistema</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddUserModal()">
+      <i class="icon-plus"></i>
+      Novo Usuário
+    </button>
+  </div>
+
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card caring-card stat-total">
+        <div class="stat-icon">
+          <i class="icon-users"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-title">Total de Usuários</h3>
+          <p class="stat-value">{{stats.total}}</p>
+        </div>
+      </div>
+      <div class="stat-card caring-card stat-active">
+        <div class="stat-icon">
+          <i class="icon-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-title">Usuários Ativos</h3>
+          <p class="stat-value">{{stats.ativos}}</p>
+        </div>
+      </div>
+      <div class="stat-card caring-card stat-inactive">
+        <div class="stat-icon">
+          <i class="icon-x-circle"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-title">Inativos</h3>
+          <p class="stat-value">{{stats.inativos}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-section">
+    <div class="filters-container caring-card">
+      <div class="search-group">
+        <i class="icon-search"></i>
+        <input type="text" placeholder="Buscar por nome ou email..." [(ngModel)]="searchTerm" (input)="onSearch()" class="input">
+      </div>
+      <select class="filter-select" [(ngModel)]="selectedPerfil" (change)="onPerfilChange()">
+        <option value="">Todos os Perfis</option>
+        <option value="admin">Administrador</option>
+        <option value="terapeuta">Admin TEA</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="selectedStatus" (change)="onStatusChange()">
+        <option value="">Todos os Status</option>
+        <option value="ativo">Ativo</option>
+        <option value="inativo">Inativo</option>
+      </select>
+      <button class="btn btn-secondary" (click)="clearFilters()">
+        <i class="icon-refresh"></i>
+        Limpar Filtros
+      </button>
+    </div>
+  </div>
+
+  <div class="users-grid">
+    <div *ngFor="let user of filteredUsers" class="user-card">
+      <div class="user-header">
+        <div class="user-avatar">
+          <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.nome" class="avatar-image">
+          <div *ngIf="!user.avatar" class="avatar-placeholder">{{user.nome.charAt(0).toUpperCase()}}</div>
+        </div>
+        <div class="user-basic-info">
+          <h3 class="user-name">{{user.nome}}</h3>
+          <p class="user-email">{{user.email}}</p>
+        </div>
+        <div class="user-badges">
+          <span class="badge" [class]="getPerfilClass(user.perfil)">{{getPerfilLabel(user.perfil)}}</span>
+          <span class="badge" [class]="getStatusClass(user.status)">{{getStatusLabel(user.status)}}</span>
+        </div>
+      </div>
+      <div class="user-actions">
+        <button class="btn btn-secondary btn-sm" (click)="viewUserDetails(user)"><i class="icon-eye"></i>Detalhes</button>
+        <button class="btn btn-secondary btn-sm" (click)="editUser(user)"><i class="icon-edit"></i>Editar</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="filteredUsers.length === 0" class="empty-state">
+    <i class="icon-users-empty"></i>
+    <h3>Nenhum usuário encontrado</h3>
+    <p *ngIf="searchTerm || selectedPerfil || selectedStatus">Tente ajustar os filtros de busca ou limpar os filtros para ver todos os usuários.</p>
+    <p *ngIf="!searchTerm && !selectedPerfil && !selectedStatus">Nenhum usuário foi cadastrado ainda. Clique em "Novo Usuário" para começar.</p>
+    <button class="btn btn-primary" (click)="openAddUserModal()"><i class="icon-plus"></i>Novo Usuário</button>
+  </div>
+
+  <app-user-details-modal [show]="showUserDetailsModal" [user]="selectedUser" (close)="closeUserDetailsModal()" (editUser)="editUser($event)"></app-user-details-modal>
+
+  <app-user-form-modal [show]="showUserFormModal" [user]="selectedUser" [mode]="formMode" (close)="closeUserFormModal()" (save)="onSaveUser($event)"></app-user-form-modal>
+</div>

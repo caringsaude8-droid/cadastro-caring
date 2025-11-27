@@ -1,0 +1,43 @@
+<!-- Home Page - Página inicial após login -->
+<div class="home-container">
+  <!-- Welcome Section -->
+  <section class="welcome-section">
+    <div class="welcome-content">
+      <h1 class="welcome-title">Bem-vindo ao Sistema Caring!</h1>
+      <p class="welcome-subtitle">Gerencie seus cuidados de saúde de forma eficiente</p>
+      <div class="user-greeting" *ngIf="userProfile">
+        <p class="greeting-text">Olá, <strong>{{userProfile.nome}}</strong>!</p>
+        <p class="role-text">Perfil: {{userProfile.perfil}}</p>
+      </div>
+    </div>
+    <div class="welcome-image">
+      <!-- Placeholder para imagem ou ilustração -->
+      <div class="image-placeholder">
+        <i class="icon-heart-pulse"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Actions -->
+  <section class="quick-actions">
+    <h2 class="section-title">Acesso Rápido</h2>
+    <div class="actions-grid">
+      <div class="action-card" 
+           *ngFor="let action of quickActions" 
+           [class]="'action-' + action.color"
+           [class.clickable]="action.clickable"
+           (click)="action.clickable ? navigateTo(action.route) : null">
+        <div class="action-icon">
+          <i [class]="'icon-' + action.icon"></i>
+        </div>
+        <div class="action-content">
+          <h3 class="action-title">{{action.title}}</h3>
+          <p class="action-description">{{action.description}}</p>
+        </div>
+        <div class="action-arrow" *ngIf="action.clickable">
+          <i class="icon-arrow-right"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

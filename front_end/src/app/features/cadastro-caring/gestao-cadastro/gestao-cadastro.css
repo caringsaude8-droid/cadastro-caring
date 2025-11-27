@@ -1,0 +1,28 @@
+.page-container { padding: 1.5rem; }
+.card-link { text-decoration: none; }
+
+/* Cards no padrão Cadastro Caring */
+.actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.action-card { display: flex; align-items: center; gap: 1rem; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; border-left: 4px solid transparent; }
+.action-card.clickable { cursor: pointer; }
+.action-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); }
+.action-blue { border-left-color: #3b82f6; }
+.action-teal { border-left-color: #06b6d4; }
+.action-orange { border-left-color: #f59e0b; }
+.action-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.action-blue .action-icon { background: #dbeafe; color: #3b82f6; }
+.action-teal .action-icon { background: #cffafe; color: #06b6d4; }
+.action-orange .action-icon { background: #fef3c7; color: #f59e0b; }
+.action-content { flex: 1; }
+.action-title { font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 0.25rem 0; }
+.action-description { font-size: 0.9rem; color: #64748b; margin: 0; }
+.action-arrow { color: #94a3b8; font-size: 1.2rem; }
+
+/* Ícones usados nos cards */
+.icon-arrow-right:before { content: "→"; }
+.icon-building:before { content: "🏢"; }
+.icon-briefcase:before { content: "💼"; }
+.icon-users:before { content: "👥"; }
+.icon-list:before { content: "📋"; }
+.icon-search:before { content: "🔎"; }
+.icon-check-circle:before { content: "✅"; }

@@ -1,0 +1,6 @@
+/* === CARING DESIGN SYSTEM === */
+@import './styles/variables.css';
+@import './styles/base.css';
+
+/* Apenas estilos globais muito específicos aqui */
+/* Componentes devem ter seus próprios arquivos CSS */

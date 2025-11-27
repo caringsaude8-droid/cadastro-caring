@@ -1,0 +1,134 @@
+<app-page-header 
+  [title]="'Cadastro Caring — Alteração Cadastral'" 
+  [subtitle]="'Atualize os dados do beneficiário e salve as mudanças'" 
+  [icon]="'users'">
+</app-page-header>
+
+<div class="form-card">
+  <form class="benef-form" (ngSubmit)="salvar()">
+    <div class="section-title-bar">Dados do Beneficiário</div>
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Nome Segurado</label>
+        <ui-input [(ngModel)]="form.nomeSegurado" name="nomeSegurado"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>CPF</label>
+        <ui-input [(ngModel)]="form.cpf" name="cpf" placeholder="000.000.000-00"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Data Nascimento</label>
+        <ui-input [(ngModel)]="form.dataNascimento" name="dataNascimento" placeholder="dd/mm/aaaa"></ui-input>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Sexo</label>
+        <select class="form-select" [(ngModel)]="form.sexo" name="sexo">
+          <option value="">Selecione</option>
+          <option *ngFor="let s of sexos" [value]="s.value">{{s.label}}</option>
+        </select>
+      </div>
+      <div class="form-group third">
+        <label>Estado Civil</label>
+        <select class="form-select" [(ngModel)]="form.estadoCivil" name="estadoCivil">
+          <option value="">Selecione</option>
+          <option *ngFor="let e of estadosCivis" [value]="e.value">{{e.label}}</option>
+        </select>
+      </div>
+      <div class="form-group third">
+        <label>Plano/Prod</label>
+        <select class="form-select" [(ngModel)]="form.planoProd" name="planoProd">
+          <option value="">Selecione</option>
+          <option *ngFor="let p of planos" [value]="p.value">{{p.label}}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Data Inclusão / Exclusão</label>
+        <ui-input [(ngModel)]="form.dataInclusaoExclusao" name="dataInclusaoExclusao" placeholder="dd/mm/aaaa"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Dependência</label>
+        <ui-input [(ngModel)]="form.dependencia" name="dependencia"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Acomodação</label>
+        <ui-input [(ngModel)]="form.acomodacao" name="acomodacao"></ui-input>
+      </div>
+    </div>
+
+    <div class="section-title-bar">Endereço</div>
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Cidade</label>
+        <ui-input [(ngModel)]="form.cidade" name="cidade"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>UF</label>
+        <select class="form-select" [(ngModel)]="form.uf" name="uf">
+          <option value="">UF</option>
+          <option *ngFor="let u of ufs" [value]="u">{{u}}</option>
+        </select>
+      </div>
+      <div class="form-group third">
+        <label>Admissão</label>
+        <ui-input [(ngModel)]="form.admissao" name="admissao" placeholder="dd/mm/aaaa"></ui-input>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Nome da Mãe</label>
+        <ui-input [(ngModel)]="form.nomeMae" name="nomeMae"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Endereço</label>
+        <ui-input [(ngModel)]="form.endereco" name="endereco"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Número</label>
+        <ui-input [(ngModel)]="form.numero" name="numero"></ui-input>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Complemento</label>
+        <ui-input [(ngModel)]="form.complemento" name="complemento"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Bairro</label>
+        <ui-input [(ngModel)]="form.bairro" name="bairro"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>CEP</label>
+        <ui-input [(ngModel)]="form.cep" name="cep" placeholder="00000-000"></ui-input>
+      </div>
+    </div>
+
+    <div class="section-title-bar">Contato</div>
+    <div class="form-row">
+      <div class="form-group third">
+        <label>DDD Celular</label>
+        <ui-input [(ngModel)]="form.dddCelular" name="dddCelular" placeholder="11"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Celular</label>
+        <ui-input [(ngModel)]="form.celular" name="celular" placeholder="(11) 99999-9999"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>E-mail</label>
+        <ui-input [(ngModel)]="form.email" name="email"></ui-input>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">Salvar</button>
+      <button type="button" class="btn-secondary">Cancelar</button>
+    </div>
+  </form>
+</div>

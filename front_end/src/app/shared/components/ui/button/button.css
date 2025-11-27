@@ -1,0 +1,144 @@
+/* Button Component Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Size variants */
+.btn-sm {
+  height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+}
+
+.btn-md {
+  height: 2.5rem;
+  padding: 0 1rem;
+}
+
+.btn-lg {
+  height: 3rem;
+  padding: 0 1.5rem;
+  font-size: 1rem;
+}
+
+.btn-icon {
+  height: 2.5rem;
+  width: 2.5rem;
+  padding: 0;
+}
+
+/* Variant styles */
+.btn-default {
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-default:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-primary {
+  background-color: #06b6d4;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #0891b2;
+}
+
+.btn-secondary {
+  background-color: #64748b;
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background-color: #475569;
+}
+
+.btn-destructive {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.btn-destructive:hover {
+  background-color: #dc2626;
+}
+
+.btn-outline {
+  border: 1px solid #e2e8f0;
+  background-color: transparent;
+  color: #1e293b;
+}
+
+.btn-outline:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: #1e293b;
+  border: none;
+}
+
+.btn-ghost:hover {
+  background-color: #f1f5f9;
+}
+
+.btn-link {
+  background-color: transparent;
+  color: #06b6d4;
+  text-decoration: underline;
+  border: none;
+}
+
+.btn-link:hover {
+  color: #0891b2;
+  text-decoration: none;
+}
+
+/* Loading state */
+.btn-loading {
+  pointer-events: none;
+}
+
+.btn-loading .btn-text {
+  opacity: 0;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

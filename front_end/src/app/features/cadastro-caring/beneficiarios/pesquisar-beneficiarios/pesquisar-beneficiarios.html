@@ -1,0 +1,159 @@
+<app-page-header 
+  [title]="'Cadastro Caring — Alteração Cadastral'" 
+  [subtitle]="'Filtre o beneficiário e abra detalhes para alterar'" 
+  [icon]="'users'">
+</app-page-header>
+
+<div class="search-container">
+  <div class="search-bar">
+    <span class="title">Pesquisa de beneficiários:</span>
+    <div class="filters">
+      <label>Nome:</label>
+      <ui-input [(ngModel)]="nome" name="nome" placeholder=""></ui-input>
+      <label>Matrícula:</label>
+      <ui-input [(ngModel)]="matricula" name="matricula" placeholder=""></ui-input>
+      <label>Matrícula titular:</label>
+      <ui-input [(ngModel)]="matriculaTitular" name="matriculaTitular" placeholder=""></ui-input>
+      <button class="btn-primary" (click)="goTo(1)">Pesquisar</button>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Nascim.</th>
+          <th>Data Inclusão</th>
+          <th>Data Exclusão</th>
+          <th>Tipo Dependência</th>
+          <th>Acomodação</th>
+          <th>Matrícula</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of paged">
+          <td>{{row.nome}}</td>
+          <td>{{row.cpf}}</td>
+          <td>{{row.nascimento}}</td>
+          <td>{{formatDateBR(row.data_inclusao)}}</td>
+          <td>{{row.data_exclusao ? formatDateBR(row.data_exclusao) : ''}}</td>
+          <td>{{row.tipo_dependencia}}</td>
+          <td>{{row.acomodacao}}</td>
+          <td>{{row.matricula_beneficiario}}</td>
+          <td>{{statusOf(row)}}</td>
+          <td class="actions">
+            <button class="btn-icon" (click)="openDetails(row)" title="Detalhes">🔎</button>
+            <button class="btn-action" (click)="setStatus(row, 'Ativo')">Ativo</button>
+            <button class="btn-action" (click)="setStatus(row, 'Já cadastrado')">Já cadastrado</button>
+            <button class="btn-action" (click)="setStatus(row, 'Documentação pendente')">Doc. pendente</button>
+          </td>
+        </tr>
+        <tr *ngIf="paged.length === 0">
+          <td colspan="10" class="empty">Nenhum beneficiário encontrado.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <button (click)="goTo(1)">««</button>
+      <button (click)="goTo(page - 1)">«</button>
+      <span class="pages">
+        <button *ngFor="let p of [].constructor(totalPages); let i = index" [class.active]="page === i + 1" (click)="goTo(i + 1)">{{i + 1}}</button>
+      </span>
+      <button (click)="goTo(page + 1)">»</button>
+      <button (click)="goTo(totalPages)">»»</button>
+    </div>
+  </div>
+</div>
+
+<!-- Card de Detalhes -->
+<div *ngIf="showDetails" class="modal-backdrop" (click)="closeDetails()"></div>
+<div *ngIf="showDetails" class="modal-card">
+  <div class="modal-header">
+    <h3>Dados do Beneficiário</h3>
+    <button class="modal-close" (click)="closeDetails()">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-grid" *ngIf="selectedRow as r">
+      <div class="item"><span class="label">Nome:</span><span class="value">{{r.nome}}</span></div>
+      <div class="item"><span class="label">CPF:</span><span class="value">{{r.cpf}}</span></div>
+      <div class="item"><span class="label">Nascimento:</span><span class="value">{{r.nascimento}}</span></div>
+      <div class="item"><span class="label">Inclusão:</span><span class="value">{{formatDateBR(r.data_inclusao)}}</span></div>
+      <div class="item"><span class="label">Exclusão:</span><span class="value">{{r.data_exclusao ? formatDateBR(r.data_exclusao) : '—'}}</span></div>
+      <div class="item"><span class="label">Tipo Dependência:</span><span class="value">{{r.tipo_dependencia}}</span></div>
+      <div class="item"><span class="label">Acomodação:</span><span class="value">{{r.acomodacao}}</span></div>
+      <div class="item"><span class="label">Matrícula:</span><span class="value">{{r.matricula_beneficiario}}</span></div>
+      <div class="item"><span class="label">Matrícula Titular:</span><span class="value">{{r.matricula_titular}}</span></div>
+      <div class="item"><span class="label">Status:</span><span class="value">{{statusOf(r)}}</span></div>
+    </div>
+
+    <div class="section-subtitle">Endereço</div>
+    <div class="detail-grid" *ngIf="selectedRow as r">
+      <div class="item"><span class="label">Endereço:</span><span class="value">{{r.endereco || '—'}}</span></div>
+      <div class="item"><span class="label">Número:</span><span class="value">{{r.numero || '—'}}</span></div>
+      <div class="item"><span class="label">Complemento:</span><span class="value">{{r.complemento || '—'}}</span></div>
+      <div class="item"><span class="label">Bairro:</span><span class="value">{{r.bairro || '—'}}</span></div>
+      <div class="item"><span class="label">CEP:</span><span class="value">{{r.cep || '—'}}</span></div>
+      <div class="item"><span class="label">Lotação do Func.:</span><span class="value">{{r.lotacaoFuncionario || '—'}}</span></div>
+    </div>
+
+    <div class="section-subtitle">Contato</div>
+    <div class="detail-grid" *ngIf="selectedRow as r">
+      <div class="item"><span class="label">DDD Celular:</span><span class="value">{{r.dddCelular || '—'}}</span></div>
+      <div class="item"><span class="label">Celular:</span><span class="value">{{r.celular || '—'}}</span></div>
+      <div class="item"><span class="label">E-mail:</span><span class="value">{{r.email || '—'}}</span></div>
+      <div class="item"><span class="label">Receber por e-mail:</span><span class="value">{{r.receberComunicacaoEmail || '—'}}</span></div>
+    </div>
+
+    <div class="section-subtitle">Dados Complementares</div>
+    <div class="detail-grid" *ngIf="selectedRow as r">
+      <div class="item"><span class="label">Admissão:</span><span class="value">{{r.admissao || '—'}}</span></div>
+      <div class="item"><span class="label">Nome da Mãe:</span><span class="value">{{r.nomeMae || '—'}}</span></div>
+      <div class="item"><span class="label">Declaração Nascido Vivo:</span><span class="value">{{r.declaracaoNascidoVivo || '—'}}</span></div>
+      <div class="item"><span class="label">CNS:</span><span class="value">{{r.cns || '—'}}</span></div>
+      <div class="item"><span class="label">Identidade de Gênero:</span><span class="value">{{r.identidadeGenero || '—'}}</span></div>
+      <div class="item"><span class="label">Nome Social:</span><span class="value">{{r.nomeSocial || '—'}}</span></div>
+      <div class="item"><span class="label">Indicador Pessoa Trans:</span><span class="value">{{r.indicadorPessoaTrans || '—'}}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-secondary" (click)="openExclusao()">Exclusão</button>
+    <button class="btn-primary" (click)="goAlteracaoFromDetails()">Alteração de Cadastro</button>
+    <button class="btn-info" (click)="gerarCarterinha()">Gerar Carterinha Virtual</button>
+  </div>
+</div>
+
+<!-- Card de Exclusão -->
+<div *ngIf="showExclusao" class="modal-backdrop" (click)="closeExclusao()"></div>
+<div *ngIf="showExclusao" class="modal-card">
+  <div class="modal-header">
+    <h3>Exclusão de Beneficiário</h3>
+    <button class="modal-close" (click)="closeExclusao()">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="exclusion-grid">
+      <div class="field">
+        <label>Motivo</label>
+        <select [(ngModel)]="exMotivo" name="ex_motivo" class="select-md">
+          <option value="">Selecione</option>
+          <option value="rescisao">Rescisão</option>
+          <option value="falecimento">Falecimento</option>
+          <option value="transferencia">Transferência</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Data da Exclusão</label>
+        <ui-input type="date" [(ngModel)]="exData" name="ex_data"></ui-input>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-secondary" (click)="closeExclusao()">Cancelar</button>
+    <button class="btn-primary" (click)="confirmarExclusao()">Confirmar Exclusão</button>
+  </div>
+</div>

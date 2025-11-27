@@ -1,0 +1,65 @@
+<div class="sidebar" [class.collapsed]="collapsed">
+  <div class="sidebar-header">
+    <div class="logo-section" *ngIf="!collapsed">
+      <div class="logo-container">
+        <div class="logo-placeholder" *ngIf="!logoUrl"><i class="icon-building"></i></div>
+        <img *ngIf="logoUrl" [src]="logoUrl" alt="Logo da empresa" class="logo-image" />
+      </div>
+      <div class="brand">
+        <h1>Cadastro</h1>
+        <p>Caring</p>
+      </div>
+    </div>
+    <div class="logo-collapsed" *ngIf="collapsed">
+      <div class="logo-placeholder-small" *ngIf="!logoUrl"><i class="icon-building"></i></div>
+      <img *ngIf="logoUrl" [src]="logoUrl" alt="Logo da empresa" class="logo-image-small" />
+    </div>
+    <button class="toggle-btn" (click)="toggleCollapsed()"><i [class]="collapsed ? 'icon-menu' : 'icon-chevron-left'"></i></button>
+  </div>
+
+  <nav class="navigation">
+    <a *ngFor="let item of topMenuItems" [routerLink]="item.url" class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <i [class]="'icon-' + item.icon"></i>
+      <span *ngIf="!collapsed">{{item.title}}</span>
+    </a>
+
+    <!-- Link direto: Cadastro Caring -->
+    <a class="nav-item" [routerLink]="'/cadastro-caring'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <i class="icon-building"></i>
+      <span *ngIf="!collapsed">Cadastro Caring</span>
+    </a>
+    <a class="nav-item" [routerLink]="'/cadastro-caring/gestao-cadastro'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <i class="icon-settings"></i>
+      <span *ngIf="!collapsed">Gestão Cadastro</span>
+    </a>
+    <a class="nav-item" [routerLink]="'/cadastro-caring/empresa'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <i class="icon-building"></i>
+      <span *ngIf="!collapsed">Empresas</span>
+    </a>
+
+    <!-- Grupo: Beneficiários -->
+    <div class="nav-group">
+      <button class="nav-item submenu-trigger" (click)="toggleBeneficiarios()">
+        <div class="nav-item-content">
+          <i class="icon-users"></i>
+          <span *ngIf="!collapsed">Beneficiários</span>
+        </div>
+        <i *ngIf="!collapsed" class="icon-chevron-down submenu-icon" [class.rotated]="beneficiariosOpen"></i>
+      </button>
+      <div *ngIf="!collapsed && beneficiariosOpen" class="submenu">
+        <a *ngFor="let subItem of beneficiariosSubItems" [routerLink]="subItem.url" class="submenu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{subItem.title}}</a>
+      </div>
+    </div>
+
+    
+  </nav>
+
+  <div class="sidebar-footer">
+    <div *ngIf="!collapsed && profile" class="user-info">
+      <p class="user-name">{{profile.nome}}</p>
+      <p class="user-role">{{profile.perfil}}</p>
+    </div>
+    <button class="logout-btn" (click)="signOut()"><i class="icon-logout"></i><span *ngIf="!collapsed">Sair</span></button>
+    <div *ngIf="!collapsed" class="version-info"><p class="system-name">Sistema Caring</p><p class="version">v1.0.0</p></div>
+  </div>
+</div>

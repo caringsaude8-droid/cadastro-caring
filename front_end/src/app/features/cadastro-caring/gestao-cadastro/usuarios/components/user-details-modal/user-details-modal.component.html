@@ -1,0 +1,46 @@
+<!-- User Details Modal -->
+<div *ngIf="show" class="modal-overlay" (click)="onOverlayClick($event)">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Detalhes do Usuário</h2>
+      <button class="modal-close-btn" (click)="onCloseModal()"><i class="icon-x"></i></button>
+    </div>
+
+    <div class="modal-body" *ngIf="user">
+      <div class="user-profile-section">
+        <div class="user-avatar-large">
+          <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.nome" class="avatar-image">
+          <div *ngIf="!user.avatar" class="avatar-placeholder">{{user.nome.charAt(0).toUpperCase()}}</div>
+        </div>
+        <div class="user-info-main">
+          <h3 class="user-name-large">{{user.nome}}</h3>
+          <p class="user-email-large">{{user.email}}</p>
+          <div class="user-badges-modal">
+            <span class="perfil-badge-modal" [class]="getPerfilClass(user.perfil)">{{getPerfilLabel(user.perfil)}}</span>
+            <span class="status-badge-modal" [class]="getStatusClass(user.status)">{{getStatusLabel(user.status)}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="user-details-grid">
+        <div class="detail-card">
+          <h4 class="detail-card-title">Informações de Contato</h4>
+          <div class="detail-item"><span class="detail-icon">📞</span><div class="detail-content"><span class="detail-label">Telefone</span><span class="detail-value">{{user.telefone}}</span></div></div>
+          <div class="detail-item"><span class="detail-icon">📧</span><div class="detail-content"><span class="detail-label">Email</span><span class="detail-value">{{user.email}}</span></div></div>
+        </div>
+
+        <div class="detail-card" *ngIf="user.departamento">
+          <h4 class="detail-card-title">Informações Profissionais</h4>
+          <div class="detail-item"><span class="detail-icon">🏢</span><div class="detail-content"><span class="detail-label">Departamento</span><span class="detail-value">{{user.departamento}}</span></div></div>
+          <div class="detail-item"><span class="detail-icon">📅</span><div class="detail-content"><span class="detail-label">Membro desde</span><span class="detail-value">{{formatDate(user.dataCriacao)}}</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-secondary" (click)="onCloseModal()">Fechar</button>
+      <button class="modal-btn modal-btn-primary" (click)="onEditUser()"><i class="icon-edit"></i>Editar Usuário</button>
+    </div>
+  </div>
+</div>
+

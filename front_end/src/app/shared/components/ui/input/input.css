@@ -1,0 +1,21 @@
+/* Modern input applied directly to <input> element */
+.modern-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  color: #1e293b;
+  transition: all 0.2s ease-in-out;
+}
+
+.modern-input::placeholder { color: #9ca3af; }
+
+.modern-input:focus {
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+  outline: none;
+}
+
+.modern-input:disabled { cursor: not-allowed; opacity: 0.6; }
