@@ -121,7 +121,6 @@
   cursor: default;
 }
 
-.action-blue { border-left-color: #3b82f6; }
 .action-green { border-left-color: #10b981; }
 .action-orange { border-left-color: #f59e0b; }
 .action-purple { border-left-color: #8b5cf6; }
@@ -139,7 +138,6 @@
   flex-shrink: 0;
 }
 
-.action-blue .action-icon { background: #dbeafe; color: #3b82f6; }
 .action-green .action-icon { background: #d1fae5; color: #10b981; }
 .action-orange .action-icon { background: #fef3c7; color: #f59e0b; }
 .action-purple .action-icon { background: #ede9fe; color: #8b5cf6; }

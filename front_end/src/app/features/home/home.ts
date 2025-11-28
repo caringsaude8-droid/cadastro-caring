@@ -42,7 +42,7 @@ export class HomeComponent implements OnInit {
       clickable: true
     },
     {
-      title: 'Usuários',
+      title: 'Gestão de Usuários',
       description: 'Gestão de usuários do sistema',
       route: '/cadastro-caring/gestao-cadastro/usuarios',
       icon: 'users',

@@ -4,6 +4,7 @@ import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { LogoService } from '../../services/logo.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 interface MenuItem { title: string; url: string; icon: string; }
 interface SubMenuItem { title: string; url: string; }
@@ -41,7 +42,11 @@ export class SidebarCadastro implements OnInit, OnDestroy {
   ];
 
 
-  constructor(private router: Router, private logoService: LogoService) {}
+  constructor(
+    private router: Router, 
+    private logoService: LogoService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
     this.profile = { nome: 'Usuário Teste', perfil: 'admin' };
@@ -78,6 +83,9 @@ export class SidebarCadastro implements OnInit, OnDestroy {
     return this.router.url.startsWith(path);
   }
 
-  signOut() { this.router.navigate(['/login']); }
+  signOut() { 
+    this.authService.signOut();
+    this.router.navigate(['/login']); 
+  }
   navigateTo(url: string) { this.router.navigate([url]); }
 }

@@ -3,23 +3,31 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
-// Guard que valida acesso por roles definidos em route.data.roles
+
 export const authGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  const requiredRoles = (route.data?.['roles'] as string[] | undefined) || [];
+  // Primeiro, verifica se está autenticado
+  if (!auth.isAuthenticated()) {
+    // Se não está autenticado, limpa qualquer dado residual e redireciona
+    auth.signOut();
+    router.navigate(['/login']);
+    return false;
+  }
+
+  const requiredProfiles = (route.data?.['profiles'] as string[] | undefined) || [];
 
   // Admin passa sempre
   if (auth.isAdmin()) return true;
 
   // Quando não há requisito, permite acesso
-  if (!requiredRoles || requiredRoles.length === 0) return true;
+  if (!requiredProfiles || requiredProfiles.length === 0) return true;
 
-  // Caso tenha algum dos roles necessários, permite
-  if (auth.hasAnyRole(requiredRoles)) return true;
+  // Caso o perfil do usuário esteja entre os permitidos
+  const user = auth.getCurrentUser();
+  if (user && requiredProfiles.includes(user.perfil || '')) return true;
 
-  // Sem permissão: redireciona para uma rota segura
-  router.navigate(['/home']);
+  // Sem permissão: acesso negado
   return false;
 };

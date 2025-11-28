@@ -15,14 +15,17 @@ import { LoginComponent } from './core/login/login.component';
 import { HomeComponent } from './features/home';
 import { UsuariosComponent } from './features/cadastro-caring/gestao-cadastro/usuarios/usuarios.component';
 import { AprovacaoCadastroComponent } from './features/cadastro-caring/gestao-cadastro/aprovacao-cadastro/aprovacao-cadastro';
+import { authGuard } from './core/guards/auth-guard';
+import { loginGuard } from './core/guards/login.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/home', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { path: 'auth', component: LoginComponent },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
+  { path: 'auth', component: LoginComponent, canActivate: [loginGuard] },
   {
     path: '',
     component: DashboardGestao,
+    canActivate: [authGuard],
     children: [
       { path: 'home', component: HomeComponent },
       { path: 'cadastro-caring', component: CadastroCaringComponent },
@@ -40,5 +43,5 @@ export const routes: Routes = [
       { path: 'usuarios', redirectTo: 'cadastro-caring/gestao-cadastro/usuarios' },
     ]
   },
-  { path: '**', redirectTo: '/home' }
+  { path: '**', redirectTo: '/login' }
 ];

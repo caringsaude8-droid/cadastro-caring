@@ -1,4 +1,22 @@
 ﻿<div class="min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center p-4">
+  <!-- Toast personalizado -->
+  <div *ngIf="showToastMessage" 
+       class="toast-container"
+       [class.toast-success]="toastType === 'success'"
+       [class.toast-error]="toastType === 'error'">
+    <div class="toast-content">
+      <div class="toast-icon">
+        <span *ngIf="toastType === 'success'">✓</span>
+        <span *ngIf="toastType === 'error'">✕</span>
+      </div>
+      <div class="toast-text">
+        <h4 class="toast-title">{{ toastTitle }}</h4>
+        <p class="toast-message">{{ toastMessage }}</p>
+      </div>
+      <button class="toast-close" (click)="hideToast()">×</button>
+    </div>
+  </div>
+
   <div class="card w-full max-w-md">
     <div class="card-header text-center">
       <div class="flex flex-col items-center space-y-4">
@@ -42,6 +60,12 @@
             class="input"
           />
         </div>
+        
+        <!-- Mensagem de erro -->
+        <div *ngIf="errorMessage" class="error-message">
+          <p class="text-red-600 text-sm">{{ errorMessage }}</p>
+        </div>
+        
         <button 
           type="submit" 
           class="btn btn-primary w-full" 
