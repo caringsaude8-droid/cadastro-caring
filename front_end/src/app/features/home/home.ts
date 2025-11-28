@@ -34,14 +34,6 @@ export class HomeComponent implements OnInit {
 
   quickActions: QuickAction[] = [
     {
-      title: 'Gestão',
-      description: 'Visão geral do sistema',
-      route: '/dashboard',
-      icon: 'dashboard',
-      color: 'blue',
-      clickable: true
-    },
-    {
       title: 'Cadastro Caring',
       description: 'Módulo de cadastros do sistema',
       route: '/cadastro-caring',

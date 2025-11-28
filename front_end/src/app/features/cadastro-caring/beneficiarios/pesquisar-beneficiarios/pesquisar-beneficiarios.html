@@ -47,9 +47,6 @@
           <td>{{statusOf(row)}}</td>
           <td class="actions">
             <button class="btn-icon" (click)="openDetails(row)" title="Detalhes">🔎</button>
-            <button class="btn-action" (click)="setStatus(row, 'Ativo')">Ativo</button>
-            <button class="btn-action" (click)="setStatus(row, 'Já cadastrado')">Já cadastrado</button>
-            <button class="btn-action" (click)="setStatus(row, 'Documentação pendente')">Doc. pendente</button>
           </td>
         </tr>
         <tr *ngIf="paged.length === 0">

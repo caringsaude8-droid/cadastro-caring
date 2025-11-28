@@ -36,30 +36,6 @@ export class CadastroCaringComponent implements OnInit {
       clickable: true
     },
     {
-      title: 'Relatórios',
-      description: 'Indicadores e relatórios',
-      route: '/cadastro-caring/relatorios',
-      icon: 'dashboard',
-      color: 'teal',
-      clickable: true
-    },
-    {
-      title: 'Empresas',
-      description: 'Em definição',
-      route: '/cadastro-caring',
-      icon: 'building',
-      color: 'orange',
-      clickable: false
-    },
-    {
-      title: 'Convênios',
-      description: 'Em definição',
-      route: '/cadastro-caring',
-      icon: 'briefcase',
-      color: 'orange',
-      clickable: false
-    },
-    {
       title: 'Usuários',
       description: 'Em definição',
       route: '/cadastro-caring',
