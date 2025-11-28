@@ -26,6 +26,7 @@ export class InputComponent implements ControlValueAccessor {
   @Input() id: string = '';
   @Input() name: string = '';
   @Input() step: string = '';
+  @Input() min: string = '';
 
   @Output() valueChange = new EventEmitter<string>();
 

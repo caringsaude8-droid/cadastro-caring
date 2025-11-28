@@ -1,0 +1,38 @@
+<app-page-header title="Relatórios de Cadastro" subtitle="Inclusões realizadas via formulário"></app-page-header>
+
+<div class="relatorios-container">
+  <div class="actions">
+    <input class="input" [(ngModel)]="filtroTermo" placeholder="Filtrar por nome, CPF, matrícula ou empresa" />
+    <button class="btn btn-primary" (click)="downloadExcel()"><i class="icon-download"></i> Exportar Excel</button>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nome Segurado</th>
+          <th>CPF</th>
+          <th>Relação Dep.</th>
+          <th>Plano/Prod</th>
+          <th>Data Inclusão/Exclusão</th>
+          <th>Código Empresa</th>
+          <th>Número Empresa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filtered">
+          <td>{{ r.nomeSegurado }}</td>
+          <td>{{ r.cpf }}</td>
+          <td>{{ r.relacaoDep }}</td>
+          <td>{{ r.planoProd }}</td>
+          <td>{{ r.dataInclusaoExclusao }}</td>
+          <td>{{ r.codigoEmpresa }}</td>
+          <td>{{ r.numeroEmpresa }}</td>
+        </tr>
+        <tr *ngIf="filtered.length === 0">
+          <td colspan="7" class="empty">Nenhuma inclusão encontrada via formulário.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,12 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { BeneficiariosService, Beneficiario } from '../beneficiarios.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { InputComponent } from '../../../../shared/components/ui/input/input';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
-import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
-import { Empresa } from '../../empresa/empresa.service';
 
 type BeneficiarioRow = Beneficiario & {
   status?: string;
@@ -43,46 +41,17 @@ type BeneficiarioRow = Beneficiario & {
   templateUrl: './pesquisar-beneficiarios.html',
   styleUrl: './pesquisar-beneficiarios.css'
 })
-export class PesquisarBeneficiariosComponent implements OnInit {
+export class PesquisarBeneficiariosComponent {
   nome = '';
   matricula = '';
   matriculaTitular = '';
-  
-  empresaSelecionada: Empresa | null = null;
-  empresaInfo = '';
 
   page = 1;
   pageSize = 10;
 
   data: BeneficiarioRow[] = [];
 
-  constructor(
-    private router: Router, 
-    private service: BeneficiariosService,
-    private empresaContextService: EmpresaContextService
-  ) {
-    this.data = this.service.list();
-  }
   
-  ngOnInit() {
-    // Obter empresa selecionada (garantido pelo guard)
-    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
-    
-    if (this.empresaSelecionada) {
-      this.empresaInfo = `Empresa: ${this.empresaSelecionada.nome} (${this.empresaSelecionada.codigoEmpresa})`;
-      
-      // Filtrar beneficiários pela empresa selecionada
-      this.data = this.data.filter(beneficiario => 
-        beneficiario.codigoEmpresa === this.empresaSelecionada?.codigoEmpresa
-      );
-    }
-  }
-  
-  voltarParaEmpresas() {
-    // Limpar empresa selecionada e voltar para seleção
-    this.empresaContextService.clearEmpresaSelecionada();
-    this.router.navigate(['/cadastro-caring/empresa']);
-  }
 
   get filtered(): BeneficiarioRow[] {
     return this.data.filter(r =>
@@ -111,6 +80,8 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   showExclusao = false;
   exMotivo = '';
   exData = '';
+  minDate = '';
+  dateError = '';
 
   openDetails(row: BeneficiarioRow) {
     this.selectedRow = row;
@@ -152,6 +123,30 @@ export class PesquisarBeneficiariosComponent implements OnInit {
     return r.data_exclusao ? 'Rescindido' : 'Ativo';
   }
 
+  canOpenExclusao(r: BeneficiarioRow | null): boolean {
+    if (!r) return false;
+    const status = this.statusOf(r);
+    return !r.data_exclusao && status === 'Ativo';
+  }
+
+  private parseLocalDate(val: string): Date {
+    const [y, m, d] = val.split('-').map(v => parseInt(v, 10));
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+
+  private todayLocal(): Date {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+
+  private computeMinDate(): string {
+    const t = this.todayLocal();
+    const y = t.getFullYear();
+    const m = ('0' + (t.getMonth() + 1)).slice(-2);
+    const d = ('0' + t.getDate()).slice(-2);
+    return `${y}-${m}-${d}`;
+  }
+
   private motivoLabel(code: string): string {
     switch ((code || '').toLowerCase()) {
       case 'rescisao': return 'Rescisão';
@@ -164,14 +159,25 @@ export class PesquisarBeneficiariosComponent implements OnInit {
 
   confirmarExclusao() {
     if (this.selectedRow) {
-      const date = this.exData ? new Date(this.exData) : new Date();
-      const status = this.motivoLabel(this.exMotivo);
-      this.service.marcarExclusaoPorMatricula(this.selectedRow.matricula_beneficiario, date, status);
+      const today = this.todayLocal();
+      if (this.exData) {
+        const chosen = this.parseLocalDate(this.exData);
+        if (chosen < today) { this.dateError = 'Selecione uma data igual ou posterior a hoje.'; return; }
+        this.dateError = '';
+      }
+      // Marcar como Pendente até aprovação, sem aplicar exclusão imediata
+      this.service.setStatusByCpf(this.selectedRow.cpf, 'Pendente');
       this.data = this.service.list();
 
       const r = this.selectedRow;
-      const motivo = status;
-      const dataExclusao = this.formatDateBR(date);
+      const motivo = this.exMotivo || '';
+      const dataExclusao = this.exData || (() => {
+        const t = this.todayLocal();
+        const y = t.getFullYear();
+        const m = ('0' + (t.getMonth() + 1)).slice(-2);
+        const d = ('0' + t.getDate()).slice(-2);
+        return `${y}-${m}-${d}`;
+      })();
       this.exMotivo = '';
       this.exData = '';
       this.showExclusao = false;
@@ -179,6 +185,19 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       this.router.navigateByUrl(`/cadastro-caring/beneficiarios/exclusao-cadastral?matricula=${encodeURIComponent(r.matricula_beneficiario)}&nome=${encodeURIComponent(r.nome)}&cpf=${encodeURIComponent(r.cpf)}&motivo=${encodeURIComponent(motivo)}&dataExclusao=${encodeURIComponent(dataExclusao)}`);
       return;
     }
+  }
+
+  onExDateChange(val: string) {
+    this.exData = val;
+    if (!val) { this.dateError = ''; return; }
+    const today = this.todayLocal();
+    const chosen = this.parseLocalDate(val);
+    this.dateError = chosen < today ? 'Selecione uma data igual ou posterior a hoje.' : '';
+  }
+
+  constructor(private router: Router, private service: BeneficiariosService) {
+    this.data = this.service.list();
+    this.minDate = this.computeMinDate();
   }
 
   alterar(row: BeneficiarioRow) {

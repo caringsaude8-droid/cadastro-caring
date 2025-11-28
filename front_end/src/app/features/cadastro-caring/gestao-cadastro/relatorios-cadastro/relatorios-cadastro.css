@@ -1,0 +1,11 @@
+.relatorios-container { padding: 0.75rem; }
+.actions { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+.input { padding: 0.5rem 0.6rem; border: 1px solid #d1d5db; border-radius: 10px; min-width: 280px; }
+.btn { border: none; border-radius: 10px; padding: 0.5rem 0.9rem; cursor: pointer; }
+.btn-primary { background: #0b5fa4; color: #fff; }
+.table-wrapper { overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { background: #f1f5f9; color: #0b5fa4; font-weight: 700; padding: 0.5rem; text-align: left; }
+.table td { border-top: 1px solid #e5e7eb; padding: 0.5rem; }
+.empty { text-align: center; color: #64748b; }
+

@@ -12,6 +12,7 @@
     <select class="form-select" [(ngModel)]="filtroStatus">
       <option value="">Todos os status</option>
       <option value="pendente">Pendente</option>
+      <option value="aguardando">Aguardando</option>
       <option value="concluida">Concluída</option>
     </select>
   </div>
@@ -39,14 +40,72 @@
           <td>{{ s.solicitante }} <span *ngIf="s.codigoEmpresa">({{ s.codigoEmpresa }})</span></td>
           <td>{{ s.descricao }}</td>
           <td>
-            <span class="badge" [class]="s.status === 'pendente' ? 'status-pendente' : 'status-concluida'">{{ s.status }}</span>
+            <span class="badge" [class]="s.status === 'pendente' ? 'status-pendente' : (s.status === 'aguardando' ? 'status-aguardando' : 'status-concluida')">{{ s.status }}</span>
           </td>
           <td class="actions">
-            <button class="btn btn-secondary btn-sm" (click)="pendente(s.id)"><i class="icon-refresh"></i>Pendente</button>
-            <button class="btn btn-primary btn-sm" (click)="aprovar(s.id)"><i class="icon-check-circle"></i>Concluir</button>
+            <button class="btn btn-icon" title="Detalhes" (click)="openDetails(s)">🔎</button>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Modal Detalhes da Solicitação -->
+<div *ngIf="showDetails" class="modal-backdrop" (click)="closeDetails()"></div>
+<div *ngIf="showDetails" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Detalhes da Solicitação</h3>
+    <button class="modal-close" (click)="closeDetails()">×</button>
+  </div>
+  <div class="modal-body" *ngIf="selected as d">
+    <div class="detail-grid">
+      <div class="item"><span class="label">Data:</span><span class="value">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span></div>
+      <div class="item"><span class="label">Tipo:</span><span class="value">{{ d.tipo }}</span></div>
+      <div class="item"><span class="label">Entidade:</span><span class="value">{{ d.entidade }}</span></div>
+      <div class="item"><span class="label">Identificador:</span><span class="value">{{ d.identificador }}</span></div>
+      <div class="item"><span class="label">Solicitante:</span><span class="value">{{ d.solicitante }} <span *ngIf="d.codigoEmpresa">({{ d.codigoEmpresa }})</span></span></div>
+      <div class="item"><span class="label">Descrição:</span><span class="value">{{ d.descricao }}</span></div>
+      <div class="item" *ngIf="d.observacao"><span class="label">Observação da solicitação:</span><span class="value">{{ d.observacao }}</span></div>
+      <div class="item"><span class="label">Status atual:</span><span class="value">{{ d.status }}</span></div>
+    </div>
+
+    <div class="section-subtitle">Histórico</div>
+    <div class="history-list" *ngIf="d.historico?.length">
+      <div class="history-item" *ngFor="let h of d.historico" [ngClass]="{'solicitante': h.status === 'pendente' && (h.observacao || '').includes('Ajustes do solicitante')}">
+        <span class="history-date">{{ h.data | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">{{ h.status }}</span>
+        <span class="history-observacao" *ngIf="h.observacao">— {{ h.observacao }}</span>
+      </div>
+    </div>
+
+    <div class="section-subtitle" *ngIf="anexosSelecionado.length > 0">Anexos enviados pelo solicitante</div>
+    <div class="anexos-list" *ngIf="anexosSelecionado.length > 0">
+      <div class="anexo" *ngFor="let a of anexosSelecionado; let i = index">
+        <div class="anexo-info">
+          <span class="tipo">{{ a.tipo }}</span>
+          <span class="nome">{{ a.nome }}</span>
+          <span class="size">{{ a.size / 1024 | number:'1.0-1' }} KB</span>
+        </div>
+        <div class="anexo-actions">
+          <button class="btn btn-secondary btn-sm" (click)="baixarAnexo(i)"><i class="icon-download"></i> Baixar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle" *ngIf="d.status !== 'concluida'">Ação</div>
+    <div class="action-grid" *ngIf="d.status !== 'concluida'">
+      <button class="btn btn-primary btn-sm" (click)="aceitarSelecionado()"><i class="icon-check-circle"></i> Aceitar</button>
+      <button class="btn btn-secondary btn-sm" (click)="negarSelecionado()"><i class="icon-refresh"></i> Negar</button>
+    </div>
+
+    <div class="section-subtitle" *ngIf="d.status === 'concluida'">Situação</div>
+    <div class="concluida-banner" *ngIf="d.status === 'concluida'">Solicitação concluída. Nenhuma ação adicional permitida.</div>
+
+    <div class="section-subtitle" *ngIf="d.status !== 'concluida'">Mensagem ao solicitante (em caso de negativa)</div>
+    <textarea *ngIf="d.status !== 'concluida'" class="input" rows="3" [(ngModel)]="motivoNegacao" placeholder="Explique o que falta para aceitação"></textarea>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeDetails()">Fechar</button>
   </div>
 </div>

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { InputComponent } from '../../../../shared/components/ui/input/input';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
-import { BeneficiariosService, InclusaoBeneficiarioRequest } from '../beneficiarios.service';
+import { BeneficiariosService, InclusaoBeneficiarioRequest, Beneficiario } from '../beneficiarios.service';
 import { AprovacaoService } from '../../gestao-cadastro/aprovacao.service';
 import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
 import { Empresa } from '../../empresa/empresa.service';
@@ -264,7 +264,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     
     // Chamada para API real
     this.service.incluirBeneficiario(request).subscribe({
-      next: (beneficiario) => {
+      next: (beneficiario: Beneficiario) => {
         // Adicionar à aprovação
         this.aprovacao.add({
           tipo: 'inclusao',
@@ -278,9 +278,9 @@ export class InclusaoBeneficiarioComponent implements OnInit {
         this.showToast('Sucesso', 'Beneficiário incluído com sucesso', 'success');
         this.limparForm();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Erro ao incluir beneficiário:', error);
-        this.showToast('Erro', 'Erro ao incluir beneficiário: ' + (error.error?.message || 'Erro desconhecido'), 'error');
+        this.showToast('Erro', 'Erro ao incluir beneficiário: ' + (error?.error?.message || 'Erro desconhecido'), 'error');
       },
       complete: () => {
         this.loading = false;

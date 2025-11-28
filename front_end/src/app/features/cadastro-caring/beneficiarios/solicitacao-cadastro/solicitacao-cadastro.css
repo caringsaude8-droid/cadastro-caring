@@ -1,0 +1,261 @@
+.solicitacao-container {
+    padding: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.table-wrapper {
+    padding: 1rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+.table thead th {
+    background: #f3f4f6;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.detail-grid .item {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.detail-grid .item.wide {
+    grid-column: 1 / -1;
+}
+
+.detail-grid .label {
+    color: #64748b;
+    min-width: 140px;
+}
+
+.detail-grid .value {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.blocked-msg {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+}
+
+.blocked-title {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.blocked-text {
+    color: #64748b;
+}
+
+.section-title-bar {
+    font-weight: 700;
+    color: #1e293b;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.25rem;
+    margin: 0.75rem 0;
+}
+
+.section-subtitle {
+    font-weight: 600;
+    color: #374151;
+    margin: 0.5rem 0;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-select {
+    padding: 0.6rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+}
+
+.actions-right {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+.anexos-list {
+    margin-top: 0.5rem;
+}
+
+.anexo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #f8fafc;
+    margin-bottom: 0.5rem;
+}
+
+.anexo-info {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    color: #1e293b;
+}
+
+.anexo-info .tipo {
+    font-weight: 600;
+    color: #0b5fa4;
+}
+
+.anexo-info .nome {
+    font-weight: 500;
+}
+
+.anexo-info .size {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.anexo-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.empty-state {
+    padding: 1rem;
+    text-align: center;
+    color: #64748b;
+}
+
+/* Status badges mapping */
+.status-pendente {
+    background: var(--warning-light);
+    color: var(--warning);
+}
+
+.status-aguardando {
+    background: var(--info-light);
+    color: var(--info);
+}
+
+.status-concluida {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1000;
+}
+
+.modal-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(800px, 92vw);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-close {
+    border: none;
+    background: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+}
+
+.modal-body {
+    padding: 1rem 1.25rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.history-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    color: #374151;
+}
+
+.history-item.solicitante {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+.history-date {
+    color: #64748b;
+}
+
+.history-status {
+    font-weight: 700;
+}

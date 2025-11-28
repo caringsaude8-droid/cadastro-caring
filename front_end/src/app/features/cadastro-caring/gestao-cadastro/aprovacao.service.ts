@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-export type SolicitacaoStatus = 'pendente' | 'concluida';
+export type SolicitacaoStatus = 'pendente' | 'aguardando' | 'concluida';
 export type SolicitacaoTipo = 'inclusao' | 'alteracao' | 'exclusao';
 
 export interface Solicitacao {
@@ -14,6 +14,7 @@ export interface Solicitacao {
   data: string;
   status: SolicitacaoStatus;
   observacao?: string;
+  historico?: { data: string; status: SolicitacaoStatus; observacao?: string }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -35,7 +36,8 @@ export class AprovacaoService {
       codigoEmpresa: partial.codigoEmpresa,
       data: partial.data || new Date().toISOString(),
       status: partial.status || 'pendente',
-      observacao: partial.observacao
+      observacao: partial.observacao,
+      historico: [{ data: new Date().toISOString(), status: partial.status || 'pendente', observacao: partial.observacao }]
     };
     this.solicitacoes.unshift(s);
     return s;
@@ -44,7 +46,9 @@ export class AprovacaoService {
   updateStatus(id: string, status: SolicitacaoStatus, observacao?: string): void {
     const idx = this.solicitacoes.findIndex(s => s.id === id);
     if (idx >= 0) {
-      this.solicitacoes[idx] = { ...this.solicitacoes[idx], status, observacao };
+      const current = this.solicitacoes[idx];
+      const hist = (current.historico || []).concat([{ data: new Date().toISOString(), status, observacao }]);
+      this.solicitacoes[idx] = { ...current, status, observacao, historico: hist };
     }
   }
 }

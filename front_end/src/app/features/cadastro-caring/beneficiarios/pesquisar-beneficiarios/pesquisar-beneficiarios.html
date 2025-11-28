@@ -4,14 +4,6 @@
   [icon]="'users'">
 </app-page-header>
 
-<div *ngIf="empresaSelecionada" class="empresa-info">
-  <div class="empresa-card">
-    <span class="empresa-label">Empresa Selecionada:</span>
-    <span class="empresa-nome">{{ empresaInfo }}</span>
-    <button class="btn-secondary btn-small" (click)="voltarParaEmpresas()">Trocar Empresa</button>
-  </div>
-</div>
-
 <div class="search-container">
   <div class="search-bar">
     <span class="title">Pesquisa de beneficiários:</span>
@@ -126,7 +118,7 @@
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-secondary" (click)="openExclusao()">Exclusão</button>
+    <button class="btn-secondary" (click)="openExclusao()" [disabled]="!canOpenExclusao(selectedRow)">Exclusão</button>
     <button class="btn-primary" (click)="goAlteracaoFromDetails()">Alteração de Cadastro</button>
     <button class="btn-info" (click)="gerarCarterinha()">Gerar Carterinha Virtual</button>
   </div>
@@ -153,7 +145,8 @@
       </div>
       <div class="field">
         <label>Data da Exclusão</label>
-        <ui-input type="date" [(ngModel)]="exData" name="ex_data"></ui-input>
+        <ui-input type="date" [(ngModel)]="exData" name="ex_data" [min]="minDate" (valueChange)="onExDateChange($event)"></ui-input>
+        <div class="error-card" *ngIf="dateError">{{dateError}}</div>
       </div>
     </div>
   </div>

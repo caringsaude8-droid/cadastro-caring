@@ -1,8 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { EmpresaContextService } from '../../../shared/services/empresa-context.service';
-import { Empresa } from '../empresa/empresa.service';
 
 @Component({
   selector: 'app-cadastro-beneficiarios',
@@ -15,7 +13,6 @@ export class CadastroBeneficiariosComponent implements OnInit {
   pageTitle = 'Beneficiários';
   loading = false;
   selectedAction: string | null = null;
-  empresaSelecionada: Empresa | null = null;
   actions = [
     { id: 'inclusao-titular', title: 'Inclusão de Titular', icon: 'users', color: 'blue' },
     { id: 'inclusao-dependente', title: 'Inclusão de Dependente', icon: 'users', color: 'green' },
@@ -26,16 +23,10 @@ export class CadastroBeneficiariosComponent implements OnInit {
     { id: 'consulta-pendentes', title: 'Consulta Movimentações Pendentes', icon: 'dashboard', color: 'blue' }
   ];
 
-  constructor(
-    private router: Router,
-    private empresaContextService: EmpresaContextService
-  ) {}
+  constructor(private router: Router) {}
 
   ngOnInit() {
     this.loading = false;
-    
-    // Obter empresa selecionada (garantido pelo guard)
-    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
   }
 
   selectAction(id: string) {

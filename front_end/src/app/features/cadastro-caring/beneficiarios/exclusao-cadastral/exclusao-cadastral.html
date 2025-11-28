@@ -1,4 +1,8 @@
 <div class="page-container">
+  <div class="success-card" *ngIf="successMessage">
+    <span class="success-icon">✅</span>
+    <span class="success-text">{{successMessage}}</span>
+  </div>
   <app-page-header 
     [title]="'Cadastro Caring — Exclusão Cadastral'" 
     [subtitle]="'Selecione o motivo para atualizar o status'" 
@@ -27,7 +31,8 @@
         </div>
         <div class="form-group">
           <label>Data da Exclusão</label>
-          <ui-input [(ngModel)]="dataExclusao" name="dataExclusao" placeholder="dd/mm/aaaa"></ui-input>
+          <ui-input type="date" [(ngModel)]="dataExclusao" name="dataExclusao" [min]="minDate" (valueChange)="onDateChange($event)"></ui-input>
+          <div class="error-card" *ngIf="dateError">{{dateError}}</div>
         </div>
         <div class="form-group">
           <label>Status Resultante</label>
@@ -36,9 +41,13 @@
       </div>
     </div>
 
+    <div class="section">
+      <div class="section-title">Mensagem ao aprovador (opcional)</div>
+      <textarea class="input" rows="3" [(ngModel)]="mensagem" placeholder="Escreva uma mensagem para o aprovador (opcional)"></textarea>
+    </div>
+
     <div class="form-actions">
       <button class="btn-secondary" (click)="confirmar()">Confirmar</button>
     </div>
   </div>
 </div>
-

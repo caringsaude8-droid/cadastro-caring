@@ -4,11 +4,13 @@ import { CadastroCaringComponent } from './features/cadastro-caring/cadastro-car
 import { CadastroBeneficiariosComponent } from './features/cadastro-caring/beneficiarios/beneficiarios';
 import { PesquisarBeneficiariosComponent } from './features/cadastro-caring/beneficiarios/pesquisar-beneficiarios/pesquisar-beneficiarios';
 import { CadastroRelatoriosComponent } from './features/cadastro-caring/relatorios/relatorios';
+import { RelatoriosCadastroComponent } from './features/cadastro-caring/gestao-cadastro/relatorios-cadastro/relatorios-cadastro';
 import { EmpresasCadastroComponent } from './features/cadastro-caring/empresa/empresa';
 import { AlteracaoCadastralComponent } from './features/cadastro-caring/beneficiarios/alteracao-cadastral/alteracao-cadastral';
 import { InclusaoBeneficiarioComponent } from './features/cadastro-caring/beneficiarios/inclusao-beneficiario/inclusao-beneficiario';
 import { ExclusaoCadastralComponent } from './features/cadastro-caring/beneficiarios/exclusao-cadastral/exclusao-cadastral';
 import { ListagemCadastralComponent } from './features/cadastro-caring/beneficiarios/listagem-cadastral/listagem-cadastral';
+import { SolicitacaoCadastroComponent } from './features/cadastro-caring/beneficiarios/solicitacao-cadastro/solicitacao-cadastro';
 import { GestaoCadastroComponent } from './features/cadastro-caring/gestao-cadastro/gestao-cadastro';
 import { ConsultarBeneficiarioComponent } from './features/cadastro-caring/gestao-cadastro/consultar-beneficiario/consultar-beneficiario';
 import { LoginComponent } from './core/login/login.component';
@@ -40,7 +42,9 @@ export const routes: Routes = [
       { path: 'cadastro-caring/beneficiarios/exclusao-cadastral', component: ExclusaoCadastralComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/listagem-cadastral', component: ListagemCadastralComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/alteracao-cadastral', component: AlteracaoCadastralComponent, canActivate: [empresaGuard] },
-      { path: 'cadastro-caring/relatorios', component: CadastroRelatoriosComponent },
+      { path: 'cadastro-caring/beneficiarios/solicitacao-cadastro', component: SolicitacaoCadastroComponent, canActivate: [empresaGuard] },
+      { path: 'cadastro-caring/gestao-cadastro/relatorios-cadastro', component: RelatoriosCadastroComponent },
+      { path: 'cadastro-caring/relatorios', redirectTo: 'cadastro-caring/gestao-cadastro/relatorios-cadastro' },
       { path: 'usuarios', redirectTo: 'cadastro-caring/gestao-cadastro/usuarios' },
     ]
   },

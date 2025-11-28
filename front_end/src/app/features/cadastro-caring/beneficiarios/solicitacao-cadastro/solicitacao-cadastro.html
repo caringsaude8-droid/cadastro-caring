@@ -1,0 +1,127 @@
+<app-page-header 
+  [title]="'Cadastro Caring — Solicitação de Cadastro'" 
+  [subtitle]="'Acompanhe suas solicitações, ajuste pendências e anexe documentos'" 
+  [icon]="'users'">
+</app-page-header>
+
+<div class="solicitacao-container">
+  <div *ngIf="minhasSolicitacoes.length === 0" class="empty-state caring-card">
+    <i class="icon-users-empty"></i>
+    <h3>Você não possui solicitações</h3>
+    <p>Envie novas solicitações nas telas de Inclusão, Alteração ou Exclusão de Beneficiários.</p>
+  </div>
+
+  <div class="table-wrapper caring-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Tipo</th>
+          <th>Entidade</th>
+          <th>Identificador</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of minhasSolicitacoes">
+          <td>{{ s.data | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ s.tipo }}</td>
+          <td>{{ s.entidade }}</td>
+          <td>{{ s.identificador }}</td>
+          <td>
+            <span class="badge" [class]="s.status === 'pendente' ? 'status-pendente' : (s.status === 'aguardando' ? 'status-aguardando' : 'status-concluida')">{{ s.status }}</span>
+          </td>
+          <td class="actions">
+            <button class="btn btn-icon" title="Detalhes" (click)="openDetails(s)">🔎</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="showDetails" class="modal-backdrop" (click)="closeDetails()"></div>
+  <div *ngIf="showDetails" class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Detalhes da Solicitação</h3>
+      <button class="modal-close" (click)="closeDetails()">×</button>
+    </div>
+    <div class="modal-body" *ngIf="selected as d">
+      <div class="detail-grid">
+        <div class="item"><span class="label">Data:</span><span class="value">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span></div>
+        <div class="item"><span class="label">Tipo:</span><span class="value">{{ d.tipo }}</span></div>
+        <div class="item"><span class="label">Entidade:</span><span class="value">{{ d.entidade }}</span></div>
+        <div class="item"><span class="label">Identificador:</span><span class="value">{{ d.identificador }}</span></div>
+      <div class="item wide"><span class="label">Descrição:</span><span class="value">{{ d.descricao }}</span></div>
+      <div class="item wide" *ngIf="d.observacao"><span class="label">Observação da aprovação:</span><span class="value">{{ d.observacao }}</span></div>
+    </div>
+
+    <div class="section-subtitle">Histórico</div>
+    <div class="history-list" *ngIf="d.historico?.length">
+      <div class="history-item" *ngFor="let h of d.historico" [ngClass]="{'solicitante': h.status === 'pendente' && (h.observacao || '').includes('Ajustes do solicitante')}">
+        <span class="history-date">{{ h.data | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">{{ h.status }}</span>
+        <span class="history-observacao" *ngIf="h.observacao">— {{ h.observacao }}</span>
+      </div>
+    </div>
+
+      <div *ngIf="d.status === 'concluida'" class="blocked-msg">
+        <i class="icon-lock"></i>
+        <div>
+          <div class="blocked-title">Solicitação concluída</div>
+          <div class="blocked-text">Não é possível alterar uma solicitação que já foi aceita.</div>
+        </div>
+      </div>
+
+      <div *ngIf="shouldShowAjustes(d)" class="ajustes-section">
+        <div class="section-title-bar">Ajustes do solicitante</div>
+        <div class="form-row">
+          <div class="form-group full">
+            <label>Mensagem ao aprovador</label>
+            <textarea class="input" rows="3" [(ngModel)]="ajustes[d.id].mensagem" placeholder="Explique as correções realizadas ou informações adicionais"></textarea>
+          </div>
+        </div>
+
+        <div class="section-subtitle">Anexar documentos complementares</div>
+        <div class="form-row">
+          <div class="form-group third">
+            <label>Tipo do documento</label>
+            <select class="form-select" [(ngModel)]="ajustes[d.id].docTipo">
+              <option value="">Selecione</option>
+              <option value="RG">RG</option>
+              <option value="CPF">CPF</option>
+              <option value="Comprovante">Comprovante</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group third">
+            <label>Arquivo</label>
+            <input type="file" class="input" (change)="onFileSelected(d, $event)">
+          </div>
+          <div class="form-group third actions-right">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary btn-sm" (click)="salvarAjustesSelecionado()"><i class="icon-upload"></i> Enviar ajustes</button>
+          </div>
+        </div>
+
+        <div class="anexos-list" *ngIf="ajustes[d.id].anexos.length > 0">
+          <div class="section-subtitle">Documentos anexados</div>
+          <div class="anexo" *ngFor="let a of ajustes[d.id].anexos; let i = index">
+            <div class="anexo-info">
+              <span class="tipo">{{ a.tipo }}</span>
+              <span class="nome">{{ a.nome }}</span>
+              <span class="size">{{ a.size / 1024 | number:'1.0-1' }} KB</span>
+            </div>
+            <div class="anexo-actions">
+              <button class="btn btn-secondary btn-sm" (click)="baixarAnexo(d, i)"><i class="icon-download"></i> Baixar</button>
+              <button class="btn btn-secondary btn-sm" (click)="removerAnexo(d, i)"><i class="icon-trash"></i> Remover</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" (click)="closeDetails()"><i class="icon-x"></i> Fechar</button>
+    </div>
+  </div>
+</div>
