@@ -4,6 +4,14 @@
   [icon]="'users'">
 </app-page-header>
 
+<div *ngIf="empresaSelecionada" class="empresa-info">
+  <div class="empresa-card">
+    <span class="empresa-label">Empresa Selecionada:</span>
+    <span class="empresa-nome">{{ empresaInfo }}</span>
+    <button class="btn-secondary btn-small" (click)="voltarParaEmpresas()">Trocar Empresa</button>
+  </div>
+</div>
+
 <div class="search-container">
   <div class="search-bar">
     <span class="title">Pesquisa de beneficiários:</span>

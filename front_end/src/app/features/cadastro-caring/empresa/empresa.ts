@@ -1,18 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
 import { InputComponent } from '../../../shared/components/ui/input/input';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header';
-
-type Clinica = {
-  nome: string;
-  cnpj: string;
-  codigo: string;
-  cidade: string;
-  uf: string;
-  telefone?: string;
-  numeroEmpresa?: string;
-};
+import { EmpresaService, Empresa } from './empresa.service';
+import { EmpresaContextService } from '../../../shared/services/empresa-context.service';
 
 @Component({
   selector: 'app-empresas-cadastro',
@@ -21,107 +14,163 @@ type Clinica = {
   templateUrl: './empresa.html',
   styleUrl: './empresa.css'
 })
-export class EmpresasCadastroComponent {
+export class EmpresasCadastroComponent implements OnInit {
   search = '';
-  selected?: Clinica;
-  selectedCodigo: string = '';
-  clinicas: Clinica[] = [
-    {
-      nome: 'Clínica Alpha Saúde',
-      cnpj: '12.345.678/0001-90',
-      codigo: 'CL001',
-      cidade: 'São Paulo',
-      uf: 'SP',
-      telefone: '(11) 2345-6789',
-      numeroEmpresa: '001'
-    },
-    {
-      nome: 'Clínica Beta Vida',
-      cnpj: '98.765.432/0001-10',
-      codigo: 'CL002',
-      cidade: 'Rio de Janeiro',
-      uf: 'RJ',
-      telefone: '(21) 9876-5432',
-      numeroEmpresa: '002'
-    },
-    {
-      nome: 'Clínica Caring Centro',
-      cnpj: '11.222.333/0001-44',
-      codigo: 'CL003',
-      cidade: 'Belo Horizonte',
-      uf: 'MG',
-      telefone: '(31) 9988-7766',
-      numeroEmpresa: '003'
-    }
-  ];
+  selected?: Empresa;
+  selectedId: number | null = null;
+  empresas: Empresa[] = [];
   showForm = false;
-  novaClinica: Clinica = { nome: '', cnpj: '', codigo: '', cidade: '', uf: '', telefone: '', numeroEmpresa: '' };
+  novaEmpresa: Omit<Empresa, 'id'> = {
+    nome: '',
+    cnpj: '',
+    codigoEmpresa: '',
+    cidade: '',
+    uf: '',
+    email: '',
+    telefone: '',
+    numeroEmpresa: ''
+  };
   ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
   showEdit = false;
-  edicaoClinica: Clinica = { nome: '', cnpj: '', codigo: '', cidade: '', uf: '', telefone: '', numeroEmpresa: '' };
-  edicaoOriginalCodigo: string = '';
+  showDetails = false;
+  empresaDetalhes: Empresa | null = null;
+  edicaoEmpresa: Omit<Empresa, 'id'> = {
+    nome: '',
+    cnpj: '',
+    codigoEmpresa: '',
+    cidade: '',
+    uf: '',
+    email: '',
+    telefone: '',
+    numeroEmpresa: ''
+  };
+  edicaoEmpresaId: number | null = null;
+  loading = false;
+  errorMessage = '';
+  
+  // Toast properties
+  showToastMessage = false;
+  toastTitle = '';
+  toastMessage = '';
+  toastType: 'success' | 'error' = 'success';
+  
+  // Aviso do guard
+  showWarningMessage = false;
+  warningMessage = '';
+  returnUrl = '';
 
-  constructor() {
-    const savedClinicas = localStorage.getItem('clinicas');
-    if (savedClinicas) {
-      try {
-        const parsed = JSON.parse(savedClinicas) as Clinica[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.clinicas = parsed;
-        }
-      } catch {}
+  constructor(
+    private empresaService: EmpresaService,
+    private empresaContextService: EmpresaContextService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit(): void {
+    this.carregarEmpresas();
+    
+    // Verificar se há empresa já selecionada no contexto
+    const empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+    if (empresaSelecionada) {
+      this.selected = empresaSelecionada;
+      this.selectedId = empresaSelecionada.id || null;
     }
-    const saved = localStorage.getItem('selectedClinic');
-    if (saved) {
-      this.selected = JSON.parse(saved);
-      this.selectedCodigo = this.selected?.codigo || '';
-    }
+    
+    // Verificar se há mensagem de aviso do guard
+    this.route.queryParams.subscribe(params => {
+      if (params['message']) {
+        this.warningMessage = params['message'];
+        this.returnUrl = params['returnUrl'] || '';
+        this.showWarningMessage = true;
+      }
+    });
   }
 
-  get filtered(): Clinica[] {
+  carregarEmpresas(): void {
+    this.loading = true;
+    this.errorMessage = '';
+    
+    this.empresaService.listarEmpresas().subscribe({
+      next: (empresas) => {
+        this.empresas = empresas;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Erro ao carregar empresas:', error);
+        this.errorMessage = 'Erro ao carregar empresas';
+        this.loading = false;
+      }
+    });
+  }
+
+  get filtered(): Empresa[] {
     const t = this.search.toLowerCase();
-    return this.clinicas.filter(c =>
+    return this.empresas.filter(e =>
       !t ||
-      c.nome.toLowerCase().includes(t) ||
-      c.cnpj.includes(t) ||
-      c.codigo.toLowerCase().includes(t) ||
-      (c.telefone || '').toLowerCase().includes(t) ||
-      (c.numeroEmpresa || '').toLowerCase().includes(t)
+      e.nome.toLowerCase().includes(t) ||
+      e.cnpj.includes(t) ||
+      e.codigoEmpresa.toLowerCase().includes(t) ||
+      e.email.toLowerCase().includes(t) ||
+      e.telefone.toLowerCase().includes(t) ||
+      e.numeroEmpresa.toLowerCase().includes(t)
     );
   }
 
-  selecionar(c: Clinica) {
-    this.selected = c;
-    localStorage.setItem('selectedClinic', JSON.stringify(c));
+  selecionar(empresa: Empresa) {
+    this.selected = empresa;
+    this.selectedId = empresa.id || null;
   }
 
-  salvarNovaClinica() {
-    const c = this.novaClinica;
-    if (!c.nome || !c.cnpj || !c.codigo || !c.cidade || !c.uf || !c.telefone || !c.numeroEmpresa) {
-      alert('Preencha todos os campos obrigatórios');
+  salvarNovaEmpresa() {
+    const e = this.novaEmpresa;
+    if (!e.nome || !e.cnpj || !e.codigoEmpresa || !e.cidade || !e.uf || !e.email || !e.telefone || !e.numeroEmpresa) {
+      this.errorMessage = 'Preencha todos os campos obrigatórios';
       return;
     }
-    const duplicate = this.clinicas.some(x => x.codigo.toLowerCase() === c.codigo.toLowerCase() || x.cnpj === c.cnpj);
-    if (duplicate) {
-      alert('Já existe uma clínica com este Código ou CNPJ');
-      return;
-    }
-    this.clinicas = [...this.clinicas, { ...c }];
-    localStorage.setItem('clinicas', JSON.stringify(this.clinicas));
-    this.novaClinica = { nome: '', cnpj: '', codigo: '', cidade: '', uf: '', telefone: '', numeroEmpresa: '' };
-    this.showForm = false;
-    alert('Clínica criada com sucesso');
-  }
-
-  cancelarNovaClinica() {
-    this.novaClinica = { nome: '', cnpj: '', codigo: '', cidade: '', uf: '', telefone: '', numeroEmpresa: '' };
-    this.showForm = false;
-    document.body.style.overflow = 'auto';
+    
+    this.loading = true;
+    this.errorMessage = '';
+    
+    this.empresaService.criarEmpresa(e).subscribe({
+      next: (empresa) => {
+        this.empresas = [...this.empresas, empresa];
+        this.resetarNovaEmpresa();
+        this.showForm = false;
+        this.loading = false;
+        this.showToast('Sucesso', 'Empresa criada com sucesso', 'success');
+      },
+      error: (error) => {
+        console.error('Erro ao criar empresa:', error);
+        this.errorMessage = 'Erro ao criar empresa';
+        this.loading = false;
+      }
+    });
   }
 
   abrirNovaEmpresa() {
     this.showForm = true;
+    this.errorMessage = '';
     document.body.style.overflow = 'hidden';
+  }
+
+  cancelarNovaEmpresa() {
+    this.resetarNovaEmpresa();
+    this.showForm = false;
+    this.errorMessage = '';
+    document.body.style.overflow = 'auto';
+  }
+  
+  resetarNovaEmpresa() {
+    this.novaEmpresa = {
+      nome: '',
+      cnpj: '',
+      codigoEmpresa: '',
+      cidade: '',
+      uf: '',
+      email: '',
+      telefone: '',
+      numeroEmpresa: ''
+    };
   }
 
   onCnpjInput(value: string) {
@@ -139,27 +188,53 @@ export class EmpresasCadastroComponent {
     if (parts[2]) formatted += '.' + parts[2];
     if (parts[3]) formatted += '/' + parts[3];
     if (parts[4]) formatted += '-' + parts[4];
-    this.novaClinica.cnpj = formatted;
+    this.novaEmpresa.cnpj = formatted;
   }
 
   acessarSelecionada() {
-    if (!this.selectedCodigo) return;
-    const found = this.clinicas.find(c => c.codigo === this.selectedCodigo);
+    if (!this.selectedId) return;
+    
+    const found = this.empresas.find(e => e.id === this.selectedId);
+    
     if (found) {
       this.selected = found;
-      localStorage.setItem('selectedClinic', JSON.stringify(found));
+      
+      // Salvar empresa selecionada no contexto global
+      this.empresaContextService.setEmpresaSelecionada(found);
+      
+      // Limpar mensagem de aviso
+      this.showWarningMessage = false;
+      
+      // Redirecionar para a URL original ou para pesquisar beneficiários
+      const redirectUrl = this.returnUrl || '/cadastro-caring/beneficiarios';
+      this.router.navigate([redirectUrl]);
+      
+      // Manter a empresa selecionada no campo (não limpar selectedId)
+      // this.selectedId permanece com o valor para mostrar qual empresa está ativa
     }
+  }
+  
+  onEmpresaSelectionChange(value: any) {
+    // Converter para number se for string
+    this.selectedId = value === 'null' || value === null ? null : Number(value);
+  }
+
+  fecharAviso() {
+    this.showWarningMessage = false;
+    this.warningMessage = '';
+    this.returnUrl = '';
   }
 
   abrirEdicaoSelecionada() {
-    if (!this.selectedCodigo) return;
-    const c = this.clinicas.find(x => x.codigo === this.selectedCodigo);
-    if (c) this.abrirEdicaoClinica(c);
+    if (!this.selectedId) return;
+    const empresa = this.empresas.find(e => e.id === this.selectedId);
+    if (empresa) this.abrirEdicaoEmpresa(empresa);
   }
 
-  abrirEdicaoClinica(c: Clinica) {
-    this.edicaoClinica = { ...c };
-    this.edicaoOriginalCodigo = c.codigo;
+  abrirEdicaoEmpresa(empresa: Empresa) {
+    const { id, ...empresaSemId } = empresa;
+    this.edicaoEmpresa = { ...empresaSemId };
+    this.edicaoEmpresaId = id || null;
     this.showEdit = true;
     document.body.style.overflow = 'hidden';
   }
@@ -173,35 +248,60 @@ export class EmpresasCadastroComponent {
     if (parts[2]) f += '.' + parts[2];
     if (parts[3]) f += '/' + parts[3];
     if (parts[4]) f += '-' + parts[4];
-    this.edicaoClinica.cnpj = f;
+    this.edicaoEmpresa.cnpj = f;
   }
 
-  salvarEdicaoClinica() {
-    const c = this.edicaoClinica;
-    if (!c.nome || !c.cnpj || !c.codigo || !c.cidade || !c.uf || !c.telefone || !c.numeroEmpresa) {
-      alert('Preencha todos os campos obrigatórios');
+  salvarEdicaoEmpresa() {
+    const e = this.edicaoEmpresa;
+    if (!e.nome || !e.cnpj || !e.codigoEmpresa || !e.cidade || !e.uf || !e.email || !e.telefone || !e.numeroEmpresa) {
+      this.errorMessage = 'Preencha todos os campos obrigatórios';
       return;
     }
-    const duplicate = this.clinicas.some(x => (x.codigo.toLowerCase() === c.codigo.toLowerCase() || x.cnpj === c.cnpj) && x.codigo !== this.edicaoOriginalCodigo);
-    if (duplicate) {
-      alert('Já existe uma clínica com este Código ou CNPJ');
+    
+    if (!this.edicaoEmpresaId) {
+      this.errorMessage = 'ID da empresa não encontrado';
       return;
     }
-    this.clinicas = this.clinicas.map(x => x.codigo === this.edicaoOriginalCodigo ? { ...c } : x);
-    localStorage.setItem('clinicas', JSON.stringify(this.clinicas));
-    if (this.selected?.codigo === this.edicaoOriginalCodigo) {
-      this.selected = { ...c };
-      localStorage.setItem('selectedClinic', JSON.stringify(this.selected));
-      this.selectedCodigo = this.selected.codigo;
-    }
-    this.cancelarEdicaoClinica();
-    alert('Clínica atualizada com sucesso');
+    
+    this.loading = true;
+    this.errorMessage = '';
+    
+    this.empresaService.atualizarEmpresa(this.edicaoEmpresaId, e).subscribe({
+      next: (empresaAtualizada) => {
+        this.empresas = this.empresas.map(emp => 
+          emp.id === this.edicaoEmpresaId ? empresaAtualizada : emp
+        );
+        
+        if (this.selected?.id === this.edicaoEmpresaId) {
+          this.selected = empresaAtualizada;
+        }
+        
+        this.cancelarEdicaoEmpresa();
+        this.loading = false;
+        this.showToast('Sucesso', 'Empresa atualizada com sucesso', 'success');
+      },
+      error: (error) => {
+        console.error('Erro ao atualizar empresa:', error);
+        this.errorMessage = 'Erro ao atualizar empresa';
+        this.loading = false;
+      }
+    });
   }
 
-  cancelarEdicaoClinica() {
-    this.edicaoClinica = { nome: '', cnpj: '', codigo: '', cidade: '', uf: '', telefone: '', numeroEmpresa: '' };
-    this.edicaoOriginalCodigo = '';
+  cancelarEdicaoEmpresa() {
+    this.edicaoEmpresa = {
+      nome: '',
+      cnpj: '',
+      codigoEmpresa: '',
+      cidade: '',
+      uf: '',
+      email: '',
+      telefone: '',
+      numeroEmpresa: ''
+    };
+    this.edicaoEmpresaId = null;
     this.showEdit = false;
+    this.errorMessage = '';
     document.body.style.overflow = 'auto';
   }
  
@@ -214,7 +314,7 @@ export class EmpresasCadastroComponent {
     if (d0) f += '(' + d0 + ')';
     if (d1) f += ' ' + d1;
     if (d2) f += '-' + d2;
-    this.novaClinica.telefone = f;
+    this.novaEmpresa.telefone = f;
   }
  
   onTelefoneEdicao(value: string) {
@@ -226,6 +326,34 @@ export class EmpresasCadastroComponent {
     if (d0) f += '(' + d0 + ')';
     if (d1) f += ' ' + d1;
     if (d2) f += '-' + d2;
-    this.edicaoClinica.telefone = f;
+    this.edicaoEmpresa.telefone = f;
+  }
+  
+  private showToast(title: string, message: string, type: 'success' | 'error') {
+    this.toastTitle = title;
+    this.toastMessage = message;
+    this.toastType = type;
+    this.showToastMessage = true;
+    
+    // Auto-hide toast after 4 seconds
+    setTimeout(() => {
+      this.hideToast();
+    }, 4000);
+  }
+  
+  hideToast() {
+    this.showToastMessage = false;
+  }
+  
+  abrirDetalhes(empresa: Empresa) {
+    this.empresaDetalhes = empresa;
+    this.showDetails = true;
+    document.body.style.overflow = 'hidden';
+  }
+  
+  fecharDetalhes() {
+    this.empresaDetalhes = null;
+    this.showDetails = false;
+    document.body.style.overflow = 'auto';
   }
 }

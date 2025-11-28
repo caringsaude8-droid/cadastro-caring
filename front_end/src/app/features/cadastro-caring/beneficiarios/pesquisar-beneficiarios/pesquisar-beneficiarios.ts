@@ -1,10 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { BeneficiariosService, Beneficiario } from '../beneficiarios.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { InputComponent } from '../../../../shared/components/ui/input/input';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
+import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
+import { Empresa } from '../../empresa/empresa.service';
 
 type BeneficiarioRow = Beneficiario & {
   status?: string;
@@ -41,18 +43,45 @@ type BeneficiarioRow = Beneficiario & {
   templateUrl: './pesquisar-beneficiarios.html',
   styleUrl: './pesquisar-beneficiarios.css'
 })
-export class PesquisarBeneficiariosComponent {
+export class PesquisarBeneficiariosComponent implements OnInit {
   nome = '';
   matricula = '';
   matriculaTitular = '';
+  
+  empresaSelecionada: Empresa | null = null;
+  empresaInfo = '';
 
   page = 1;
   pageSize = 10;
 
   data: BeneficiarioRow[] = [];
 
-  constructor(private router: Router, private service: BeneficiariosService) {
+  constructor(
+    private router: Router, 
+    private service: BeneficiariosService,
+    private empresaContextService: EmpresaContextService
+  ) {
     this.data = this.service.list();
+  }
+  
+  ngOnInit() {
+    // Obter empresa selecionada (garantido pelo guard)
+    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+    
+    if (this.empresaSelecionada) {
+      this.empresaInfo = `Empresa: ${this.empresaSelecionada.nome} (${this.empresaSelecionada.codigoEmpresa})`;
+      
+      // Filtrar beneficiários pela empresa selecionada
+      this.data = this.data.filter(beneficiario => 
+        beneficiario.codigoEmpresa === this.empresaSelecionada?.codigoEmpresa
+      );
+    }
+  }
+  
+  voltarParaEmpresas() {
+    // Limpar empresa selecionada e voltar para seleção
+    this.empresaContextService.clearEmpresaSelecionada();
+    this.router.navigate(['/cadastro-caring/empresa']);
   }
 
   get filtered(): BeneficiarioRow[] {

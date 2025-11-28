@@ -1,81 +1,125 @@
 <app-page-header 
   [title]="'Cadastro Caring — Empresas'" 
-  [subtitle]="'Selecione a clínica para visualizar os dados'" 
+  [subtitle]="'Selecione a empresa para visualizar os dados'" 
   [icon]="'building'">
 </app-page-header>
 
 <div class="empresa-card">
+  <!-- Aviso de Empresa Necessária -->
+  <div *ngIf="showWarningMessage" class="warning-banner">
+    <div class="warning-content">
+      <div class="warning-icon">⚠️</div>
+      <div class="warning-text">
+        <h4 class="warning-title">Empresa Necessária</h4>
+        <p class="warning-message">{{ warningMessage }}</p>
+      </div>
+      <button class="warning-close" (click)="fecharAviso()">×</button>
+    </div>
+  </div>
+
+  <!-- Toast personalizado -->
+  <div *ngIf="showToastMessage" 
+       class="toast-container"
+       [class.toast-success]="toastType === 'success'"
+       [class.toast-error]="toastType === 'error'">
+    <div class="toast-content">
+      <div class="toast-icon">
+        <span *ngIf="toastType === 'success'">✓</span>
+        <span *ngIf="toastType === 'error'">✕</span>
+      </div>
+      <div class="toast-text">
+        <h4 class="toast-title">{{ toastTitle }}</h4>
+        <p class="toast-message">{{ toastMessage }}</p>
+      </div>
+      <button class="toast-close" (click)="hideToast()">×</button>
+    </div>
+  </div>
+
+  <!-- Mensagem de erro -->
+  <div *ngIf="errorMessage" class="error-message">
+    <p class="text-red-600">{{ errorMessage }}</p>
+  </div>
+  
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-message">
+    <p>Carregando...</p>
+  </div>
+
   <div class="toolbar">
     <label>Pesquisar:</label>
-    <ui-input [(ngModel)]="search" name="search" placeholder="Nome, CNPJ, Código, Telefone ou Número"></ui-input>
-    <button class="btn-primary" (click)="abrirNovaEmpresa()">Nova Empresa</button>
-    <span class="selecionada" *ngIf="selected">Selecionada: <strong>{{selected!.nome}}</strong> ({{selected!.codigo}})</span>
+    <ui-input [(ngModel)]="search" name="search" placeholder="Nome, CNPJ, Código, E-mail, Telefone"></ui-input>
+    <button class="btn-primary" (click)="abrirNovaEmpresa()" [disabled]="loading">Nova Empresa</button>
+    <span class="selecionada" *ngIf="selected">Selecionada: <strong>{{selected!.nome}}</strong> ({{selected!.codigoEmpresa}})</span>
   </div>
 
   <div class="selection-card">
-    <div class="selection-header">Escolha a unidade que deseja acessar</div>
+    <div class="selection-header">Escolha a empresa que deseja acessar</div>
     <div class="selection-body">
-      <label>Unidade *</label>
-      <select class="form-select" [(ngModel)]="selectedCodigo">
-        <option value="">Selecione...</option>
-        <option *ngFor="let c of clinicas" [value]="c.codigo">{{c.nome}}</option>
+      <label>Empresa *</label>
+      <select class="form-select" [(ngModel)]="selectedId" (ngModelChange)="onEmpresaSelectionChange($event)">
+        <option [value]="null">Selecione...</option>
+        <option *ngFor="let e of empresas" [value]="e.id">{{e.nome}}</option>
       </select>
     </div>
     <div class="selection-actions">
-      <button class="btn-access" [disabled]="!selectedCodigo" (click)="acessarSelecionada()">Acessar</button>
-      <button class="btn-secondary" [disabled]="!selectedCodigo" (click)="abrirEdicaoSelecionada()">Editar</button>
+      <button class="btn-access" [disabled]="!selectedId" (click)="acessarSelecionada()">Acessar</button>
     </div>
   </div>
 
-  <div *ngIf="showForm" class="modal-backdrop" (click)="cancelarNovaClinica()"></div>
+  <div *ngIf="showForm" class="modal-backdrop" (click)="cancelarNovaEmpresa()"></div>
   <div *ngIf="showForm" class="modal-card" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Nova Empresa</h3>
-      <button class="modal-close" (click)="cancelarNovaClinica()">×</button>
+      <button class="modal-close" (click)="cancelarNovaEmpresa()">×</button>
     </div>
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group">
           <label>Nome *</label>
-          <ui-input [(ngModel)]="novaClinica.nome" name="nome"></ui-input>
+          <ui-input [(ngModel)]="novaEmpresa.nome" name="nome"></ui-input>
         </div>
         <div class="form-group">
           <label>CNPJ *</label>
-          <ui-input [(ngModel)]="novaClinica.cnpj" (ngModelChange)="onCnpjInput($event)" name="cnpj" placeholder="00.000.000/0000-00"></ui-input>
+          <ui-input [(ngModel)]="novaEmpresa.cnpj" (ngModelChange)="onCnpjInput($event)" name="cnpj" placeholder="00.000.000/0000-00"></ui-input>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Código Empresa *</label>
-          <ui-input [(ngModel)]="novaClinica.codigo" name="codigo"></ui-input>
+          <ui-input [(ngModel)]="novaEmpresa.codigoEmpresa" name="codigoEmpresa"></ui-input>
         </div>
         <div class="form-group">
           <label>Número Empresa *</label>
-          <ui-input [(ngModel)]="novaClinica.numeroEmpresa" name="numeroEmpresa"></ui-input>
+          <ui-input [(ngModel)]="novaEmpresa.numeroEmpresa" name="numeroEmpresa"></ui-input>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>E-mail *</label>
+          <ui-input [(ngModel)]="novaEmpresa.email" name="email" type="email" placeholder="email@empresa.com"></ui-input>
         </div>
         <div class="form-group">
           <label>Cidade *</label>
-          <ui-input [(ngModel)]="novaClinica.cidade" name="cidade"></ui-input>
+          <ui-input [(ngModel)]="novaEmpresa.cidade" name="cidade"></ui-input>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>UF *</label>
-          <select class="form-select" [(ngModel)]="novaClinica.uf" name="uf">
+          <select class="form-select" [(ngModel)]="novaEmpresa.uf" name="uf">
             <option value="">Selecione</option>
             <option *ngFor="let u of ufs" [value]="u">{{u}}</option>
           </select>
         </div>
         <div class="form-group">
           <label>Telefone *</label>
-          <ui-input [(ngModel)]="novaClinica.telefone" (ngModelChange)="onTelefoneInput($event)" name="telefone" placeholder="(00) 00000-0000"></ui-input>
+          <ui-input [(ngModel)]="novaEmpresa.telefone" (ngModelChange)="onTelefoneInput($event)" name="telefone" placeholder="(00) 00000-0000"></ui-input>
         </div>
-        <div class="form-group"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-secondary" (click)="cancelarNovaClinica()">Cancelar</button>
-      <button class="btn-primary" (click)="salvarNovaClinica()">Salvar</button>
+      <button class="btn-secondary" (click)="cancelarNovaEmpresa()" [disabled]="loading">Cancelar</button>
+      <button class="btn-primary" (click)="salvarNovaEmpresa()" [disabled]="loading">{{ loading ? 'Salvando...' : 'Salvar' }}</button>
     </div>
   </div>
 
@@ -84,81 +128,130 @@
       <tr>
         <th>Nome</th>
         <th>CNPJ</th>
-        <th>Código Empresa</th>
-        <th>Número Empresa</th>
-        <th>Cidade</th>
-        <th>UF</th>
-        <th>Telefone</th>
+        <th>Código Emp</th>
+        <th>Número Emp</th>
         <th>Ações</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let c of filtered">
-        <td>{{c.nome}}</td>
-        <td>{{c.cnpj}}</td>
-        <td>{{c.codigo}}</td>
-        <td>{{c.numeroEmpresa || ''}}</td>
-        <td>{{c.cidade}}</td>
-        <td>{{c.uf}}</td>
-        <td>{{c.telefone || ''}}</td>
+      <tr *ngFor="let e of filtered">
+        <td class="nome-truncado" [title]="e.nome">{{e.nome}}</td>
+        <td>{{e.cnpj}}</td>
+        <td>{{e.codigoEmpresa}}</td>
+        <td>{{e.numeroEmpresa}}</td>
         <td class="actions">
-          <button class="btn-secondary" (click)="abrirEdicaoClinica(c)">Editar</button>
+          <button class="btn-info" (click)="abrirDetalhes(e)" [disabled]="loading">Detalhes</button>
+          <button class="btn-secondary" (click)="abrirEdicaoEmpresa(e)" [disabled]="loading">Editar</button>
         </td>
       </tr>
-      <tr *ngIf="filtered.length===0"><td colspan="8" class="empty">Nenhuma clínica encontrada</td></tr>
+      <tr *ngIf="filtered.length===0"><td colspan="5" class="empty">Nenhuma empresa encontrada</td></tr>
     </tbody>
   </table>
 
   <!-- Modal de Edição -->
-  <div *ngIf="showEdit" class="modal-backdrop" (click)="cancelarEdicaoClinica()"></div>
+  <div *ngIf="showEdit" class="modal-backdrop" (click)="cancelarEdicaoEmpresa()"></div>
   <div *ngIf="showEdit" class="modal-card" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Editar Empresa</h3>
-      <button class="modal-close" (click)="cancelarEdicaoClinica()">×</button>
+      <button class="modal-close" (click)="cancelarEdicaoEmpresa()">×</button>
     </div>
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group">
           <label>Nome *</label>
-          <ui-input [(ngModel)]="edicaoClinica.nome" name="ed_nome"></ui-input>
+          <ui-input [(ngModel)]="edicaoEmpresa.nome" name="ed_nome"></ui-input>
         </div>
         <div class="form-group">
           <label>CNPJ *</label>
-          <ui-input [(ngModel)]="edicaoClinica.cnpj" (ngModelChange)="onCnpjEdicao($event)" name="ed_cnpj" placeholder="00.000.000/0000-00"></ui-input>
+          <ui-input [(ngModel)]="edicaoEmpresa.cnpj" (ngModelChange)="onCnpjEdicao($event)" name="ed_cnpj" placeholder="00.000.000/0000-00"></ui-input>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Código Empresa *</label>
-          <ui-input [(ngModel)]="edicaoClinica.codigo" name="ed_codigo"></ui-input>
+          <ui-input [(ngModel)]="edicaoEmpresa.codigoEmpresa" name="ed_codigoEmpresa"></ui-input>
         </div>
         <div class="form-group">
           <label>Número Empresa *</label>
-          <ui-input [(ngModel)]="edicaoClinica.numeroEmpresa" name="ed_numeroEmpresa"></ui-input>
+          <ui-input [(ngModel)]="edicaoEmpresa.numeroEmpresa" name="ed_numeroEmpresa"></ui-input>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>E-mail *</label>
+          <ui-input [(ngModel)]="edicaoEmpresa.email" name="ed_email" type="email" placeholder="email@empresa.com"></ui-input>
         </div>
         <div class="form-group">
           <label>Cidade *</label>
-          <ui-input [(ngModel)]="edicaoClinica.cidade" name="ed_cidade"></ui-input>
+          <ui-input [(ngModel)]="edicaoEmpresa.cidade" name="ed_cidade"></ui-input>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>UF *</label>
-          <select class="form-select" [(ngModel)]="edicaoClinica.uf" name="ed_uf">
+          <select class="form-select" [(ngModel)]="edicaoEmpresa.uf" name="ed_uf">
             <option value="">Selecione</option>
             <option *ngFor="let u of ufs" [value]="u">{{u}}</option>
           </select>
         </div>
         <div class="form-group">
           <label>Telefone *</label>
-          <ui-input [(ngModel)]="edicaoClinica.telefone" (ngModelChange)="onTelefoneEdicao($event)" name="ed_telefone" placeholder="(00) 00000-0000"></ui-input>
+          <ui-input [(ngModel)]="edicaoEmpresa.telefone" (ngModelChange)="onTelefoneEdicao($event)" name="ed_telefone" placeholder="(00) 00000-0000"></ui-input>
         </div>
-        <div class="form-group"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-secondary" (click)="cancelarEdicaoClinica()">Cancelar</button>
-      <button class="btn-primary" (click)="salvarEdicaoClinica()">Salvar</button>
+      <button class="btn-secondary" (click)="cancelarEdicaoEmpresa()" [disabled]="loading">Cancelar</button>
+      <button class="btn-primary" (click)="salvarEdicaoEmpresa()" [disabled]="loading">{{ loading ? 'Salvando...' : 'Salvar' }}</button>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes -->
+  <div *ngIf="showDetails" class="modal-backdrop" (click)="fecharDetalhes()"></div>
+  <div *ngIf="showDetails" class="modal-card modal-details" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Detalhes da Empresa</h3>
+      <button class="modal-close" (click)="fecharDetalhes()">×</button>
+    </div>
+    <div class="modal-body" *ngIf="empresaDetalhes">
+      <div class="details-grid">
+        <div class="detail-item">
+          <label>Nome:</label>
+          <span>{{ empresaDetalhes.nome }}</span>
+        </div>
+        <div class="detail-item">
+          <label>CNPJ:</label>
+          <span>{{ empresaDetalhes.cnpj }}</span>
+        </div>
+        <div class="detail-item">
+          <label>E-mail:</label>
+          <span>{{ empresaDetalhes.email }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Telefone:</label>
+          <span>{{ empresaDetalhes.telefone }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Código da Empresa:</label>
+          <span>{{ empresaDetalhes.codigoEmpresa }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Número da Empresa:</label>
+          <span>{{ empresaDetalhes.numeroEmpresa }}</span>
+        </div>
+        <div class="detail-item">
+          <label>Cidade:</label>
+          <span>{{ empresaDetalhes.cidade }}</span>
+        </div>
+        <div class="detail-item">
+          <label>UF:</label>
+          <span>{{ empresaDetalhes.uf }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="fecharDetalhes()">Fechar</button>
+      <button class="btn-primary" (click)="abrirEdicaoEmpresa(empresaDetalhes!); fecharDetalhes()">Editar Empresa</button>
     </div>
   </div>
 </div>

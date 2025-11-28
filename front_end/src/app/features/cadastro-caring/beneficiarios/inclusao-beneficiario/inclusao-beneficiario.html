@@ -6,6 +6,41 @@
     [icon]="'users'">
   </app-page-header>
 
+  <!-- Informações da Empresa -->
+  <div class="empresa-info" *ngIf="empresaSelecionada">
+    <div class="empresa-card">
+      <div class="empresa-icon">🏢</div>
+      <div class="empresa-details">
+        <h3>{{empresaSelecionada.nome}}</h3>
+        <p>CNPJ: {{empresaSelecionada.cnpj}}</p>
+        <span class="empresa-codigo">Código: {{empresaSelecionada.codigoEmpresa}}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-message" *ngIf="loading">
+    <div class="spinner"></div>
+    <span>Carregando informações...</span>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-container" *ngIf="showToastMessage">
+    <div class="toast" [ngClass]="'toast-' + toastType">
+      <div class="toast-icon">
+        <span *ngIf="toastType === 'success'">✓</span>
+        <span *ngIf="toastType === 'error'">✗</span>
+        <span *ngIf="toastType === 'warning'">⚠</span>
+        <span *ngIf="toastType === 'info'">ℹ</span>
+      </div>
+      <div class="toast-content">
+        <div class="toast-title">{{toastTitle}}</div>
+        <div class="toast-message">{{toastMessage}}</div>
+      </div>
+      <button class="toast-close" (click)="showToastMessage = false">×</button>
+    </div>
+  </div>
+
   <div class="form-card">
     <form class="benef-form" (ngSubmit)="salvar()">
       <div class="section-title-bar">Dados do Beneficiário</div>
@@ -18,21 +53,28 @@
           </select>
         </div>
         <div class="form-group third"></div>
-        <div class="form-group third" *ngIf="(form.relacaoDep || '').toLowerCase() === 'dependente'">
+        <div class="form-group third" *ngIf="form.relacaoDep && form.relacaoDep !== 'titular'">
           <div class="selection-card">
-            <div class="selection-header">Selecionar Titular por CPF</div>
+            <div class="selection-header">
+              <span>CPF do Titular *</span>
+              <button type="button" class="btn-search" (click)="buscarTitular()" [disabled]="buscandoTitular">
+                <span *ngIf="!buscandoTitular">🔍 Buscar</span>
+                <span *ngIf="buscandoTitular">⏳ Buscando...</span>
+              </button>
+            </div>
             <div class="selection-body">
               <div class="selection-row">
-                <ui-input [(ngModel)]="titularCpfSearch" name="titularCpfSearch" placeholder="000.000.000-00" (input)="filterTitulares()"></ui-input>
+                <ui-input 
+                  [(ngModel)]="cpfTitular" 
+                  name="cpfTitular" 
+                  placeholder="000.000.000-00" 
+                  maxlength="14">
+                </ui-input>
               </div>
-              <div class="selection-row" *ngIf="titularesFiltrados.length > 0">
-                <div class="selection-result">{{titularesFiltrados[0].cpf}} — {{titularesFiltrados[0].nome}}</div>
-              </div>
-              <div class="selection-row" *ngIf="titularCpfSearch && titularesFiltrados.length === 0">
-                <small class="not-found">CPF não encontrado</small>
-              </div>
-              <div class="selection-info" *ngIf="selectedTitular">
-                <small>Vinculado a: {{selectedTitular.nome}} • Matrícula: {{selectedTitular.matricula_beneficiario}}</small>
+              <div class="selection-row" *ngIf="titularEncontrado">
+                <div class="selection-result titular-encontrado">
+                  ✓ {{titularEncontrado.nome}} ({{titularEncontrado.cpf}})
+                </div>
               </div>
             </div>
           </div>
@@ -260,8 +302,16 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn-primary">Salvar</button>
-        <button type="button" class="btn-secondary">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="loading">
+          <span *ngIf="!loading">💾 Salvar Beneficiário</span>
+          <span *ngIf="loading">⏳ Salvando...</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="limparForm()" [disabled]="loading">
+          🗑️ Limpar Formulário
+        </button>
+        <button type="button" class="btn-secondary" (click)="voltarParaBeneficiarios()" [disabled]="loading">
+          ← Voltar para Lista
+        </button>
       </div>
     </form>
   </div>

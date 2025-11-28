@@ -56,7 +56,16 @@ export class LoginComponent {
     this.authService.login(credentials).subscribe({
       next: (response) => {
         this.showToast('Login realizado', `Bem-vindo, ${response.user.nome}!`, 'success');
-        this.router.navigate(['/home']);
+        
+        // Se usuário tem empresa vinculada, redirecionar para beneficiários
+        if (response.user.empresaId) {
+          // Aguardar um momento para garantir que a empresa seja carregada
+          setTimeout(() => {
+            this.router.navigate(['/cadastro-caring/beneficiarios']);
+          }, 500);
+        } else {
+          this.router.navigate(['/home']);
+        }
       },
       error: (error) => {
         console.error('Erro no login:', error);

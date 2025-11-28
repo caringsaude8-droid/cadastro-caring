@@ -17,6 +17,7 @@ import { UsuariosComponent } from './features/cadastro-caring/gestao-cadastro/us
 import { AprovacaoCadastroComponent } from './features/cadastro-caring/gestao-cadastro/aprovacao-cadastro/aprovacao-cadastro';
 import { authGuard } from './core/guards/auth-guard';
 import { loginGuard } from './core/guards/login.guard';
+import { empresaGuard } from './core/guards/empresa.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -34,11 +35,11 @@ export const routes: Routes = [
       { path: 'cadastro-caring/gestao-cadastro/usuarios', component: UsuariosComponent },
       { path: 'cadastro-caring/gestao-cadastro/aprovacao-cadastro', component: AprovacaoCadastroComponent },
       { path: 'cadastro-caring/empresa', component: EmpresasCadastroComponent },
-      { path: 'cadastro-caring/beneficiarios', component: PesquisarBeneficiariosComponent },
-      { path: 'cadastro-caring/beneficiarios/inclusao', component: InclusaoBeneficiarioComponent },
-      { path: 'cadastro-caring/beneficiarios/exclusao-cadastral', component: ExclusaoCadastralComponent },
-      { path: 'cadastro-caring/beneficiarios/listagem-cadastral', component: ListagemCadastralComponent },
-      { path: 'cadastro-caring/beneficiarios/alteracao-cadastral', component: AlteracaoCadastralComponent },
+      { path: 'cadastro-caring/beneficiarios', component: PesquisarBeneficiariosComponent, canActivate: [empresaGuard] },
+      { path: 'cadastro-caring/beneficiarios/inclusao', component: InclusaoBeneficiarioComponent, canActivate: [empresaGuard] },
+      { path: 'cadastro-caring/beneficiarios/exclusao-cadastral', component: ExclusaoCadastralComponent, canActivate: [empresaGuard] },
+      { path: 'cadastro-caring/beneficiarios/listagem-cadastral', component: ListagemCadastralComponent, canActivate: [empresaGuard] },
+      { path: 'cadastro-caring/beneficiarios/alteracao-cadastral', component: AlteracaoCadastralComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/relatorios', component: CadastroRelatoriosComponent },
       { path: 'usuarios', redirectTo: 'cadastro-caring/gestao-cadastro/usuarios' },
     ]
