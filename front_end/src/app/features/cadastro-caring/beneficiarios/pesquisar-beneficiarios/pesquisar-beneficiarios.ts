@@ -106,6 +106,11 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   minDate = '';
   dateError = '';
 
+  showCarterinha = false;
+  cardNome = '';
+  cardCpf = '';
+  cardCodigo = '';
+
   openDetails(row: BeneficiarioRow) {
     this.selectedRow = row;
     this.showDetails = true;
@@ -477,7 +482,45 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   }
 
   gerarCarterinha() {
-    alert('Carterinha virtual gerada (simulado).');
+    if (!this.selectedRow) return;
+    console.log('🔵 gerarCarterinha chamado', this.selectedRow);
+    this.cardNome = this.selectedRow.nome || '';
+    this.cardCpf = this.selectedRow.cpf || '';
+    this.cardCodigo = this.selectedRow.matricula_beneficiario || '';
+    // Não fecha o modal de detalhes!
+    this.closeExclusao();
+    this.showCarterinha = true;
+  }
+
+  closeCarterinha() {
+    this.showCarterinha = false;
+  }
+
+
+  abrirCartaoVirtual() {
+    const r = this.selectedRow;
+    const nome = this.cardNome || r?.nome || '';
+    const cpf = this.cardCpf || r?.cpf || '';
+    const numeroProduto = this.cardCodigo || r?.matricula_beneficiario || '';
+    const acomodacao = r?.acomodacao || '';
+    const vigencia = r?.data_inclusao ? this.formatDateBR(r.data_inclusao) : '';
+    const dataNasc = r?.nascimento || '';
+    const query = new URLSearchParams({
+      nome,
+      cpf,
+      numeroProduto,
+      acomodacao,
+      vigencia,
+      dataNasc,
+      abrangencia: 'Nacional',
+      cpt: 'NÃO HÁ',
+      rede: 'NA08 Master',
+      segmentacao: 'Ambulatorial + Hospitalar com Obstetrícia',
+      atend: '0994',
+      via: '01'
+    }).toString();
+    this.router.navigateByUrl(`/cadastro-caring/beneficiarios/cartao-virtual?${query}`);
+    this.closeCarterinha();
   }
 
   limparFiltros(): void {
@@ -505,8 +548,8 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       nome: raw.benNomeSegurado || raw.nome || '',
       cpf: raw.benCpf || raw.cpf || '',
       nascimento: raw.benDtaNasc ? this.formatarDataISO(raw.benDtaNasc) : (raw.nascimento || ''),
-      data_inclusao: raw.benDtaInclusao ? new Date(raw.benDtaInclusao) : (raw.data_inclusao ? new Date(raw.data_inclusao) : new Date()),
-      data_exclusao: raw.benDtaExclusao ? new Date(raw.benDtaExclusao) : (raw.data_exclusao ? new Date(raw.data_exclusao) : null),
+      data_inclusao: raw.benDtaInclusao ? (this.parseApiDate(raw.benDtaInclusao) || new Date()) : (raw.data_inclusao ? (this.parseApiDate(raw.data_inclusao) || new Date()) : new Date()),
+      data_exclusao: raw.benDtaExclusao ? (this.parseApiDate(raw.benDtaExclusao) || null) : (raw.data_exclusao ? (this.parseApiDate(raw.data_exclusao) || null) : null),
       tipo_dependencia: raw.benRelacaoDep === '00' ? 'titular' : 'dependente',
       acomodacao: this.mapearAcomodacao(raw.benPlanoProd),
       matricula_beneficiario: raw.benMatricula || raw.matricula_beneficiario || '',
@@ -551,9 +594,30 @@ export class PesquisarBeneficiariosComponent implements OnInit {
 
   private formatarDataISO(data: string): string {
     if (!data) return '';
-    const soData = data.split('T')[0];
-    const [ano, mes, dia] = soData.split('-');
-    return (ano && mes && dia) ? `${dia}/${mes}/${ano}` : soData;
+    const s = data.split('T')[0];
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+    const [ano, mes, dia] = s.split('-');
+    return (ano && mes && dia) ? `${dia}/${mes}/${ano}` : s;
+  }
+
+  private parseApiDate(value: any): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+    if (typeof value === 'string') {
+      const s = value.trim();
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+        const [d, m, y] = s.split('/');
+        const dt = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+        return isNaN(dt.getTime()) ? null : dt;
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const dt = new Date(s);
+        return isNaN(dt.getTime()) ? null : dt;
+      }
+      const dt = new Date(s);
+      return isNaN(dt.getTime()) ? null : dt;
+    }
+    return null;
   }
 
 }

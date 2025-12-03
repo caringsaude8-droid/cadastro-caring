@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AprovacaoService, Solicitacao } from '../../gestao-cadastro/aprovacao.service';
+import { SolicitacaoBeneficiarioService } from '../../gestao-cadastro/solicitacao-beneficiario.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
 import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
@@ -30,7 +31,8 @@ export class SolicitacaoCadastroComponent implements OnInit {
     private aprovacao: AprovacaoService, 
     private auth: AuthService,
     private empresaContextService: EmpresaContextService,
-    private beneficiariosService: BeneficiariosService
+    private beneficiariosService: BeneficiariosService,
+    private solicitacaoBeneficiarioService: SolicitacaoBeneficiarioService
   ) {}
 
   ngOnInit(): void {
@@ -41,68 +43,66 @@ export class SolicitacaoCadastroComponent implements OnInit {
     // Obter empresa selecionada
     this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
 
-    // Sincronizar lista de solicitações com a API
-    this.aprovacao.atualizarSolicitacoes();
-    // Assinar Observable para atualizar lista automaticamente
-    this.solicitacoesSub = this.aprovacao.solicitacoes$.subscribe(solicitacoes => {
-      this.solicitacoes = solicitacoes;
-      this.loading = false;
-    });
-      if (this.solicitacoesSub) {
-        this.solicitacoesSub.unsubscribe();
-      }
+    // Carregar solicitações da empresa selecionada
+    this.carregarSolicitacoes();
   }
   
   carregarSolicitacoes(): void {
-    this.loading = true;
-    this.solicitacoes = this.aprovacao.list();
-    
-    console.log('🔍 Carregando solicitações:');
-    console.log('  - Total de solicitações:', this.solicitacoes.length);
-    console.log('  - Usuário atual:', this.currentUser);
-    console.log('  - Empresa selecionada:', this.empresaSelecionada);
-    console.log('  - Minhas solicitações:', this.minhasSolicitacoes.length);
-    
-    // Inicializar ajustes para minhas solicitações
-    for (const s of this.minhasSolicitacoes) {
-      const saved = localStorage.getItem(this.keyFor(s.id));
-      if (saved) {
-        try { 
-          this.ajustes[s.id] = JSON.parse(saved); 
-        } catch { 
-          this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' }; 
-        }
-      } else {
-        this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' };
-      }
+    if (!this.empresaSelecionada || !this.empresaSelecionada.id) {
+      this.solicitacoes = [];
+      return;
     }
-    
-    this.loading = false;
+    this.loading = true;
+    this.solicitacaoBeneficiarioService.listarTodas()
+      .subscribe((solicitacoes: any[]) => {
+        console.log('[API] solicitações recebidas (todas):', solicitacoes);
+        // Filtrar pelo ID da empresa selecionada
+        const empresaId = this.empresaSelecionada?.id;
+        const filtradas = solicitacoes
+          .filter(s => String(s.empresaId) === String(empresaId))
+          .map(s => ({
+            ...s,
+            tipo: (s.tipo || '').toLowerCase(),
+            status: mapStatus(s.status),
+            descricao: s.beneficiarioNome || s.descricao || '',
+            identificador: s.beneficiarioCpf || s.identificador || '',
+            data: s.dataSolicitacao || s.data || '',
+          }));
+        this.solicitacoes = filtradas;
+        // Função utilitária para mapear status do backend para o front
+        function mapStatus(status: string): string {
+          const map: Record<string, string> = {
+            'PENDENTE': 'pendente',
+            'APROVADA': 'concluida',
+            'REJEITADA': 'aguardando',
+            'CANCELADA': 'aguardando'
+          };
+          return map[status?.toUpperCase?.()] || 'pendente';
+        }
+        // Inicializar ajustes para minhas solicitações
+        for (const s of this.minhasSolicitacoes) {
+          const saved = localStorage.getItem(this.keyFor(s.id));
+          if (saved) {
+            try { 
+              this.ajustes[s.id] = JSON.parse(saved); 
+            } catch { 
+              this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' }; 
+            }
+          } else {
+            this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' };
+          }
+        }
+        this.loading = false;
+      }, (err) => {
+        console.error('[API] erro ao buscar solicitações:', err);
+        this.solicitacoes = [];
+        this.loading = false;
+      });
   }
 
   get minhasSolicitacoes(): Solicitacao[] {
-    const filtered = this.solicitacoes.filter(s => {
-      // Filtrar por empresa (mais flexível para mostrar todas as solicitações da empresa)
-      const currentUserName = this.auth.getCurrentUser()?.nome || this.currentUser;
-      const isMyCompany = !this.empresaSelecionada || 
-                         !s.codigoEmpresa || 
-                         s.codigoEmpresa === this.empresaSelecionada.codigoEmpresa ||
-                         s.codigoEmpresa === String(this.empresaSelecionada.id);
-      
-      console.log(`📋 Solicitação ${s.id}:`, {
-        solicitante: s.solicitante,
-        currentUserName,
-        codigoEmpresa: s.codigoEmpresa,
-        empresaSelecionada: this.empresaSelecionada?.codigoEmpresa,
-        empresaId: this.empresaSelecionada?.id,
-        isMyCompany,
-        incluir: isMyCompany
-      });
-      
-      return isMyCompany;
-    });
-    
-    return filtered;
+    // As solicitações já vêm filtradas por empresa do serviço
+    return this.solicitacoes;
   }
 
   canEditar(s: Solicitacao): boolean { return s.status === 'pendente'; }

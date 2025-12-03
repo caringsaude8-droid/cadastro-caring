@@ -38,7 +38,8 @@
       </div>
       <div class="form-group third">
         <label>Data Nascimento</label>
-        <ui-input [(ngModel)]="form.dataNascimento" name="dataNascimento" placeholder="dd/mm/aaaa"></ui-input>
+        <ui-input [(ngModel)]="form.dataNascimento" (valueChange)="onNascimentoChange($event)" name="dataNascimento" placeholder="dd/mm/aaaa"></ui-input>
+        <div class="input-hint" *ngIf="form.dataNascimento && !isDateValid(form.dataNascimento)">Formato inválido. Use dd/mm/aaaa</div>
       </div>
     </div>
 
@@ -69,11 +70,13 @@
     <div class="form-row">
       <div class="form-group third">
         <label>Data Inclusão</label>
-        <ui-input [(ngModel)]="form.dataInclusao" name="dataInclusao" placeholder="dd/mm/aaaa"></ui-input>
+        <ui-input [(ngModel)]="form.dataInclusao" (valueChange)="onDataInclusaoChange($event)" name="dataInclusao" placeholder="dd/mm/aaaa"></ui-input>
+        <div class="input-hint" *ngIf="form.dataInclusao && !isDateValid(form.dataInclusao)">Formato inválido. Use dd/mm/aaaa</div>
       </div>
       <div class="form-group third">
         <label>Data Exclusão</label>
-        <ui-input [(ngModel)]="form.dataExclusao" name="dataExclusao" placeholder="dd/mm/aaaa"></ui-input>
+        <ui-input [(ngModel)]="form.dataExclusao" (valueChange)="onDataExclusaoChange($event)" name="dataExclusao" placeholder="dd/mm/aaaa"></ui-input>
+        <div class="input-hint" *ngIf="form.dataExclusao && !isDateValid(form.dataExclusao)">Formato inválido. Use dd/mm/aaaa</div>
       </div>
       <div class="form-group third">
         <label>Dependência</label>
@@ -96,7 +99,8 @@
       </div>
       <div class="form-group third">
         <label>Admissão</label>
-        <ui-input [(ngModel)]="form.admissao" name="admissao" placeholder="dd/mm/aaaa"></ui-input>
+        <ui-input [(ngModel)]="form.admissao" (valueChange)="onAdmissaoChange($event)" name="admissao" placeholder="dd/mm/aaaa"></ui-input>
+        <div class="input-hint" *ngIf="form.admissao && !isDateValid(form.admissao)">Formato inválido. Use dd/mm/aaaa</div>
       </div>
     </div>
 

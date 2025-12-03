@@ -183,4 +183,34 @@
     <button class="btn-secondary" (click)="closeExclusao()">Cancelar</button>
     <button class="btn-primary" (click)="confirmarExclusao()">Confirmar Exclusão</button>
   </div>
+
+
+<!-- Card de Carterinha Virtual (fora de qualquer outro modal) -->
+</div>
+<div *ngIf="showCarterinha" class="modal-backdrop" (click)="closeCarterinha()"></div>
+<div *ngIf="showCarterinha" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Gerar Carterinha Virtual</h3>
+    <button class="modal-close" (click)="closeCarterinha()">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="exclusion-grid">
+      <div class="field">
+        <label>Nome</label>
+        <ui-input [(ngModel)]="cardNome" name="card_nome"></ui-input>
+      </div>
+      <div class="field">
+        <label>CPF</label>
+        <ui-input [(ngModel)]="cardCpf" name="card_cpf" placeholder="000.000.000-00"></ui-input>
+      </div>
+      <div class="field">
+        <label>Código da Carterinha</label>
+        <ui-input [(ngModel)]="cardCodigo" name="card_codigo"></ui-input>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-secondary" (click)="closeCarterinha()">Cancelar</button>
+    <button class="btn-primary" (click)="abrirCartaoVirtual()">Abrir Cartão Virtual</button>
+  </div>
 </div>

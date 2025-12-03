@@ -9,7 +9,7 @@ import { EmpresasCadastroComponent } from './features/cadastro-caring/empresa/em
 import { AlteracaoCadastralComponent } from './features/cadastro-caring/beneficiarios/alteracao-cadastral/alteracao-cadastral';
 import { InclusaoBeneficiarioComponent } from './features/cadastro-caring/beneficiarios/inclusao-beneficiario/inclusao-beneficiario';
 import { ExclusaoCadastralComponent } from './features/cadastro-caring/beneficiarios/exclusao-cadastral/exclusao-cadastral';
-
+import { CartaoVirtualComponent } from './features/cadastro-caring/beneficiarios/cartao-virtual/cartao-virtual';
 import { SolicitacaoCadastroComponent } from './features/cadastro-caring/beneficiarios/solicitacao-cadastro/solicitacao-cadastro';
 import { GestaoCadastroComponent } from './features/cadastro-caring/gestao-cadastro/gestao-cadastro';
 import { ConsultarBeneficiarioComponent } from './features/cadastro-caring/gestao-cadastro/consultar-beneficiario/consultar-beneficiario';
@@ -40,7 +40,7 @@ export const routes: Routes = [
       { path: 'cadastro-caring/beneficiarios', component: PesquisarBeneficiariosComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/inclusao', component: InclusaoBeneficiarioComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/exclusao-cadastral', component: ExclusaoCadastralComponent, canActivate: [empresaGuard] },
-
+      { path: 'cadastro-caring/beneficiarios/cartao-virtual', component: CartaoVirtualComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/alteracao-cadastral', component: AlteracaoCadastralComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/solicitacao-cadastro', component: SolicitacaoCadastroComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/gestao-cadastro/relatorios-cadastro', component: RelatoriosCadastroComponent },

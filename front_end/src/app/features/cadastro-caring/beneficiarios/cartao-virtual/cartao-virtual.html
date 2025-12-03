@@ -1,0 +1,45 @@
+<div class="page-container">
+  <app-page-header [title]="'Cartão Virtual do Beneficiário'" [subtitle]="'Frente e verso para impressão'"
+    [icon]="'id-card'"></app-page-header>
+
+  <div class="actions-bar" *ngIf="!embedded">
+    <button class="btn-print" (click)="downloadPdf()">Salvar PDF</button>
+  </div>
+
+  <div class="cards-grid">
+    <div class="cartao verso">
+      <div class="top-brand">
+        <div class="logo-block" *ngIf="logoUrl; else logoText">
+          <img class="logo-img" [src]="logoUrl" alt="Seguros Unimed" />
+        </div>
+        <ng-template #logoText>
+          <div class="logo">Seguros<br>Unimed</div>
+        </ng-template>
+      </div>
+      <div class="content">
+        <div class="titulo">{{nome || 'Nome do Beneficiário'}}</div>
+        <div class="rotulo">Nome do Beneficiário</div>
+        <div class="contratante">{{empresa || 'T J D F T - Unimed'}}</div>
+        <div class="rotulo">Contratante</div>
+        <div class="produto">{{plano || acomodacao || 'UNIMED ADMINISTRADO DINÂMICO TAXA CP'}}</div>
+        <div class="rotulo">Produto</div>
+        <div class="numero">{{numeroProduto || matricula || '09942507287333197'}}</div>
+      </div>
+      <div class="verso-bottom">
+        <div class="col">
+          <div>Data de Nasc.: <span>{{dataNasc || '05/11/1967'}}</span></div>
+          <div>Acomod.: <span>{{acomodacao || 'Individual'}}</span></div>
+          <div>Plano: <span>{{plano || 'Regulamentado'}}</span></div>
+          <div>Vigência do Plano: <span>{{vigencia || '18/11/2025'}}</span></div>
+          <div>Abrangência: <span>{{abrangencia || 'Nacional'}}</span></div>
+        </div>
+        <div class="col">
+          <div>Cob. Parcial Temp: <span>{{cpt || 'NÃO HÁ'}}</span></div>
+          <div>Rede de Atendimento: <span>{{redeAtendimento || 'NA08 Master'}}</span></div>
+          <div>Segmentação Assist.: <span>{{segmentacao || 'Ambulatorial + Hospitalar com Obstetrícia'}}</span></div>
+          <div>Atend.: <span>{{atend || '0994'}}</span></div>
+          <div>Via: <span>{{via || '01'}}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>

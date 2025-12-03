@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
 import { AprovacaoService, Solicitacao } from '../aprovacao.service';
 import { BeneficiariosService } from '../../beneficiarios/beneficiarios.service';
+import { SolicitacaoBeneficiarioService } from '../solicitacao-beneficiario.service';
 
 type Anexo = { tipo: string; nome: string; size: number; dataUrl: string };
 
@@ -24,7 +25,7 @@ export class AprovacaoCadastroComponent {
   anexosSelecionado: Anexo[] = [];
   carregando = false;
 
-  constructor(private aprovacao: AprovacaoService, private beneficiarios: BeneficiariosService) {}
+  constructor(private aprovacao: AprovacaoService, private beneficiarios: BeneficiariosService, private solicitacoesService: SolicitacaoBeneficiarioService) {}
 
   get lista(): Solicitacao[] {
     return this.aprovacao.list().filter(s => {
@@ -120,6 +121,24 @@ export class AprovacaoCadastroComponent {
       this.anexosSelecionado = parsed?.anexos || [];
     } catch { this.anexosSelecionado = []; }
     this.showDetails = true;
+    const idNum = parseInt(s.id);
+    if (!isNaN(idNum)) {
+      this.solicitacoesService.buscarPorId(idNum).subscribe({
+        next: (resp: any) => {
+          try {
+            const dados = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
+            if (dados) {
+              const keys = Object.keys(dados);
+              console.log('🧾 Dados da solicitação:', { id: s.id, keys });
+              if (keys.includes('benDependencia')) {
+                console.warn('⚠️ Campo benDependencia encontrado em dadosJson');
+              }
+            }
+          } catch {}
+        },
+        error: () => {}
+      });
+    }
   }
 
   closeDetails() {

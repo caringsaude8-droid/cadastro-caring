@@ -1,3 +1,4 @@
+// ...existing code...
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
@@ -46,6 +47,19 @@ export interface ProcessarSolicitacaoRequest {
   providedIn: 'root'
 })
 export class SolicitacaoBeneficiarioService {
+
+    /**
+     * Listar todas as solicitações - GET /api/cadastro/v1/solicitacoes
+     */
+
+        /**
+         * Listar todas as solicitações - GET /api/cadastro/v1/solicitacoes
+         */
+        listarTodas(): Observable<SolicitacaoBeneficiario[]> {
+          return this.http.get<SolicitacaoBeneficiario[]>(this.baseUrl).pipe(
+            catchError(error => of([]))
+          );
+        }
     /**
      * Listar solicitações pendentes por empresa - GET /api/cadastro/v1/solicitacoes/pendentes?empresaId=xx
      */
@@ -86,7 +100,6 @@ export class SolicitacaoBeneficiarioService {
    * Criar nova solicitação - POST /api/cadastro/v1/solicitacoes
    */
   criarSolicitacao(request: SolicitacaoRequest): Observable<SolicitacaoBeneficiario> {
-    
     return this.http.post<SolicitacaoBeneficiario>(this.baseUrl, request).pipe(
       map(response => response),
       catchError(error => throwError(() => error))

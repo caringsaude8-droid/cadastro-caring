@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { SolicitacaoBeneficiarioService, SolicitacaoRequest } from './solicitacao-beneficiario.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { EmpresaContextService } from '../../../shared/services/empresa-context.service';
 
 export type SolicitacaoStatus = 'pendente' | 'aguardando' | 'concluida';
 export type SolicitacaoTipo = 'inclusao' | 'alteracao' | 'exclusao';
@@ -27,7 +28,8 @@ export class AprovacaoService {
 
   constructor(
     private solicitacaoService: SolicitacaoBeneficiarioService,
-    private authService: AuthService
+    private authService: AuthService,
+    private empresaContextService: EmpresaContextService
   ) {
     // Carregar solicitações iniciais
     this.atualizarSolicitacoes();
@@ -186,7 +188,7 @@ export class AprovacaoService {
     const request: SolicitacaoRequest = {
       beneficiarioId: beneficiario.id,
       tipo: 'ALTERACAO',
-      dadosPropostos,
+      dadosPropostos: dadosPropostos,
       observacoesSolicitacao: observacoes,
       empresaId
     };
@@ -197,12 +199,15 @@ export class AprovacaoService {
    * Método helper para criar solicitação de inclusão de beneficiário
    */
   criarSolicitacaoInclusao(dadosPropostos: any, observacoes?: string): Observable<any> {
+    const empresa = this.empresaContextService.getEmpresaSelecionada();
     const request: SolicitacaoRequest = {
       tipo: 'INCLUSAO',
-      dadosPropostos,
-      observacoesSolicitacao: observacoes
+      dadosPropostos: dadosPropostos,
+      observacoesSolicitacao: observacoes,
+      empresaId: empresa?.id
     };
 
     return this.solicitacaoService.criarSolicitacao(request);
   }
+ 
 }

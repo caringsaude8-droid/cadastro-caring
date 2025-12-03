@@ -31,5 +31,6 @@ function shouldAddEmpresaId(url: string): boolean {
          url.includes('/movimentacoes') || 
          url.includes('/inclusoes') ||
          url.includes('/alteracoes') ||
-         url.includes('/exclusoes');
+         url.includes('/exclusoes') ||
+         url.includes('/solicitacoes');
 }

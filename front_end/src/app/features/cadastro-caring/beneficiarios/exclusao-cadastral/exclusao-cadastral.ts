@@ -120,7 +120,7 @@ export class ExclusaoCadastralComponent implements OnInit {
         entidade: 'beneficiario',
         identificador: this.beneficiario.cpf || this.beneficiario.matricula || '',
         descricao: this.motivo ? `Exclusão do beneficiário ${this.beneficiario.nome || ''} por ${this.motivo}`.trim() : `Exclusão do beneficiário ${this.beneficiario.nome || ''}`.trim(),
-        solicitante: 'Dr. João Silva',
+        solicitante: author,
         codigoEmpresa: clinica?.codigo,
         observacao: this.mensagem ? `${author}: ${this.mensagem}` : undefined
       });

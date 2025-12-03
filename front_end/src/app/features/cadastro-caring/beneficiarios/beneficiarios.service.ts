@@ -106,9 +106,9 @@ export class BeneficiariosService {
       id: apiData.id,
       nome: apiData.nome || apiData.benNomeSegurado || '',
       cpf: apiData.cpf || apiData.benCpf || '',
-      nascimento: apiData.nascimento || (apiData.benDtaNasc ? new Date(apiData.benDtaNasc).toISOString().split('T')[0] : ''),
-      data_inclusao: apiData.data_inclusao ? new Date(apiData.data_inclusao) : (apiData.benDtaInclusao ? new Date(apiData.benDtaInclusao) : new Date()),
-      data_exclusao: apiData.data_exclusao ? new Date(apiData.data_exclusao) : (apiData.benDtaExclusao ? new Date(apiData.benDtaExclusao) : null),
+      nascimento: apiData.nascimento || (apiData.benDtaNasc ? this.parseApiDateToIso(apiData.benDtaNasc) : ''),
+      data_inclusao: apiData.data_inclusao ? (this.parseApiDate(apiData.data_inclusao) || new Date()) : (apiData.benDtaInclusao ? (this.parseApiDate(apiData.benDtaInclusao) || new Date()) : new Date()),
+      data_exclusao: apiData.data_exclusao ? (this.parseApiDate(apiData.data_exclusao) || null) : (apiData.benDtaExclusao ? (this.parseApiDate(apiData.benDtaExclusao) || null) : null),
       tipo_dependencia: apiData.tipo_dependencia || (apiData.benRelacaoDep === '00' ? 'titular' : 'dependente'),
       acomodacao: apiData.acomodacao || this.mapearAcomodacao(apiData.benPlanoProd),
       matricula_beneficiario: apiData.matricula_beneficiario || apiData.benMatricula || '',
@@ -119,7 +119,7 @@ export class BeneficiariosService {
       nome_mae: apiData.nome_mae || apiData.benNomeDaMae || '',
       sexo: apiData.sexo || apiData.benSexo || '',
       estado_civil: apiData.estado_civil || apiData.benEstCivil || '',
-      admissao: apiData.admissao || (apiData.benAdmissao ? new Date(apiData.benAdmissao).toISOString().split('T')[0] : ''),
+      admissao: apiData.admissao || (apiData.benAdmissao ? this.parseApiDateToIso(apiData.benAdmissao) : ''),
       plano_prod: apiData.plano_prod || apiData.benPlanoProd || '',
       endereco: apiData.endereco || apiData.benEndereco || '',
       numero: apiData.numero || apiData.benNumero || '',
@@ -133,9 +133,50 @@ export class BeneficiariosService {
       nome_social: apiData.nome_social || apiData.benNomeSocial || '',
       identidade_genero: apiData.identidade_genero || apiData.benIdentGenero || '',
       indicador_pessoa_trans: apiData.indicador_pessoa_trans || apiData.benIndicPesTrans || '',
-      data_casamento: apiData.data_casamento || (apiData.benDataCasamento ? new Date(apiData.benDataCasamento).toISOString().split('T')[0] : ''),
+      data_casamento: apiData.data_casamento || (apiData.benDataCasamento ? this.parseApiDateToIso(apiData.benDataCasamento) : ''),
       benStatus: apiData.benStatus || 'Ativo' // Se não tem status na API, assumir Ativo
     };
+  }
+
+  private parseApiDate(value: any): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+    if (typeof value === 'string') {
+      const s = value.trim();
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+        const [d, m, y] = s.split('/');
+        const dt = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+        return isNaN(dt.getTime()) ? null : dt;
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const dt = new Date(s);
+        return isNaN(dt.getTime()) ? null : dt;
+      }
+      const dt = new Date(s);
+      return isNaN(dt.getTime()) ? null : dt;
+    }
+    return null;
+  }
+
+  private parseApiDateToIso(value: any): string {
+    if (!value) return '';
+    if (value instanceof Date) {
+      if (isNaN(value.getTime())) return '';
+      return value.toISOString().split('T')[0];
+    }
+    if (typeof value === 'string') {
+      const s = value.trim();
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+        const [d, m, y] = s.split('/');
+        const dd = ('0' + parseInt(d, 10)).slice(-2);
+        const mm = ('0' + parseInt(m, 10)).slice(-2);
+        return `${y}-${mm}-${dd}`;
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        return s.split('T')[0];
+      }
+    }
+    return '';
   }
 
   private mapearAcomodacao(planoProd: string): string {

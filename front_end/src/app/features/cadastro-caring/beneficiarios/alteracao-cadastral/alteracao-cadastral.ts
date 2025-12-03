@@ -139,7 +139,7 @@ export class AlteracaoCadastralComponent implements OnInit {
       // Dados básicos que estão chegando da listagem
       if (params.get('nome')) this.form.nomeSegurado = params.get('nome')!;
       if (params.get('cpf')) this.form.cpf = params.get('cpf')!;
-      if (params.get('nascimento')) this.form.dataNascimento = params.get('nascimento')!;
+      if (params.get('nascimento')) this.form.dataNascimento = this.normalizeDateInput(params.get('nascimento')!);
       if (params.get('tipo_dependencia')) this.form.dependencia = params.get('tipo_dependencia')!;
       if (params.get('matricula_beneficiario')) this.form.matricula = params.get('matricula_beneficiario')!;
       if (params.get('matricula_titular')) this.form.matriculaTitular = params.get('matricula_titular')!;
@@ -148,7 +148,7 @@ export class AlteracaoCadastralComponent implements OnInit {
       if (params.get('nome_mae')) this.form.nomeMae = params.get('nome_mae')!;
       if (params.get('sexo')) this.form.sexo = params.get('sexo')!;
       if (params.get('estado_civil')) this.form.estadoCivil = params.get('estado_civil')!;
-      if (params.get('admissao')) this.form.admissao = params.get('admissao')!;
+      if (params.get('admissao')) this.form.admissao = this.normalizeDateInput(params.get('admissao')!);
       if (params.get('plano_prod')) this.form.planoProd = params.get('plano_prod')!;
       
       // Dados complementares
@@ -184,10 +184,10 @@ export class AlteracaoCadastralComponent implements OnInit {
       const dataInclusao = params.get('data_inclusao');
       const dataExclusao = params.get('data_exclusao');
       if (dataInclusao && dataInclusao !== '') {
-        this.form.dataInclusao = dataInclusao;
+        this.form.dataInclusao = this.normalizeDateInput(dataInclusao);
       }
       if (dataExclusao && dataExclusao !== '') {
-        this.form.dataExclusao = dataExclusao;
+        this.form.dataExclusao = this.normalizeDateInput(dataExclusao);
       }
 
       // Se temos CPF, tentar buscar dados completos da API
@@ -237,39 +237,46 @@ export class AlteracaoCadastralComponent implements OnInit {
         benNomeSegurado: this.form.nomeSegurado,
         benCpf: this.form.cpf,
         benDtaNasc: this.form.dataNascimento,
-        benDependencia: this.form.dependencia,
+        benRelacaoDep: this.mapDependencia(this.form.dependencia),
         benSexo: this.form.sexo,
         benEstCivil: this.form.estadoCivil,
         
         // Contatos
-        benTelRes: this.form.telefone,
-        benTelCel: this.form.celular,
+        
+        benDddCel: this.form.celular,
         benEmail: this.form.email,
         
         // Endereço - usando nomes corretos da API
-        benEndLogra: this.form.endereco,
-        benEndNum: this.form.numero,
-        benEndCompl: this.form.complemento,
-        benEndCep: this.form.cep,
-        benEndBairro: this.form.bairro,
-        benEndMunic: this.form.cidade,
-        benEndUf: this.form.uf,
+        benEndereco: this.form.endereco,
+        benNumero: this.form.numero,
+        benComplemento: this.form.complemento,
+        benCep: this.form.cep,
+        benBairro: this.form.bairro,
+        benCidade: this.form.cidade,
+        benUf: this.form.uf,
         
         // Família
-        benNomeMae: this.form.nomeMae,
+        benNomeDaMae: this.form.nomeMae,
         
         // Documentos - nomes corretos da API
-        benRgNum: this.form.rg,
-        benRgOrgEmissor: this.form.rgOrgaoExpedidor,
-        benRgUfExpedicao: this.form.rgUfExpedicao,
+        
         
         // Campos específicos
         benNomeSocial: this.form.nomeSocial,
         benIdentGenero: this.form.identidadeGenero,
         benIndicPesTrans: this.form.indicadorPessoaTrans,
         benDataCasamento: this.form.dataCasamento,
-        
+      
         // Campos adicionais que podem ser necessários
+        benDtaInclusao: this.form.dataInclusao,
+        benDtaExclusao: this.form.dataExclusao,
+        benPlanoProd: this.form.planoProd,
+        benAdmissao: this.form.admissao,
+        benMatricula: this.form.matricula,
+        benCodUnimedSeg: undefined,
+        benTitularId: undefined,
+        benCodCartao: undefined,
+        benMotivoExclusao: undefined,
         benEmpId: empresa.id,
         benStatus: 'ATIVO'
       };
@@ -399,8 +406,44 @@ export class AlteracaoCadastralComponent implements OnInit {
   private formatarDataBR(data: string): string {
     if (!data) return '';
     const soData = data.split('T')[0];
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(soData)) return soData;
     const [ano, mes, dia] = soData.split('-');
     return (ano && mes && dia) ? `${dia}/${mes}/${ano}` : soData;
+  }
+
+  private mapDependencia(val: string): string {
+    if (!val) return '';
+    const v = val.toLowerCase();
+    if (v === 'titular' || v === '00') return '00';
+    if (v === 'dependente' || v === '01') return '01';
+    return val;
+  }
+
+  onNascimentoChange(val: string) { this.form.dataNascimento = this.normalizeDateInput(val); }
+  onDataInclusaoChange(val: string) { this.form.dataInclusao = this.normalizeDateInput(val); }
+  onDataExclusaoChange(val: string) { this.form.dataExclusao = this.normalizeDateInput(val); }
+  onAdmissaoChange(val: string) { this.form.admissao = this.normalizeDateInput(val); }
+
+  isDateValid(val: string | null | undefined): boolean {
+    if (!val) return true;
+    const s = val.trim();
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return false;
+    const [dd, mm, yyyy] = s.split('/').map(v => parseInt(v, 10));
+    if (mm < 1 || mm > 12) return false;
+    if (dd < 1 || dd > 31) return false;
+    const d = new Date(yyyy, mm - 1, dd);
+    return d.getFullYear() === yyyy && d.getMonth() === mm - 1 && d.getDate() === dd;
+  }
+
+  private normalizeDateInput(val: string): string {
+    if (!val) return '';
+    const digits = val.replace(/\D/g, '').slice(0, 8);
+    const d = digits.slice(0, 2);
+    const m = digits.slice(2, 4);
+    const y = digits.slice(4, 8);
+    if (digits.length <= 2) return d;
+    if (digits.length <= 4) return `${d}/${m}`;
+    return `${d}/${m}/${y}`;
   }
 
   // Métodos para anexos

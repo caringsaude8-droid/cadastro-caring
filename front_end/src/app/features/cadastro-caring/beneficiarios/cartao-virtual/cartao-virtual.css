@@ -1,0 +1,264 @@
+.logo-img {
+  height: 60px;
+  width: auto;
+  max-width: 80%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 1.2rem auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.page-container {
+  padding: 1.5rem;
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: .5rem;
+}
+
+.btn-print {
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: .5rem .9rem;
+  cursor: pointer;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.cartao {
+  width: 900px;
+  height: 530px;
+  border-radius: 12px;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.cartao.frente {
+  background: #002653;
+}
+
+.top-brand {
+  background: #002653;
+  padding: .6rem .8rem;
+  display: flex;
+  align-items: center;
+}
+
+.logo-block {
+  display: flex;
+  align-items: center;
+}
+
+.logo-img {
+  height: 60px;
+  width: auto;
+  display: block;
+  border-radius: 6px;
+}
+
+.logo {
+  background: #0c3b5d;
+  color: #bfeaff;
+  padding: .35rem .6rem;
+  border-radius: 6px;
+  width: max-content;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: .3px;
+}
+
+.content {
+  padding: 1rem .9rem 0 .9rem;
+}
+
+.titulo {
+  font-size: 2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.rotulo {
+  font-size: .8rem;
+  color: #bfeaff;
+  margin-bottom: .35rem;
+}
+
+.contratante,
+.produto {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+}
+
+.numero {
+  font-size: 1.6rem;
+  margin-top: .25rem;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.bottom-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  background: #0c3757;
+  padding: .85rem .9rem;
+  font-size: .95rem;
+}
+
+.bottom-info .col div {
+  margin: .12rem 0;
+}
+
+.bottom-info span {
+  font-weight: 700;
+}
+
+.cartao.verso {
+  background: #002653;
+  display: flex;
+  flex-direction: column;
+}
+
+.verso-top {
+  padding: 1.6rem .9rem;
+  text-align: center;
+}
+
+.verso-top .linha {
+  color: #bfeaff;
+}
+
+.verso-top .destaque {
+  color: #ffffff;
+  font-weight: 700;
+  margin-top: .4rem;
+  font-size: 1.1rem;
+}
+
+.verso-mid {
+  padding: .7rem .9rem;
+  text-align: center;
+}
+
+.verso-mid .linha {
+  color: #bfeaff;
+}
+
+.verso-bottom {
+  background: #009edd;
+  color: #ffffff;
+  padding: .95rem .9rem;
+  text-align: left;
+  grid-template-columns: 1fr 1fr;
+  display: grid;
+  gap: .3rem;
+  border-radius: 0 0 12px 12px;
+  margin-top: auto;
+}
+
+.verso-bottom .ans {
+  background: #002b3f;
+  color: #fff;
+  display: inline-block;
+  padding: .15rem .4rem;
+  border-radius: 6px;
+  margin-top: .15rem;
+}
+
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .cards-grid,
+  .cards-grid * {
+    visibility: visible !important;
+  }
+
+  .cards-grid {
+    position: static;
+    width: 100%;
+    display: grid;
+    justify-items: center;
+    gap: 10mm;
+  }
+
+  .cartao {
+    box-shadow: none;
+    width: 180mm;
+    height: 106mm;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+
+  .cartao,
+  .cartao * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .cartao.frente {
+    background: #002653 !important;
+  }
+
+  .top-brand {
+    background: #002653 !important;
+  }
+
+  .logo {
+    background: #0c3b5d !important;
+    color: #bfeaff !important;
+  }
+
+  .logo-img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .bottom-info {
+    background: #0c3757 !important;
+  }
+
+  .cartao.verso {
+    background: #002653 !important;
+  }
+
+  .verso-top .linha {
+    color: #bfeaff !important;
+  }
+
+  .verso-top .destaque {
+    color: #ffffff !important;
+  }
+
+  .verso-mid .linha {
+    color: #bfeaff !important;
+  }
+
+  .verso-bottom {
+    background: #009edd !important;
+    color: #ffffff !important;
+  }
+
+  .verso-bottom .ans {
+    background: #002b3f !important;
+    color: #ffffff !important;
+  }
+}
