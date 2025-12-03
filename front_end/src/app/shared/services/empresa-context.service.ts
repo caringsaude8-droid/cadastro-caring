@@ -6,9 +6,20 @@ import { Empresa } from '../../features/cadastro-caring/empresa/empresa.service'
   providedIn: 'root'
 })
 export class EmpresaContextService {
-  private empresaSelecionadaSubject = new BehaviorSubject<Empresa | null>(null);
-  
-  empresaSelecionada$ = this.empresaSelecionadaSubject.asObservable();
+  private empresaSelecionadaSubject: BehaviorSubject<Empresa | null>;
+  empresaSelecionada$;
+
+  constructor() {
+    let initialEmpresa: Empresa | null = null;
+    try {
+      const stored = localStorage.getItem('empresaSelecionada');
+      if (stored) {
+        initialEmpresa = JSON.parse(stored);
+      }
+    } catch {}
+    this.empresaSelecionadaSubject = new BehaviorSubject<Empresa | null>(initialEmpresa);
+    this.empresaSelecionada$ = this.empresaSelecionadaSubject.asObservable();
+  }
 
   setEmpresaSelecionada(empresa: Empresa | null) {
     this.empresaSelecionadaSubject.next(empresa);

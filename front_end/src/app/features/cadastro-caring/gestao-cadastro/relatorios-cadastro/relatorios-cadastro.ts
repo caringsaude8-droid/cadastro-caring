@@ -106,11 +106,13 @@ export class RelatoriosCadastroComponent implements OnInit {
       const yyyy = d.getFullYear();
       return `${dd}/${mm}/${yyyy}`;
     };
-    for (const b of list) {
-      const key = `inclusaoDetalhe:${b.cpf}`;
-      const raw = localStorage.getItem(key);
-      let form: ReportForm | null = null;
-      try { form = raw ? (JSON.parse(raw) as ReportForm) : null; } catch { form = null; }
+    // Usar subscribe para trabalhar com Observable
+    list.subscribe(beneficiarios => {
+      for (const b of beneficiarios) {
+        const key = `inclusaoDetalhe:${b.cpf}`;
+        const raw = localStorage.getItem(key);
+        let form: ReportForm | null = null;
+        try { form = raw ? (JSON.parse(raw) as ReportForm) : null; } catch { form = null; }
       mapped.push({
         tipoMovto: 'Inclusão',
         codUSeg: '',
@@ -149,8 +151,9 @@ export class RelatoriosCadastroComponent implements OnInit {
         codigoEmpresa: form?.codigoEmpresa || codigoEmpresaDefault,
         numeroEmpresa: form?.numeroEmpresa || (b.matricula_titular || '')
       });
-    }
-    this.rows = mapped;
+      }
+      this.rows = mapped;
+    });
   }
 
   get filtered(): ReportRow[] {

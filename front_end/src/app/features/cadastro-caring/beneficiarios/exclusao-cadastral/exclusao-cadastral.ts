@@ -30,6 +30,7 @@ export class ExclusaoCadastralComponent implements OnInit {
   dateError: string = '';
   successMessage: string = '';
   mensagem: string = '';
+  tipoMotivo: string = 'E'; // E=Exclusão
 
   motivos = [
     { value: 'rescisao', label: 'Rescisão' },
@@ -93,9 +94,20 @@ export class ExclusaoCadastralComponent implements OnInit {
     store[this.beneficiario.matricula] = { status: statusFinal, motivo: this.motivo, dataExclusao: this.dataExclusao };
     localStorage.setItem(key, JSON.stringify(store));
 
-    // Marcar beneficiário como Pendente até aprovação
+    // Marcar beneficiário como Pendente até aprovação (via API)
     if (this.beneficiario.cpf) {
-      this.beneficiarios.setStatusByCpf(this.beneficiario.cpf, 'Pendente');
+      this.beneficiarios.buscarPorFiltros({ cpf: this.beneficiario.cpf }).subscribe({
+        next: (beneficiarios) => {
+          const beneficiario = beneficiarios.find(b => b.cpf === this.beneficiario.cpf);
+          if (beneficiario) {
+            this.beneficiarios.alterarBeneficiario(beneficiario.id, { benStatus: 'Pendente' }).subscribe({
+              next: () => console.log('✅ Beneficiário marcado como pendente para exclusão'),
+              error: (error) => console.error('❌ Erro ao marcar status pendente:', error)
+            });
+          }
+        },
+        error: (error) => console.error('❌ Erro ao buscar beneficiário:', error)
+      });
     }
 
     try {

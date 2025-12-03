@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { EmpresaContextService } from '../../../shared/services/empresa-context.service';
 
 @Component({
   selector: 'app-cadastro-beneficiarios',
@@ -13,6 +14,7 @@ export class CadastroBeneficiariosComponent implements OnInit {
   pageTitle = 'Beneficiários';
   loading = false;
   selectedAction: string | null = null;
+  empresaSelecionada: any = null;
   actions = [
     { id: 'inclusao-titular', title: 'Inclusão de Titular', icon: 'users', color: 'blue' },
     { id: 'inclusao-dependente', title: 'Inclusão de Dependente', icon: 'users', color: 'green' },
@@ -23,10 +25,20 @@ export class CadastroBeneficiariosComponent implements OnInit {
     { id: 'consulta-pendentes', title: 'Consulta Movimentações Pendentes', icon: 'dashboard', color: 'blue' }
   ];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private empresaContextService: EmpresaContextService
+  ) {}
 
   ngOnInit() {
     this.loading = false;
+    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+    console.log('🏠 Beneficiarios: Empresa carregada =', this.empresaSelecionada);
+  }
+
+  trocarEmpresa() {
+    this.empresaContextService.clearEmpresaSelecionada();
+    this.router.navigate(['/cadastro-caring/empresa']);
   }
 
   selectAction(id: string) {

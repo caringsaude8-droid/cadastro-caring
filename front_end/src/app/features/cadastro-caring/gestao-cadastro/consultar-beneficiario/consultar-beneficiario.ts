@@ -52,7 +52,7 @@ export class ConsultarBeneficiarioComponent {
       tipoProduto: this.tipoProduto,
       tipoProposta: this.tipoProposta
     }).toString();
-    this.router.navigateByUrl(`/cadastro-caring/beneficiarios/listagem-cadastral?${query}`);
+    this.router.navigateByUrl(`/cadastro-caring/beneficiarios?${query}`);
   }
 }
 

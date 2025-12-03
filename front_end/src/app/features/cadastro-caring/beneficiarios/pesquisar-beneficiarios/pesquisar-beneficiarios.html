@@ -1,3 +1,7 @@
+<div class="empresa-info-bar" *ngIf="empresaSelecionada">
+  <span>Empresa selecionada: <b>{{ empresaSelecionada.nome || empresaSelecionada.razaoSocial || empresaSelecionada.fantasia }}</b></span>
+</div>
+
 <app-page-header 
   [title]="'Cadastro Caring — Alteração Cadastral'" 
   [subtitle]="'Filtre o beneficiário e abra detalhes para alterar'" 
@@ -14,7 +18,21 @@
       <ui-input [(ngModel)]="matricula" name="matricula" placeholder=""></ui-input>
       <label>Matrícula titular:</label>
       <ui-input [(ngModel)]="matriculaTitular" name="matriculaTitular" placeholder=""></ui-input>
-      <button class="btn-primary" (click)="goTo(1)">Pesquisar</button>
+      <button class="btn-primary" (click)="pesquisar()" [disabled]="loading">Pesquisar</button>
+      <button class="btn-secondary" (click)="limparFiltros()" [disabled]="loading">Limpar</button>
+    </div>
+  </div>
+
+  <!-- Indicadores de Loading e Erro -->
+  <div class="status-container" *ngIf="loading || error">
+    <div class="loading-indicator" *ngIf="loading">
+      <div class="spinner"></div>
+      <span>Carregando beneficiários...</span>
+    </div>
+    <div class="error-message" *ngIf="error">
+      <span class="error-icon">⚠️</span>
+      <span>{{ error }}</span>
+      <button class="btn-retry" (click)="carregarBeneficiarios()">🔁 Tentar novamente</button>
     </div>
   </div>
 
@@ -49,13 +67,29 @@
             <button class="btn-icon" (click)="openDetails(row)" title="Detalhes">🔎</button>
           </td>
         </tr>
-        <tr *ngIf="paged.length === 0">
-          <td colspan="10" class="empty">Nenhum beneficiário encontrado.</td>
+        <tr *ngIf="paged.length === 0 && !loading">
+          <td colspan="10" class="empty">
+            <span *ngIf="!nome && !matricula && !matriculaTitular">Nenhum beneficiário cadastrado.</span>
+            <span *ngIf="nome || matricula || matriculaTitular">Nenhum beneficiário encontrado com os filtros aplicados.</span>
+          </td>
+        </tr>
+        <tr *ngIf="loading">
+          <td colspan="10" class="loading-row">
+            <div class="loading-text">
+              <div class="spinner-small"></div>
+              Carregando...
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
 
-    <div class="pagination">
+    <!-- Contador de resultados -->
+    <div class="results-info" *ngIf="!loading && data.length > 0">
+      <span>Exibindo {{ paged.length }} de {{ filtered.length }} beneficiários (total: {{ data.length }})</span>
+    </div>
+
+    <div class="pagination" *ngIf="!loading && totalPages > 1">
       <button (click)="goTo(1)">««</button>
       <button (click)="goTo(page - 1)">«</button>
       <span class="pages">
@@ -95,26 +129,21 @@
       <div class="item"><span class="label">Complemento:</span><span class="value">{{r.complemento || '—'}}</span></div>
       <div class="item"><span class="label">Bairro:</span><span class="value">{{r.bairro || '—'}}</span></div>
       <div class="item"><span class="label">CEP:</span><span class="value">{{r.cep || '—'}}</span></div>
-      <div class="item"><span class="label">Lotação do Func.:</span><span class="value">{{r.lotacaoFuncionario || '—'}}</span></div>
     </div>
 
     <div class="section-subtitle">Contato</div>
     <div class="detail-grid" *ngIf="selectedRow as r">
-      <div class="item"><span class="label">DDD Celular:</span><span class="value">{{r.dddCelular || '—'}}</span></div>
-      <div class="item"><span class="label">Celular:</span><span class="value">{{r.celular || '—'}}</span></div>
+      <div class="item"><span class="label">Celular (com DDD):</span><span class="value">{{ formatarCelular(r.celular) }}</span></div>
       <div class="item"><span class="label">E-mail:</span><span class="value">{{r.email || '—'}}</span></div>
-      <div class="item"><span class="label">Receber por e-mail:</span><span class="value">{{r.receberComunicacaoEmail || '—'}}</span></div>
     </div>
 
     <div class="section-subtitle">Dados Complementares</div>
     <div class="detail-grid" *ngIf="selectedRow as r">
       <div class="item"><span class="label">Admissão:</span><span class="value">{{r.admissao || '—'}}</span></div>
       <div class="item"><span class="label">Nome da Mãe:</span><span class="value">{{r.nomeMae || '—'}}</span></div>
-      <div class="item"><span class="label">Declaração Nascido Vivo:</span><span class="value">{{r.declaracaoNascidoVivo || '—'}}</span></div>
-      <div class="item"><span class="label">CNS:</span><span class="value">{{r.cns || '—'}}</span></div>
       <div class="item"><span class="label">Identidade de Gênero:</span><span class="value">{{r.identidadeGenero || '—'}}</span></div>
       <div class="item"><span class="label">Nome Social:</span><span class="value">{{r.nomeSocial || '—'}}</span></div>
-      <div class="item"><span class="label">Indicador Pessoa Trans:</span><span class="value">{{r.indicadorPessoaTrans || '—'}}</span></div>
+      <div class="item"><span class="label">Indicador Pessoa Trans:</span><span class="value">{{r.indicadorPessoaTrans || r.indicador_pessoa_trans || '—'}}</span></div>
     </div>
   </div>
   <div class="modal-footer">

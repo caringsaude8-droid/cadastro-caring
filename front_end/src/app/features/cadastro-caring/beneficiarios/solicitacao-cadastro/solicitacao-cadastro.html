@@ -1,24 +1,51 @@
 <app-page-header 
-  [title]="'Cadastro Caring — Solicitação de Cadastro'" 
-  [subtitle]="'Acompanhe suas solicitações, ajuste pendências e anexe documentos'" 
+  [title]="'Cadastro Caring — Solicitações da Empresa'" 
+  [subtitle]="'Acompanhe as solicitações, ajuste pendências e anexe documentos'" 
   [icon]="'users'">
 </app-page-header>
 
+<!-- Informações da Empresa -->
+<div class="empresa-info caring-card" *ngIf="empresaSelecionada">
+  <div class="empresa-card">
+    <div class="empresa-icon">🏢</div>
+    <div class="empresa-details">
+      <h3>{{empresaSelecionada.nome}}</h3>
+      <p>CNPJ: {{empresaSelecionada.cnpj}}</p>
+      <span class="empresa-codigo">Código: {{empresaSelecionada.codigoEmpresa}}</span>
+    </div>
+  </div>
+</div>
+
 <div class="solicitacao-container">
-  <div *ngIf="minhasSolicitacoes.length === 0" class="empty-state caring-card">
-    <i class="icon-users-empty"></i>
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-message caring-card">
+    <div class="spinner"></div>
+    <span>Carregando solicitações...</span>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && minhasSolicitacoes.length === 0" class="empty-state caring-card">
+    <div class="empty-icon">📋</div>
     <h3>Você não possui solicitações</h3>
     <p>Envie novas solicitações nas telas de Inclusão, Alteração ou Exclusão de Beneficiários.</p>
   </div>
 
-  <div class="table-wrapper caring-card">
+  <!-- Tabela de Solicitações -->
+  <div class="table-wrapper caring-card" *ngIf="!loading && minhasSolicitacoes.length > 0">
+    <div class="table-header">
+      <h3>Suas Solicitações ({{minhasSolicitacoes.length}})</h3>
+      <button class="btn btn-secondary btn-sm" (click)="carregarSolicitacoes()">
+        🔄 Atualizar
+      </button>
+    </div>
+    
     <table class="table">
       <thead>
         <tr>
           <th>Data</th>
           <th>Tipo</th>
-          <th>Entidade</th>
-          <th>Identificador</th>
+          <th>Beneficiário</th>
+          <th>CPF/Matrícula</th>
           <th>Status</th>
           <th>Ações</th>
         </tr>
@@ -26,14 +53,26 @@
       <tbody>
         <tr *ngFor="let s of minhasSolicitacoes">
           <td>{{ s.data | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ s.tipo }}</td>
-          <td>{{ s.entidade }}</td>
+          <td>
+            <span class="tipo-badge" [class]="'tipo-' + s.tipo">
+              {{ s.tipo === 'inclusao' ? '➕ Inclusão' : 
+                 s.tipo === 'alteracao' ? '✏️ Alteração' : 
+                 '❌ Exclusão' }}
+            </span>
+          </td>
+          <td>{{ s.descricao }}</td>
           <td>{{ s.identificador }}</td>
           <td>
-            <span class="badge" [class]="s.status === 'pendente' ? 'status-pendente' : (s.status === 'aguardando' ? 'status-aguardando' : 'status-concluida')">{{ s.status }}</span>
+            <span class="status-badge" [class]="'status-' + s.status">
+              {{ s.status === 'pendente' ? '⏳ Pendente' : 
+                 s.status === 'aguardando' ? '⚠️ Aguardando Ajustes' : 
+                 '✅ Concluída' }}
+            </span>
           </td>
           <td class="actions">
-            <button class="btn btn-icon" title="Detalhes" (click)="openDetails(s)">🔎</button>
+            <button class="btn btn-primary btn-sm" title="Ver Detalhes" (click)="openDetails(s)">
+              👁️ Detalhes
+            </button>
           </td>
         </tr>
       </tbody>

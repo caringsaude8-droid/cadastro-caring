@@ -166,20 +166,131 @@
     color: #64748b;
 }
 
-/* Status badges mapping */
+/* Empresa Info */
+.empresa-info {
+  margin-bottom: 1.5rem;
+}
+
+.empresa-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.empresa-icon {
+  font-size: 2rem;
+}
+
+.empresa-details h3 {
+  margin: 0 0 0.25rem 0;
+  color: #1e293b;
+}
+
+.empresa-details p {
+  margin: 0 0 0.25rem 0;
+  color: #64748b;
+}
+
+.empresa-codigo {
+  font-size: 0.875rem;
+  color: #0b5fa4;
+  font-weight: 600;
+}
+
+/* Loading */
+.loading-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+/* Table Header */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table-header h3 {
+  margin: 0;
+  color: #1e293b;
+}
+
+/* Status and Type Badges */
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .status-pendente {
-    background: var(--warning-light);
-    color: var(--warning);
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .status-aguardando {
-    background: var(--info-light);
-    color: var(--info);
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .status-concluida {
-    background: var(--success-light);
-    color: var(--success);
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.tipo-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.tipo-inclusao {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.tipo-alteracao {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.tipo-exclusao {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .modal-backdrop {

@@ -1,10 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { BeneficiariosService, Beneficiario } from '../beneficiarios.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { InputComponent } from '../../../../shared/components/ui/input/input';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
+import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
+import { AprovacaoService } from '../../gestao-cadastro/aprovacao.service';
 
 type BeneficiarioRow = Beneficiario & {
   status?: string;
@@ -41,7 +43,26 @@ type BeneficiarioRow = Beneficiario & {
   templateUrl: './pesquisar-beneficiarios.html',
   styleUrl: './pesquisar-beneficiarios.css'
 })
-export class PesquisarBeneficiariosComponent {
+export class PesquisarBeneficiariosComponent implements OnInit {
+    /**
+     * Formata o celular para exibir (XX) XXXXXXXX ou (XX) XXXXX-XXXX
+     */
+    formatarCelular(celular: string | undefined | null): string {
+      if (!celular) return '—';
+      const digits = celular.replace(/\D/g, '');
+      if (digits.length === 11) {
+        // Formato (XX) 9XXXX-XXXX
+        return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
+      } else if (digits.length === 10) {
+        // Formato (XX) XXXX-XXXX
+        return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`;
+      } else if (digits.length >= 2) {
+        // Apenas DDD + resto
+        return `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+      }
+      return celular;
+    }
+  empresaSelecionada: any = null;
   nome = '';
   matricula = '';
   matriculaTitular = '';
@@ -50,6 +71,8 @@ export class PesquisarBeneficiariosComponent {
   pageSize = 10;
 
   data: BeneficiarioRow[] = [];
+  loading = false;
+  error: string | null = null;
 
   
 
@@ -92,17 +115,41 @@ export class PesquisarBeneficiariosComponent {
   goAlteracaoFromDetails() {
     if (!this.selectedRow) return;
     const r = this.selectedRow;
-    const query = new URLSearchParams({
+    const params: any = {
       nome: r.nome,
       cpf: r.cpf,
       nascimento: r.nascimento,
       data_inclusao: this.formatDateBR(r.data_inclusao),
       data_exclusao: this.formatDateBR(r.data_exclusao),
       tipo_dependencia: r.tipo_dependencia,
-      acomodacao: r.acomodacao,
       matricula_beneficiario: r.matricula_beneficiario,
       matricula_titular: r.matricula_titular
-    }).toString();
+    };
+
+    // Adicionar campos opcionais se existirem
+    if (r.nome_mae) params.nome_mae = r.nome_mae;
+    if (r.sexo) params.sexo = r.sexo;
+    if (r.estado_civil) params.estado_civil = r.estado_civil;
+    if (r.admissao) params.admissao = r.admissao;
+    if (r.plano_prod) params.plano_prod = r.plano_prod;
+    if (r.endereco) params.endereco = r.endereco;
+    if (r.numero) params.numero = r.numero;
+    if (r.complemento) params.complemento = r.complemento;
+    if (r.bairro) params.bairro = r.bairro;
+    if (r.cep) params.cep = r.cep;
+    if (r.celular) params.celular = r.celular;
+    if (r.email) params.email = r.email;
+    if (r.telefone) params.telefone = r.telefone;
+    if (r.rg) params.rg = r.rg;
+    if (r.rg_orgao_expedidor) params.rg_orgao_expedidor = r.rg_orgao_expedidor;
+    if (r.rg_uf_expedicao) params.rg_uf_expedicao = r.rg_uf_expedicao;
+    if (r.nome_social) params.nome_social = r.nome_social;
+    if (r.identidade_genero) params.identidade_genero = r.identidade_genero;
+    if (r.indicador_pessoa_trans) params.indicador_pessoa_trans = r.indicador_pessoa_trans;
+    if (r.indicadorPessoaTrans) params.indicadorPessoaTrans = r.indicadorPessoaTrans;
+    if (r.data_casamento) params.data_casamento = r.data_casamento;
+
+    const query = new URLSearchParams(params).toString();
     this.router.navigateByUrl(`/cadastro-caring/beneficiarios/alteracao-cadastral?${query}`);
     this.closeDetails();
   }
@@ -119,14 +166,34 @@ export class PesquisarBeneficiariosComponent {
   }
 
   statusOf(r: BeneficiarioRow): string {
-    if (r.status) return r.status;
-    return r.data_exclusao ? 'Rescindido' : 'Ativo';
+    // Usar benStatus que vem da API (campo obrigatório do banco)
+    if (r.benStatus) {
+      return r.benStatus;
+    }
+    
+    // Verificar se tem status no campo opcional
+    if (r.status) {
+      return r.status;
+    }
+    
+    // Se tem data de exclusão mas não tem status, mostrar rescindido
+    if (r.data_exclusao) {
+      return 'Rescindido';
+    }
+    
+    // Se chegou aqui, há problema nos dados
+    return 'Sem Status';
   }
 
   canOpenExclusao(r: BeneficiarioRow | null): boolean {
     if (!r) return false;
     const status = this.statusOf(r);
-    return !r.data_exclusao && status === 'Ativo';
+    const hasDataExclusao = !!r.data_exclusao;
+    
+    // Comparação case-insensitive para o status
+    const isAtivo = status?.toLowerCase() === 'ativo';
+    
+    return !hasDataExclusao && isAtivo;
   }
 
   private parseLocalDate(val: string): Date {
@@ -158,33 +225,95 @@ export class PesquisarBeneficiariosComponent {
   }
 
   confirmarExclusao() {
-    if (this.selectedRow) {
-      const today = this.todayLocal();
-      if (this.exData) {
-        const chosen = this.parseLocalDate(this.exData);
-        if (chosen < today) { this.dateError = 'Selecione uma data igual ou posterior a hoje.'; return; }
-        this.dateError = '';
-      }
-      // Marcar como Pendente até aprovação, sem aplicar exclusão imediata
-      this.service.setStatusByCpf(this.selectedRow.cpf, 'Pendente');
-      this.data = this.service.list();
+    if (!this.selectedRow) return;
 
-      const r = this.selectedRow;
-      const motivo = this.exMotivo || '';
-      const dataExclusao = this.exData || (() => {
-        const t = this.todayLocal();
-        const y = t.getFullYear();
-        const m = ('0' + (t.getMonth() + 1)).slice(-2);
-        const d = ('0' + t.getDate()).slice(-2);
-        return `${y}-${m}-${d}`;
-      })();
-      this.exMotivo = '';
-      this.exData = '';
-      this.showExclusao = false;
-      this.closeDetails();
-      this.router.navigateByUrl(`/cadastro-caring/beneficiarios/exclusao-cadastral?matricula=${encodeURIComponent(r.matricula_beneficiario)}&nome=${encodeURIComponent(r.nome)}&cpf=${encodeURIComponent(r.cpf)}&motivo=${encodeURIComponent(motivo)}&dataExclusao=${encodeURIComponent(dataExclusao)}`);
+    const today = this.todayLocal();
+    if (this.exData) {
+      const chosen = this.parseLocalDate(this.exData);
+      if (chosen < today) { 
+        this.dateError = 'Selecione uma data igual ou posterior a hoje.'; 
+        return; 
+      }
+      this.dateError = '';
+    }
+
+    if (!this.selectedRow.cpf) {
+      console.error('❌ Beneficiário selecionado não tem CPF válido');
       return;
     }
+
+    const motivo = this.exMotivo || 'RESCISAO';
+    const observacoes = `Solicitação de exclusão - Motivo: ${this.motivoLabel(motivo)}`;
+    
+    // Usar nova API via AprovacaoService
+    this.aprovacaoService.criarSolicitacaoExclusao(
+      this.selectedRow, 
+      motivo, 
+      observacoes
+    ).subscribe({
+      next: (response: any) => {
+        console.log('✅ Solicitação de exclusão criada:', response.numeroSolicitacao);
+        
+        // Marcar beneficiário como Pendente
+        this.service.alterarBeneficiario(this.selectedRow!.id, { 
+          benStatus: 'Pendente' 
+        }).subscribe({
+          next: () => {
+            console.log('✅ Beneficiário marcado como pendente');
+            this.carregarBeneficiarios();
+            
+            // Mostrar feedback de sucesso
+            alert(`Solicitação de exclusão ${response.numeroSolicitacao || 'criada'} com sucesso!\n\nO beneficiário foi marcado como pendente e aguarda aprovação.`);
+          },
+          error: (error: any) => console.error('❌ Erro ao marcar como pendente:', error)
+        });
+
+        // Limpar formulário e fechar modais
+        this.exMotivo = '';
+        this.exData = '';
+        this.showExclusao = false;
+        this.closeDetails();
+        
+        // Navegar para aprovações (opcional)
+        // this.router.navigateByUrl('/cadastro-caring/gestao-cadastro/aprovacao-cadastro');
+      },
+      error: (error: any) => {
+        console.error('❌ Erro ao criar solicitação de exclusão:', error);
+        
+        // Fallback: usar método antigo se nova API falhar
+        console.log('🔄 Tentando método de fallback...');
+        
+        const r = this.selectedRow;
+        if (!r) return;
+        
+        const dataExclusao = this.exData || (() => {
+          const t = this.todayLocal();
+          const y = t.getFullYear();
+          const m = ('0' + (t.getMonth() + 1)).slice(-2);
+          const d = ('0' + t.getDate()).slice(-2);
+          return `${y}-${m}-${d}`;
+        })();
+
+        // Criar solicitação local (método antigo)
+        const solicitacao = {
+          tipo: 'exclusao' as const,
+          entidade: 'Beneficiário',
+          identificador: r.cpf,
+          descricao: `${r.nome} - Exclusão`,
+          solicitante: 'Usuário Atual', // TODO: Pegar do AuthService
+          observacao: observacoes
+        };
+
+        this.aprovacaoService.add(solicitacao);
+        
+        alert('Solicitação de exclusão criada com sucesso!\n\nAguardando aprovação.');
+        
+        this.exMotivo = '';
+        this.exData = '';
+        this.showExclusao = false;
+        this.closeDetails();
+      }
+    });
   }
 
   onExDateChange(val: string) {
@@ -195,38 +324,236 @@ export class PesquisarBeneficiariosComponent {
     this.dateError = chosen < today ? 'Selecione uma data igual ou posterior a hoje.' : '';
   }
 
-  constructor(private router: Router, private service: BeneficiariosService) {
-    this.data = this.service.list();
+  constructor(
+    private router: Router, 
+    private service: BeneficiariosService,
+    private empresaContextService: EmpresaContextService,
+    private aprovacaoService: AprovacaoService
+  ) {
     this.minDate = this.computeMinDate();
   }
 
+  ngOnInit(): void {
+    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+    
+    if (!this.empresaSelecionada?.id) {
+      this.error = 'Empresa não selecionada ou sem ID válido. Selecione uma empresa primeiro.';
+      return;
+    }
+    
+    // Carregar dados da API
+    this.carregarBeneficiarios();
+  }
+
+  carregarBeneficiarios(): void {
+    this.loading = true;
+    this.error = null;
+    
+    // Usar listRaw para pegar dados brutos da API com campos 'ben'
+    this.service.listRaw().subscribe({
+      next: (beneficiariosRaw) => {
+        console.log('✅ Beneficiários carregados da API:', beneficiariosRaw.length);
+        
+        // Mapear dados brutos para o formato esperado pelo componente
+        this.data = beneficiariosRaw.map(raw => this.mapearDadosBrutos(raw));
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('❌ Erro ao carregar beneficiários:', error);
+        
+        // Não exibir mensagens de erro de autenticação - deixar interceptor lidar
+        if (error.status === 401 || error.status === 403) {
+          console.log('🔐 Erro de autenticação - interceptor vai lidar com isso');
+          this.loading = false;
+          return;
+        }
+        
+        // Determinar tipo de erro e mensagem apropriada
+        if (error.status === 0) {
+          this.error = 'Servidor indisponível. Verifique sua conexão com a internet.';
+        } else if (error.status === 404) {
+          this.error = 'Endpoint não encontrado. Verifique a configuração da API.';
+        } else if (error.status >= 500) {
+          this.error = 'Erro interno do servidor. Tente novamente mais tarde.';
+        } else {
+          this.error = 'Erro ao carregar lista de beneficiários. Tente novamente.';
+        }
+        
+        this.data = [];
+        this.loading = false;
+      }
+    });
+  }
+
+  pesquisar(): void {
+    if (!this.nome && !this.matricula && !this.matriculaTitular) {
+      // Se não há filtros, recarregar todos
+      this.carregarBeneficiarios();
+      return;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    const filtros = {
+      nome: this.nome || undefined,
+      matricula: this.matricula || undefined,
+      matriculaTitular: this.matriculaTitular || undefined
+    };
+
+    this.service.buscarPorFiltros(filtros).subscribe({
+      next: (beneficiarios) => {
+        this.data = beneficiarios;
+        this.loading = false;
+        console.log('✅ Pesquisa realizada:', beneficiarios.length, 'resultados');
+      },
+      error: (error) => {
+        console.error('❌ Erro na pesquisa:', error);
+        
+        if (error.status === 0) {
+          this.error = 'Servidor indisponível para realizar a pesquisa.';
+        } else {
+          this.error = 'Erro ao realizar pesquisa. Tente novamente.';
+        }
+        this.loading = false;
+      }
+    });
+  }
+
   alterar(row: BeneficiarioRow) {
-    const query = new URLSearchParams({
+    const params: any = {
       nome: row.nome,
       cpf: row.cpf,
       nascimento: row.nascimento,
       data_inclusao: this.formatDateBR(row.data_inclusao),
       data_exclusao: this.formatDateBR(row.data_exclusao),
       tipo_dependencia: row.tipo_dependencia,
-      acomodacao: row.acomodacao,
       matricula_beneficiario: row.matricula_beneficiario,
       matricula_titular: row.matricula_titular
-    }).toString();
+    };
+
+    // Adicionar campos opcionais se existirem
+    if (row.nome_mae) params.nome_mae = row.nome_mae;
+    if (row.sexo) params.sexo = row.sexo;
+    if (row.estado_civil) params.estado_civil = row.estado_civil;
+    if (row.admissao) params.admissao = row.admissao;
+    if (row.plano_prod) params.plano_prod = row.plano_prod;
+    if (row.endereco) params.endereco = row.endereco;
+    if (row.numero) params.numero = row.numero;
+    if (row.complemento) params.complemento = row.complemento;
+    if (row.bairro) params.bairro = row.bairro;
+    if (row.cep) params.cep = row.cep;
+    if (row.celular) params.celular = row.celular;
+    if (row.email) params.email = row.email;
+    if (row.telefone) params.telefone = row.telefone;
+    if (row.rg) params.rg = row.rg;
+    if (row.rg_orgao_expedidor) params.rg_orgao_expedidor = row.rg_orgao_expedidor;
+    if (row.rg_uf_expedicao) params.rg_uf_expedicao = row.rg_uf_expedicao;
+    if (row.nome_social) params.nome_social = row.nome_social;
+    if (row.identidade_genero) params.identidade_genero = row.identidade_genero;
+    if (row.indicador_pessoa_trans) params.indicador_pessoa_trans = row.indicador_pessoa_trans;
+    if (row.data_casamento) params.data_casamento = row.data_casamento;
+
+    const query = new URLSearchParams(params).toString();
     this.router.navigateByUrl(`/cadastro-caring/beneficiarios/alteracao-cadastral?${query}`);
   }
 
   excluir(row: BeneficiarioRow) {
-    this.service.marcarExclusaoPorMatricula(row.matricula_beneficiario);
-    this.data = this.service.list();
+    if (confirm('Tem certeza que deseja excluir este beneficiário?')) {
+      this.loading = true;
+      
+      this.service.excluirBeneficiario(row.id, 'RESCISAO').subscribe({
+        next: () => {
+          console.log('✅ Beneficiário excluído com sucesso');
+          this.carregarBeneficiarios(); // Recarregar lista
+        },
+        error: (error) => {
+          console.error('❌ Erro ao excluir beneficiário:', error);
+          this.error = 'Erro ao excluir beneficiário. Tente novamente.';
+          this.loading = false;
+        }
+      });
+    }
   }
 
   gerarCarterinha() {
     alert('Carterinha virtual gerada (simulado).');
   }
 
-  setStatus(row: BeneficiarioRow, status: 'Ativo' | 'Já cadastrado' | 'Documentação pendente') {
-    this.service.setStatusByCpf(row.cpf, status);
-    this.data = this.service.list();
+  limparFiltros(): void {
+    this.nome = '';
+    this.matricula = '';
+    this.matriculaTitular = '';
+    this.carregarBeneficiarios();
+  }
+
+  private verificarEmpresaSelecionada(): boolean {
+    if (!this.empresaSelecionada) {
+      this.error = 'Nenhuma empresa selecionada. Selecione uma empresa antes de continuar.';
+      return false;
+    }
+    if (!this.empresaSelecionada.id) {
+      this.error = 'Empresa selecionada não possui ID válido. Selecione novamente a empresa.';
+      return false;
+    }
+    return true;
+  }
+
+  private mapearDadosBrutos(raw: any): BeneficiarioRow {
+    return {
+      id: raw.id,
+      nome: raw.benNomeSegurado || raw.nome || '',
+      cpf: raw.benCpf || raw.cpf || '',
+      nascimento: raw.benDtaNasc ? this.formatarDataISO(raw.benDtaNasc) : (raw.nascimento || ''),
+      data_inclusao: raw.benDtaInclusao ? new Date(raw.benDtaInclusao) : (raw.data_inclusao ? new Date(raw.data_inclusao) : new Date()),
+      data_exclusao: raw.benDtaExclusao ? new Date(raw.benDtaExclusao) : (raw.data_exclusao ? new Date(raw.data_exclusao) : null),
+      tipo_dependencia: raw.benRelacaoDep === '00' ? 'titular' : 'dependente',
+      acomodacao: this.mapearAcomodacao(raw.benPlanoProd),
+      matricula_beneficiario: raw.benMatricula || raw.matricula_beneficiario || '',
+      matricula_titular: raw.matricula_titular || '',
+      
+      // Campos detalhados com dados brutos da API
+      benStatus: raw.benStatus || 'Ativo',
+      admissao: raw.benAdmissao ? this.formatarDataISO(raw.benAdmissao) : '',
+      nomeMae: raw.benNomeDaMae || '',
+      endereco: raw.benEndereco || '',
+      numero: raw.benNumero || '',
+      complemento: raw.benComplemento || '',
+      bairro: raw.benBairro || '',
+      cep: raw.benCep || '',
+      celular: raw.benDddCel || '',
+      email: raw.benEmail || '',
+      
+      // Campos complementares
+      nome_mae: raw.benNomeDaMae || '',
+      sexo: raw.benSexo || '',
+      estado_civil: raw.benEstCivil || '',
+      plano_prod: raw.benPlanoProd || '',
+      telefone: raw.benTelefone || '',
+      rg: raw.benRg || '',
+      rg_orgao_expedidor: raw.benRgOrgaoExpedidor || '',
+      rg_uf_expedicao: raw.benRgUfExpedicao || '',
+      nome_social: raw.benNomeSocial || '',
+      identidade_genero: raw.benIdentGenero || '',
+      indicador_pessoa_trans: raw.benIndicPesTrans || '',
+      data_casamento: raw.benDataCasamento ? this.formatarDataISO(raw.benDataCasamento) : ''
+    } as BeneficiarioRow;
+  }
+
+  private mapearAcomodacao(planoProd: string): string {
+    const mapeamento: { [key: string]: string } = {
+      'ADMDTXCP': 'Apartamento',
+      'QUPLTXCP': 'Quarto',
+      'ENFLTXCP': 'Enfermaria'
+    };
+    return mapeamento[planoProd] || 'Standard';
+  }
+
+  private formatarDataISO(data: string): string {
+    if (!data) return '';
+    const soData = data.split('T')[0];
+    const [ano, mes, dia] = soData.split('-');
+    return (ano && mes && dia) ? `${dia}/${mes}/${ano}` : soData;
   }
 
 }

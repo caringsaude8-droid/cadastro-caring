@@ -116,7 +116,7 @@ Valores aceitos: "SOLTEIRO", "CASADO", "DIVORCIADO", "VIUVO", "SEPARADO"
 
 ### Listar Beneficiários
 ```
-GET http://localhost:8081/api/cadastro/v1/beneficiarios?codigoEmpresa={codigo}
+GET http://localhost:8081/api/cadastro/v1/beneficiarios?empresaId={id}
 ```
 
 ### Alterar Beneficiário

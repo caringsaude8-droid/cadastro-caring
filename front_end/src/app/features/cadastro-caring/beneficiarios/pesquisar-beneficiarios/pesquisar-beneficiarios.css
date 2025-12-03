@@ -1,3 +1,39 @@
+/* Barra de empresa selecionada */
+.empresa-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, #0ea5e9 60%, #06b6d4 100%);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.7rem 1.2rem;
+    border-radius: 10px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.10);
+}
+
+.empresa-info-bar b {
+    font-size: 1.08em;
+    letter-spacing: 0.5px;
+}
+
+.btn-trocar-empresa {
+    background: #fff;
+    color: #0ea5e9;
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 0.45rem 1.1rem;
+    font-weight: 600;
+    font-size: 0.98rem;
+    cursor: pointer;
+    margin-left: 1.2rem;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-trocar-empresa:hover {
+    background: #0ea5e9;
+    color: #fff;
+}
+
 .search-container {
     background: #e6f0f3;
     border: 1px solid #06b6d4;
@@ -269,4 +305,117 @@
     border-color: #06b6d4;
     box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
     outline: none;
+}
+
+/* Indicadores de Status */
+.status-container {
+    margin: 0.75rem;
+    margin-bottom: 0;
+}
+
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    color: #0369a1;
+    font-weight: 500;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #fef2f2 0%, #fffbeb 100%);
+    border: 1px solid #f87171;
+    border-radius: 8px;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.error-icon {
+    font-size: 1.2rem;
+}
+
+.btn-retry {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-left: auto;
+    transition: background 0.2s;
+}
+
+.btn-retry:hover {
+    background: #b91c1c;
+}
+
+/* Spinners */
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #0ea5e9;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #6b7280;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Loading na tabela */
+.loading-row {
+    background: #f8fafc !important;
+}
+
+.loading-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Contador de resultados */
+.results-info {
+    padding: 0.5rem 0.75rem;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Estados desabilitados para botões */
+.btn-primary:disabled,
+.btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-primary:disabled:hover,
+.btn-secondary:disabled:hover {
+    background: #c2111a;
+    transform: none;
 }

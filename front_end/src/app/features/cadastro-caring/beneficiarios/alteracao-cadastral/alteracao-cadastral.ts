@@ -1,9 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { InputComponent } from '../../../../shared/components/ui/input/input';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
+import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
+import { BeneficiariosService } from '../beneficiarios.service';
+import { AprovacaoService } from '../../gestao-cadastro/aprovacao.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-alteracao-cadastral',
@@ -12,14 +16,44 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
   templateUrl: './alteracao-cadastral.html',
   styleUrl: './alteracao-cadastral.css'
 })
-export class AlteracaoCadastralComponent {
+export class AlteracaoCadastralComponent implements OnInit {
+      // Getter/setter para celular formatado visualmente
+      get celularFormatado(): string {
+        return this.formatarCelular(this.form.celular);
+      }
+      set celularFormatado(valor: string) {
+        // Salva apenas os dígitos no model
+        this.form.celular = valor.replace(/\D/g, '').slice(0, 11);
+      }
+    /**
+     * Formata o celular para exibir (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+     */
+    formatarCelular(celular: string | undefined | null): string {
+      if (!celular) return '';
+      const digits = celular.replace(/\D/g, '');
+      if (digits.length === 11) {
+        // Formato (XX) 9XXXX-XXXX
+        return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
+      } else if (digits.length === 10) {
+        // Formato (XX) XXXX-XXXX
+        return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`;
+      } else if (digits.length >= 2) {
+        // Apenas DDD + resto
+        return `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+      }
+      return celular;
+    }
+  empresaSelecionada: any = null;
+
+
+
   form = {
     nomeSegurado: '',
     cpf: '',
     dataNascimento: '',
-    dataInclusaoExclusao: '',
+    dataInclusao: '',
+    dataExclusao: '',
     dependencia: '',
-    acomodacao: '',
     matricula: '',
     matriculaTitular: '',
     sexo: '',
@@ -29,6 +63,10 @@ export class AlteracaoCadastralComponent {
     uf: '',
     admissao: '',
     nomeMae: '',
+    rg: '',
+    rgOrgaoExpedidor: '',
+    rgUfExpedicao: '',
+    telefone: '',
     endereco: '',
     numero: '',
     complemento: '',
@@ -39,7 +77,6 @@ export class AlteracaoCadastralComponent {
     lotacaoFuncionario: '',
     declaracaoNascidoVivo: '',
     cns: '',
-    dddCelular: '',
     receberComunicacaoEmail: 'nao',
     celular: '',
     email: '',
@@ -47,8 +84,19 @@ export class AlteracaoCadastralComponent {
     cidadeResidencia: '',
     ufResidencia: '',
     codigoEmpresa: '',
-    numeroEmpresa: ''
+    numeroEmpresa: '',
+    dataCasamento: '',
+    indicadorPessoaTrans: 'nao',
+    nomeSocial: '',
+    identidadeGenero: '',
+    tipoMotivo: '' // Usuario deve selecionar
   };
+
+  // Opções para tipo de motivo na alteração
+  tiposMotivo = [
+    { value: 'A', label: 'Alteração Cadastral' },
+    { value: 'P', label: 'Troca de Plano' }
+  ];
 
   sexos = [ { value: 'M', label: 'Masculino' }, { value: 'F', label: 'Feminino' } ];
   estadosCivis = [
@@ -58,30 +106,332 @@ export class AlteracaoCadastralComponent {
     { value: 'viuvo', label: 'Viúvo(a)' }
   ];
   ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-  planos = [ { value: 'planoA', label: 'Plano A' }, { value: 'planoB', label: 'Plano B' } ];
+  planos = [
+    { value: 'unimed_adm_dinamico', label: 'UNIMED ADM. DINAMICO' }
+  ];
+  generos = [
+    { value: 'cisgenerio', label: 'Cisgênero' },
+    { value: 'transgenero', label: 'Transgênero' },
+    { value: 'nao_binario', label: 'Não binário' },
+    { value: 'outro', label: 'Outro' }
+  ];
 
-  constructor(private route: ActivatedRoute) {
-    this.route.queryParamMap.subscribe(params => {
-      const nome = params.get('nome');
+  // Campos para anexos
+  anexos: { tipo: string; nome: string; size: number; dataUrl: string }[] = [];
+  docTipo = '';
+  docTipos = ['RG', 'CPF', 'Comprovante de residência', 'Declaração', 'Contrato', 'Outros'];
+
+  constructor(
+    private route: ActivatedRoute,
+    private empresaContextService: EmpresaContextService,
+    private router: Router,
+    private beneficiariosService: BeneficiariosService,
+    private aprovacaoService: AprovacaoService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    // Obter contexto da empresa
+    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+    
+    // Auto-preencher formulário com dados da URL e buscar dados completos da API
+    this.route.queryParamMap.subscribe(async params => {
+      // Dados básicos que estão chegando da listagem
+      if (params.get('nome')) this.form.nomeSegurado = params.get('nome')!;
+      if (params.get('cpf')) this.form.cpf = params.get('cpf')!;
+      if (params.get('nascimento')) this.form.dataNascimento = params.get('nascimento')!;
+      if (params.get('tipo_dependencia')) this.form.dependencia = params.get('tipo_dependencia')!;
+      if (params.get('matricula_beneficiario')) this.form.matricula = params.get('matricula_beneficiario')!;
+      if (params.get('matricula_titular')) this.form.matriculaTitular = params.get('matricula_titular')!;
+      
+      // Campos que podem vir da API expandida
+      if (params.get('nome_mae')) this.form.nomeMae = params.get('nome_mae')!;
+      if (params.get('sexo')) this.form.sexo = params.get('sexo')!;
+      if (params.get('estado_civil')) this.form.estadoCivil = params.get('estado_civil')!;
+      if (params.get('admissao')) this.form.admissao = params.get('admissao')!;
+      if (params.get('plano_prod')) this.form.planoProd = params.get('plano_prod')!;
+      
+      // Dados complementares
+      if (params.get('nome_social')) this.form.nomeSocial = params.get('nome_social')!;
+      if (params.get('identidade_genero')) this.form.identidadeGenero = params.get('identidade_genero')!;
+      if (params.get('indicador_pessoa_trans')) this.form.indicadorPessoaTrans = params.get('indicador_pessoa_trans') === 'true' ? 'sim' : 'nao';
+      if (params.get('data_casamento')) this.form.dataCasamento = params.get('data_casamento')!;
+      
+      // Documentos
+      if (params.get('rg')) this.form.rg = params.get('rg')!;
+      if (params.get('rg_orgao_expedidor')) this.form.rgOrgaoExpedidor = params.get('rg_orgao_expedidor')!;
+      if (params.get('rg_uf_expedicao')) this.form.rgUfExpedicao = params.get('rg_uf_expedicao')!;
+      
+      // Endereço
+      if (params.get('cep')) this.form.cep = params.get('cep')!;
+      if (params.get('endereco')) this.form.endereco = params.get('endereco')!;
+      // Suporte tanto para 'numero' quanto 'benNumero' na query string
+      if (params.get('numero')) this.form.numero = params.get('numero')!;
+      else if (params.get('benNumero')) this.form.numero = params.get('benNumero')!;
+      if (params.get('complemento')) this.form.complemento = params.get('complemento')!;
+      if (params.get('bairro')) this.form.bairro = params.get('bairro')!;
+      if (params.get('cidade')) this.form.cidade = params.get('cidade')!;
+      if (params.get('uf')) this.form.uf = params.get('uf')!;
+      
+      // Contato
+      if (params.get('telefone')) this.form.telefone = params.get('telefone')!;
+      if (params.get('celular')) this.form.celular = params.get('celular')!;
+      if (params.get('email')) this.form.email = params.get('email')!;
+      
+
+      
+      // Datas
+      const dataInclusao = params.get('data_inclusao');
+      const dataExclusao = params.get('data_exclusao');
+      if (dataInclusao && dataInclusao !== '') {
+        this.form.dataInclusao = dataInclusao;
+      }
+      if (dataExclusao && dataExclusao !== '') {
+        this.form.dataExclusao = dataExclusao;
+      }
+
+      // Se temos CPF, tentar buscar dados completos da API
       const cpf = params.get('cpf');
-      const nascimento = params.get('nascimento');
-      const dataInclusao = params.get('dataInclusao');
-      const dataExclusao = params.get('dataExclusao');
-      const dependencia = params.get('dependencia');
-      const acomodacao = params.get('acomodacao');
-      const matricula = params.get('matricula');
-      const matriculaTitular = params.get('matriculaTitular');
-      if (nome) this.form.nomeSegurado = nome;
-      if (cpf) this.form.cpf = cpf;
-      if (nascimento) this.form.dataNascimento = nascimento;
-      if (dataInclusao || dataExclusao) this.form.dataInclusaoExclusao = dataInclusao || dataExclusao || '';
-      if (dependencia) this.form.dependencia = dependencia;
-      if (acomodacao) this.form.acomodacao = acomodacao;
-      if (matricula) this.form.matricula = matricula;
-      if (matriculaTitular) this.form.matriculaTitular = matriculaTitular;
+      if (cpf) {
+        try {
+          // Usar listRaw para obter dados brutos com campos 'ben'
+          const beneficiariosRaw = await this.beneficiariosService.listRaw().toPromise();
+          const beneficiarioCompleto = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === cpf);
+          
+          if (beneficiarioCompleto) {
+            console.log('📋 Beneficiário encontrado com dados brutos:', beneficiarioCompleto);
+            this.preencherFormularioCompleto(beneficiarioCompleto);
+          }
+        } catch (error) {
+          console.warn('⚠️ Erro ao buscar dados completos:', error);
+        }
+      }
     });
+    
+    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
   }
 
-  salvar() {}
+
+
+  async salvar() {
+    console.log('💾 Salvando alteração com tipoMotivo:', this.form.tipoMotivo);
+    
+    if (!this.form.nomeSegurado?.trim() || !this.form.cpf?.trim() || !this.form.tipoMotivo) {
+      alert('Por favor, preencha todos os campos obrigatórios, incluindo o tipo de movimentação.');
+      return;
+    }
+
+    try {
+      const empresa = this.empresaContextService.getEmpresaSelecionada();
+      const usuario = this.authService.getCurrentUser();
+
+      if (!empresa || !usuario) {
+        alert('Erro: Contexto de empresa ou usuário não encontrado.');
+        return;
+      }
+
+      // Preparar dados propostos conforme documentação da API
+      const dadosPropostos = {
+        // Campos obrigatórios da API
+        benTipoMotivo: this.form.tipoMotivo,
+        benNomeSegurado: this.form.nomeSegurado,
+        benCpf: this.form.cpf,
+        benDtaNasc: this.form.dataNascimento,
+        benDependencia: this.form.dependencia,
+        benSexo: this.form.sexo,
+        benEstCivil: this.form.estadoCivil,
+        
+        // Contatos
+        benTelRes: this.form.telefone,
+        benTelCel: this.form.celular,
+        benEmail: this.form.email,
+        
+        // Endereço - usando nomes corretos da API
+        benEndLogra: this.form.endereco,
+        benEndNum: this.form.numero,
+        benEndCompl: this.form.complemento,
+        benEndCep: this.form.cep,
+        benEndBairro: this.form.bairro,
+        benEndMunic: this.form.cidade,
+        benEndUf: this.form.uf,
+        
+        // Família
+        benNomeMae: this.form.nomeMae,
+        
+        // Documentos - nomes corretos da API
+        benRgNum: this.form.rg,
+        benRgOrgEmissor: this.form.rgOrgaoExpedidor,
+        benRgUfExpedicao: this.form.rgUfExpedicao,
+        
+        // Campos específicos
+        benNomeSocial: this.form.nomeSocial,
+        benIdentGenero: this.form.identidadeGenero,
+        benIndicPesTrans: this.form.indicadorPessoaTrans,
+        benDataCasamento: this.form.dataCasamento,
+        
+        // Campos adicionais que podem ser necessários
+        benEmpId: empresa.id,
+        benStatus: 'ATIVO'
+      };
+      
+
+      
+      // Buscar beneficiário por CPF para obter ID
+      const beneficiariosRaw = await this.beneficiariosService.listRaw().toPromise();
+      const beneficiario = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === this.form.cpf);
+      
+      if (!beneficiario) {
+        alert('Beneficiário não encontrado. Verifique o CPF.');
+        return;
+      }
+
+      const observacoes = `Alteração cadastral - Tipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}`;
+      
+      // Usar nova API via AprovacaoService
+      this.aprovacaoService.criarSolicitacaoAlteracao(
+        beneficiario,
+        dadosPropostos,
+        observacoes,
+        empresa.id
+      ).subscribe({
+        next: (response: any) => {
+          
+          // Marcar beneficiário como Pendente
+          this.beneficiariosService.alterarBeneficiario(beneficiario.id, { 
+            benStatus: 'Pendente' 
+          }).subscribe({
+            next: () => {
+              alert(`Solicitação enviada!\nSua solicitação de alteração cadastral foi criada com sucesso.\n\nTipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}\nO beneficiário foi marcado como pendente e aguarda aprovação.`);
+              this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+            },
+            error: (error: any) => {
+              // Ainda navegar, pois a solicitação foi criada
+              alert(`Solicitação enviada!\nSua solicitação de alteração cadastral foi criada com sucesso.\n\nTipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}`);
+              this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+            }
+          });
+        },
+        error: (error: any) => {
+          console.log('⚠️ Erro na solicitação:', error);
+          
+          // Não exibir mensagens de erro de autenticação - apenas logar
+          if (error.status === 401 || error.status === 403) {
+            console.log('🔐 Erro de autenticação/autorização - interceptor vai lidar com isso');
+            return;
+          }
+          
+          let errorMessage = 'Erro desconhecido';
+          
+          if (error.status === 400) {
+            errorMessage = error.error?.message || 'Dados inválidos. Verifique os campos.';
+          } else if (error.status === 500) {
+            errorMessage = 'Erro interno do servidor. Tente novamente.';
+          } else {
+            errorMessage = error.error?.message || error.message || 'Erro na comunicação com o servidor.';
+          }
+          
+          alert(`Erro ao criar solicitação de alteração:\n\n${errorMessage}`);
+        }
+      });
+      
+    } catch (error) {
+      alert('Erro ao salvar alteração. Tente novamente.');
+    }
+  }
+
+  private getTipoMotivoTexto(codigo: string): string {
+    switch (codigo) {
+      case 'A': return 'Alteração Cadastral';
+      case 'P': return 'Troca de Plano';
+      default: return 'Não especificado';
+    }
+  }
+
+  cancelar() {
+    console.log('🚫 Cancelando alteração cadastral');
+    this.router.navigate(['/cadastro-caring/beneficiarios']);
+  }
+
+  private preencherFormularioCompleto(beneficiario: any) {
+    // Preenchimento direto apenas com os campos padronizados da API
+    if (beneficiario.benNumero) this.form.numero = beneficiario.benNumero;
+    if (beneficiario.benDataInclusao) this.form.dataInclusao = this.formatarDataBR(beneficiario.benDataInclusao);
+    if (beneficiario.benDtaExclusao) this.form.dataExclusao = this.formatarDataBR(beneficiario.benDtaExclusao);
+    if (beneficiario.benNomeDaMae) this.form.nomeMae = beneficiario.benNomeDaMae;
+    if (beneficiario.benSexo) this.form.sexo = beneficiario.benSexo === 'M' ? 'M' : 'F';
+    if (beneficiario.benEstCivil) this.form.estadoCivil = this.mapearEstadoCivil(beneficiario.benEstCivil);
+    if (beneficiario.benAdmissao) this.form.admissao = this.formatarDataBR(beneficiario.benAdmissao);
+    if (beneficiario.benPlanoProd) this.form.planoProd = this.mapearPlanoProduto(beneficiario.benPlanoProd);
+    if (beneficiario.benEndereco) this.form.endereco = beneficiario.benEndereco;
+    if (beneficiario.benComplemento) this.form.complemento = beneficiario.benComplemento;
+    if (beneficiario.benBairro) this.form.bairro = beneficiario.benBairro;
+    if (beneficiario.benCidade) this.form.cidade = beneficiario.benCidade;
+    if (beneficiario.benUf) this.form.uf = beneficiario.benUf;
+    if (beneficiario.benCep) this.form.cep = beneficiario.benCep;
+    if (beneficiario.benDddCel) this.form.celular = beneficiario.benDddCel;
+    if (beneficiario.benEmail) this.form.email = beneficiario.benEmail;
+    if (beneficiario.benIndicPesTrans) this.form.indicadorPessoaTrans = beneficiario.benIndicPesTrans;
+    if (beneficiario.benDataCasamento) {
+      this.form.dataCasamento = this.formatarDataBR(beneficiario.benDataCasamento);
+    }
+    if (beneficiario.benNomeSocial) this.form.nomeSocial = beneficiario.benNomeSocial;
+    if (beneficiario.benIdentGenero) this.form.identidadeGenero = beneficiario.benIdentGenero;
+    console.log('✅ Auto-preenchimento concluído');
+  }
+
+  private mapearEstadoCivil(codigo: string): string {
+    const mapeamento: { [key: string]: string } = {
+      'S': 'solteiro',
+      'M': 'casado', 
+      'D': 'divorciado',
+      'W': 'viuvo'
+    };
+    return mapeamento[codigo] || codigo.toLowerCase();
+  }
+
+  private mapearPlanoProduto(codigo: string): string {
+    const mapeamento: { [key: string]: string } = {
+      'ADMDTXCP': 'unimed_adm_dinamico'
+    };
+    return mapeamento[codigo] || codigo;
+  }
+
+  private formatarDataBR(data: string): string {
+    if (!data) return '';
+    const soData = data.split('T')[0];
+    const [ano, mes, dia] = soData.split('-');
+    return (ano && mes && dia) ? `${dia}/${mes}/${ano}` : soData;
+  }
+
+  // Métodos para anexos
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files[0];
+    if (!file || !this.docTipo) {
+      alert('Selecione o tipo e o arquivo.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      this.anexos.push({ tipo: this.docTipo, nome: file.name, size: file.size, dataUrl });
+      input.value = '';
+      this.docTipo = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removerAnexo(idx: number) {
+    this.anexos.splice(idx, 1);
+  }
+
+  baixarAnexo(idx: number) {
+    const a = this.anexos[idx];
+    if (!a?.dataUrl) return;
+    const link = document.createElement('a');
+    link.href = a.dataUrl;
+    link.download = a.nome;
+    link.click();
+  }
 }
 

@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { AprovacaoService, Solicitacao } from '../../gestao-cadastro/aprovacao.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
+import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
+import { BeneficiariosService } from '../beneficiarios.service';
 
 type Anexo = { tipo: string; nome: string; size: number; dataUrl: string };
 
@@ -16,27 +18,91 @@ type Anexo = { tipo: string; nome: string; size: number; dataUrl: string };
 })
 export class SolicitacaoCadastroComponent implements OnInit {
   solicitacoes: Solicitacao[] = [];
-  currentUser = 'Dr. João Silva';
+  solicitacoesSub: any;
+  currentUser = '';
+  empresaSelecionada: any = null;
   ajustes: Record<string, { mensagem: string; anexos: Anexo[]; docTipo: string }> = {};
   showDetails = false;
   selected: Solicitacao | null = null;
+  loading = false;
 
-  constructor(private aprovacao: AprovacaoService, private auth: AuthService) {}
+  constructor(
+    private aprovacao: AprovacaoService, 
+    private auth: AuthService,
+    private empresaContextService: EmpresaContextService,
+    private beneficiariosService: BeneficiariosService
+  ) {}
 
   ngOnInit(): void {
+    // Obter usuário atual
+    const user = this.auth.getCurrentUser();
+    this.currentUser = user?.nome || 'Usuário';
+
+    // Obter empresa selecionada
+    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+
+    // Sincronizar lista de solicitações com a API
+    this.aprovacao.atualizarSolicitacoes();
+    // Assinar Observable para atualizar lista automaticamente
+    this.solicitacoesSub = this.aprovacao.solicitacoes$.subscribe(solicitacoes => {
+      this.solicitacoes = solicitacoes;
+      this.loading = false;
+    });
+      if (this.solicitacoesSub) {
+        this.solicitacoesSub.unsubscribe();
+      }
+  }
+  
+  carregarSolicitacoes(): void {
+    this.loading = true;
     this.solicitacoes = this.aprovacao.list();
+    
+    console.log('🔍 Carregando solicitações:');
+    console.log('  - Total de solicitações:', this.solicitacoes.length);
+    console.log('  - Usuário atual:', this.currentUser);
+    console.log('  - Empresa selecionada:', this.empresaSelecionada);
+    console.log('  - Minhas solicitações:', this.minhasSolicitacoes.length);
+    
+    // Inicializar ajustes para minhas solicitações
     for (const s of this.minhasSolicitacoes) {
       const saved = localStorage.getItem(this.keyFor(s.id));
       if (saved) {
-        try { this.ajustes[s.id] = JSON.parse(saved); } catch { this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' }; }
+        try { 
+          this.ajustes[s.id] = JSON.parse(saved); 
+        } catch { 
+          this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' }; 
+        }
       } else {
         this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' };
       }
     }
+    
+    this.loading = false;
   }
 
   get minhasSolicitacoes(): Solicitacao[] {
-    return this.solicitacoes.filter(s => s.solicitante === this.currentUser);
+    const filtered = this.solicitacoes.filter(s => {
+      // Filtrar por empresa (mais flexível para mostrar todas as solicitações da empresa)
+      const currentUserName = this.auth.getCurrentUser()?.nome || this.currentUser;
+      const isMyCompany = !this.empresaSelecionada || 
+                         !s.codigoEmpresa || 
+                         s.codigoEmpresa === this.empresaSelecionada.codigoEmpresa ||
+                         s.codigoEmpresa === String(this.empresaSelecionada.id);
+      
+      console.log(`📋 Solicitação ${s.id}:`, {
+        solicitante: s.solicitante,
+        currentUserName,
+        codigoEmpresa: s.codigoEmpresa,
+        empresaSelecionada: this.empresaSelecionada?.codigoEmpresa,
+        empresaId: this.empresaSelecionada?.id,
+        isMyCompany,
+        incluir: isMyCompany
+      });
+      
+      return isMyCompany;
+    });
+    
+    return filtered;
   }
 
   canEditar(s: Solicitacao): boolean { return s.status === 'pendente'; }

@@ -1,12 +1,32 @@
+
+
+<div class="empresa-info-bar" *ngIf="empresaSelecionada">
+  <span>Empresa selecionada: <b>{{ empresaSelecionada.nome || empresaSelecionada.razaoSocial || empresaSelecionada.fantasia }}</b></span>
+</div>
+
 <app-page-header 
   [title]="'Cadastro Caring — Alteração Cadastral'" 
   [subtitle]="'Atualize os dados do beneficiário e salve as mudanças'" 
   [icon]="'users'">
 </app-page-header>
 
+
+
 <div class="form-card">
   <form class="benef-form" (ngSubmit)="salvar()">
     <div class="section-title-bar">Dados do Beneficiário</div>
+    
+    <!-- Tipo de Motivo -->
+    <div class="form-row">
+      <div class="form-group half">
+        <label>Tipo de Movimentação</label>
+        <select [(ngModel)]="form.tipoMotivo" name="tipoMotivo" class="form-select" required>
+          <option value="" disabled>Selecione o tipo de movimentação</option>
+          <option *ngFor="let tipo of tiposMotivo" [value]="tipo.value">{{tipo.label}}</option>
+        </select>
+      </div>
+    </div>
+
     <div class="form-row">
       <div class="form-group third">
         <label>Nome Segurado</label>
@@ -48,16 +68,16 @@
 
     <div class="form-row">
       <div class="form-group third">
-        <label>Data Inclusão / Exclusão</label>
-        <ui-input [(ngModel)]="form.dataInclusaoExclusao" name="dataInclusaoExclusao" placeholder="dd/mm/aaaa"></ui-input>
+        <label>Data Inclusão</label>
+        <ui-input [(ngModel)]="form.dataInclusao" name="dataInclusao" placeholder="dd/mm/aaaa"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Data Exclusão</label>
+        <ui-input [(ngModel)]="form.dataExclusao" name="dataExclusao" placeholder="dd/mm/aaaa"></ui-input>
       </div>
       <div class="form-group third">
         <label>Dependência</label>
         <ui-input [(ngModel)]="form.dependencia" name="dependencia"></ui-input>
-      </div>
-      <div class="form-group third">
-        <label>Acomodação</label>
-        <ui-input [(ngModel)]="form.acomodacao" name="acomodacao"></ui-input>
       </div>
     </div>
 
@@ -113,22 +133,106 @@
     <div class="section-title-bar">Contato</div>
     <div class="form-row">
       <div class="form-group third">
-        <label>DDD Celular</label>
-        <ui-input [(ngModel)]="form.dddCelular" name="dddCelular" placeholder="11"></ui-input>
-      </div>
-      <div class="form-group third">
-        <label>Celular</label>
-        <ui-input [(ngModel)]="form.celular" name="celular" placeholder="(11) 99999-9999"></ui-input>
+        <label>Celular (com DDD)</label>
+          <ui-input [(ngModel)]="celularFormatado" name="celular" placeholder="(11) 99999-9999"></ui-input>
       </div>
       <div class="form-group third">
         <label>E-mail</label>
         <ui-input [(ngModel)]="form.email" name="email"></ui-input>
       </div>
+      <div class="form-group third"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Receber comunicação por email?</label>
+        <select class="form-select" [(ngModel)]="form.receberComunicacaoEmail" name="receberComunicacaoEmail">
+          <option value="nao">Não</option>
+          <option value="sim">Sim</option>
+        </select>
+      </div>
+      <div class="form-group third">
+        <label>Matrícula</label>
+        <ui-input [(ngModel)]="form.matricula" name="matricula"></ui-input>
+      </div>
+      <div class="form-group third"></div>
+    </div>
+
+    <div class="section-title-bar">Dados Complementares</div>
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Data Casamento</label>
+        <ui-input type="date" [(ngModel)]="form.dataCasamento" name="dataCasamento"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Indicador Pessoa Trans</label>
+        <select class="form-select" [(ngModel)]="form.indicadorPessoaTrans" name="indicadorPessoaTrans">
+          <option value="nao">Não</option>
+          <option value="sim">Sim</option>
+        </select>
+      </div>
+      <div class="form-group third">
+        <label>Nome Social</label>
+        <ui-input [(ngModel)]="form.nomeSocial" name="nomeSocial"></ui-input>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Identidade de Gênero</label>
+        <select class="form-select" [(ngModel)]="form.identidadeGenero" name="identidadeGenero">
+          <option value="">Selecione</option>
+          <option *ngFor="let g of generos" [value]="g.value">{{g.label}}</option>
+        </select>
+      </div>
+      <div class="form-group third"></div>
+      <div class="form-group third"></div>
+    </div>
+
+    <div class="section-title-bar">Anexos</div>
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Tipo de Documento</label>
+        <select class="form-select" [(ngModel)]="docTipo" name="docTipo">
+          <option value="">Selecione</option>
+          <option *ngFor="let t of docTipos" [value]="t">{{t}}</option>
+        </select>
+      </div>
+      <div class="form-group third">
+        <label>Arquivo</label>
+        <input type="file" (change)="onFileSelected($event)">
+      </div>
+      <div class="form-group third"></div>
+    </div>
+
+    <div class="attachments">
+      <table class="attachments-table">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Arquivo</th>
+            <th>Tamanho</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of anexos; let i = index">
+            <td>{{a.tipo}}</td>
+            <td>{{a.nome}}</td>
+            <td>{{(a.size/1024) | number:'1.0-0'}} KB</td>
+            <td class="file-actions">
+              <button type="button" class="btn-secondary" (click)="baixarAnexo(i)">Baixar</button>
+              <button type="button" class="btn-danger" (click)="removerAnexo(i)">Remover</button>
+            </td>
+          </tr>
+          <tr *ngIf="anexos.length===0"><td colspan="4" class="empty">Nenhum anexo adicionado</td></tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="form-actions">
       <button type="submit" class="btn-primary">Salvar</button>
-      <button type="button" class="btn-secondary">Cancelar</button>
+      <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
     </div>
   </form>
 </div>

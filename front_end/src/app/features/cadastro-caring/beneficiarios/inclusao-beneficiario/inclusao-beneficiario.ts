@@ -7,7 +7,9 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 import { BeneficiariosService, InclusaoBeneficiarioRequest, Beneficiario } from '../beneficiarios.service';
 import { AprovacaoService } from '../../gestao-cadastro/aprovacao.service';
 import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { Empresa } from '../../empresa/empresa.service';
+import { ViaCepService, ViaCepResponse } from '../../../../shared/services/via-cep.service';
 
 @Component({
   selector: 'app-inclusao-beneficiario',
@@ -35,12 +37,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     complemento: '',
     bairro: '',
     cep: '',
-    pisPasep: '',
     matricula: '',
-    lotacaoFuncionario: '',
-    declaracaoNascidoVivo: '',
-    cns: '',
-    dddCelular: '',
     receberComunicacaoEmail: 'nao',
     celular: '',
     email: '',
@@ -52,7 +49,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     dataCasamento: '',
     indicadorPessoaTrans: 'nao',
     nomeSocial: '',
-    identidadeGenero: ''
+    identidadeGenero: '',
+    tipoMotivo: 'I' // I=Inclusão, E=Exclusão, A=Alteração, P=Troca de plano
   };
 
   // Empresa e carregamento
@@ -71,6 +69,11 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   cpfTitular = '';
   titularEncontrado: any = null;
   buscandoTitular = false;
+
+  // Controle do ViaCEP
+  cepInvalido = false;
+  enderecoCarregado = false;
+  isLoadingCep = false;
 
   anexos: { tipo: string; nome: string; size: number; dataUrl: string }[] = [];
   docTipo = '';
@@ -116,45 +119,13 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
   planos = [
-    // Empresariais Básicos
-    { value: 'empresarial_basico', label: 'Empresarial Básico' },
-    { value: 'empresarial_pratico', label: 'Empresarial Prático' },
-    { value: 'empresarial_versatil', label: 'Empresarial Versátil' },
-    { value: 'empresarial_dinamico', label: 'Empresarial Dinâmico' },
-    { value: 'empresarial_lider', label: 'Empresarial Líder' },
-    { value: 'empresarial_senior', label: 'Empresarial Sênior' },
+    // tipo de plano
+    { value: 'unimed_adm_dinamico', label: 'UNIMED ADM. DINAMICO' },
     
-    // Básico II, Dinâmico II, etc.
-    { value: 'basico_ii', label: 'Básico II' },
-    { value: 'dinamico_ii', label: 'Dinâmico II' },
-    { value: 'lider_ii', label: 'Líder II' },
-    { value: 'pratico_ii', label: 'Prático II' },
-    { value: 'senior_ii', label: 'Sênior II' },
-    { value: 'versatil_ii', label: 'Versátil II' },
     
-    // Corporativos
-    { value: 'corp_compacto_enf', label: 'Corporativo Compacto ENF' },
-    { value: 'corp_efetivo_apto', label: 'Corporativo Efetivo APTO' },
-    { value: 'corp_completo_apto', label: 'Corporativo Completo APTO' },
-    { value: 'corp_superior_apto', label: 'Corporativo Superior APTO' },
-    { value: 'corp_senior_apto', label: 'Corporativo Sênior APTO' },
-    { value: 'corp_compacto_enf_cp', label: 'Corporativo Compacto ENF CP' },
-    { value: 'corp_efetivo_apto_cp', label: 'Corporativo Efetivo APTO CP' },
-    { value: 'corp_completo_apto_cp_ii', label: 'Corporativo Completo APTO CP II' },
-    { value: 'corp_superior_apto_cp', label: 'Corporativo Superior APTO CP' },
-    { value: 'corp_senior_apto_cp', label: 'Corporativo Sênior APTO CP' },
     
-    // PME
-    { value: 'pme_compacto_enf', label: 'PME Compacto ENF' },
-    { value: 'pme_efetivo_apto', label: 'PME Efetivo APTO' },
-    { value: 'pme_completo_apto', label: 'PME Completo APTO' },
-    { value: 'pme_superior_apto', label: 'PME Superior APTO' },
-    { value: 'pme_senior_apto', label: 'PME Sênior APTO' },
-    { value: 'pme_compacto_enf_cp', label: 'PME Compacto ENF CP' },
-    { value: 'pme_efetivo_apto_cp', label: 'PME Efetivo APTO CP' },
-    { value: 'pme_completo_apto_cp', label: 'PME Completo APTO CP' },
-    { value: 'pme_superior_apto_cp', label: 'PME Superior APTO CP' },
-    { value: 'pme_senior_apto_cp', label: 'PME Sênior APTO CP' }
+    
+    
   ];
 
   generos = [
@@ -168,7 +139,9 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     private service: BeneficiariosService, 
     private aprovacao: AprovacaoService,
     private empresaContextService: EmpresaContextService,
-    private router: Router
+    private authService: AuthService,
+    private router: Router,
+    private viaCepService: ViaCepService
   ) {}
 
   cepError = '';
@@ -191,8 +164,18 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       this.form.numeroEmpresa = this.empresaSelecionada.numeroEmpresa;
     }
     
-    this.titulares = this.service.list().filter(b => (b.tipo_dependencia || '').toLowerCase() === 'titular');
-    this.titularesFiltrados = [];
+    // Carregar titulares via Observable
+    this.service.list().subscribe({
+      next: (beneficiarios) => {
+        this.titulares = beneficiarios.filter(b => (b.tipo_dependencia || '').toLowerCase() === 'titular');
+        this.titularesFiltrados = [];
+      },
+      error: (error) => {
+        console.error('Erro ao carregar titulares:', error);
+        this.titulares = [];
+        this.titularesFiltrados = [];
+      }
+    });
   }
 
   onRelacaoChanged() {
@@ -262,18 +245,36 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     // Converter formulário para formato da API
     const request = await this.converterFormParaAPI();
     
-    // Chamada para API real
+    // Garantir que o status 'Pendente' seja definido explicitamente
+    request.benStatus = 'Pendente';
+    
+    console.log('📤 Request enviado para API:', request);
+    
+    // Chamada para API - salva beneficiário com status 'Pendente'
     this.service.incluirBeneficiario(request).subscribe({
       next: (beneficiario: Beneficiario) => {
-        // Adicionar à aprovação
-        this.aprovacao.add({
-          tipo: 'inclusao',
+        console.log('✅ Beneficiário salvo na API:', beneficiario);
+        console.log('📊 Status retornado pela API:', beneficiario.benStatus);
+        
+        // Verificar se o status foi persistido corretamente
+        if (!beneficiario.benStatus || beneficiario.benStatus !== 'Pendente') {
+          console.warn('⚠️ Status não foi definido como "Pendente" pela API. Status atual:', beneficiario.benStatus);
+        }
+        
+        // Gerar solicitação para aprovação
+        const currentUser = this.authService.getCurrentUser();
+        const solicitacao = {
+          tipo: 'inclusao' as const,
           entidade: 'beneficiario',
-          identificador: this.form.cpf || '',
-          descricao: `Inclusão de ${this.form.nomeSegurado || ''}`,
-          solicitante: 'Usuário Atual',
-          codigoEmpresa: this.empresaSelecionada?.codigoEmpresa || ''
-        });
+          identificador: beneficiario.cpf || this.form.cpf || '',
+          descricao: `${beneficiario.nome || this.form.nomeSegurado || ''}`,
+          solicitante: currentUser?.nome || 'Usuário',
+          codigoEmpresa: this.empresaSelecionada?.codigoEmpresa || String(this.empresaSelecionada?.id) || ''
+        };
+        
+        console.log('📝 Criando solicitação de aprovação:', solicitacao);
+        const solicitacaoCriada = this.aprovacao.add(solicitacao);
+        console.log('✅ Solicitação criada com ID:', solicitacaoCriada.id);
         
         this.showToast('Sucesso', 'Beneficiário incluído com sucesso', 'success');
         this.limparForm();
@@ -311,7 +312,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benBairro: this.form.bairro || undefined,
       benCep: this.form.cep || undefined,
       benMatricula: this.form.matricula || undefined,
-      benDddCel: this.form.dddCelular || undefined,
+      benDddCel: this.form.celular || undefined,
       benEmail: this.form.email || undefined,
       benDataCasamento: this.form.dataCasamento ? this.formatarDataParaAPI(this.form.dataCasamento) : undefined,
       benIndicPesTrans: this.form.indicadorPessoaTrans || undefined,
@@ -322,7 +323,15 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benDtaInclusao: new Date().toISOString().split('T')[0], // YYYY-MM-DD
       
       // ID do titular (se for dependente)
-      benTitularId: this.titularEncontrado?.id || undefined
+      benTitularId: this.titularEncontrado?.id || undefined,
+      
+      // Campos adicionais que a API espera
+      benTipoMotivo: 'I', // I=Inclusão (sempre I para inclusão)
+      benCodUnimedSeg: undefined, // Código Unimed do segurado (gerado pela API)
+      benDtaExclusao: undefined, // Data de exclusão (null para inclusão)
+      benCodCartao: undefined, // Código do cartão (gerado pela API)
+      benMotivoExclusao: undefined, // Não usado em inclusão
+      benStatus: 'Pendente' // Status inicial - aguardando aprovação
     };
 
     return request;
@@ -382,77 +391,11 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     // Converter valores do formulário para códigos da API
     switch (planoProduto.toLowerCase()) {
       // Empresariais Básicos
-      case 'empresarial_basico':
-        return 'SSB';
-      case 'empresarial_pratico':
-        return 'SSP';
-      case 'empresarial_versatil':
-        return 'SSV';
-      case 'empresarial_dinamico':
-        return 'SSD';
-      case 'empresarial_lider':
-        return 'SSL';
-      case 'empresarial_senior':
-        return 'SSS';
+      case 'unimed_adm_dinamico':
+        return 'ADMDTXCP';
       
-      // Afinidade de Adesao
-      case 'basico_ii':
-        return 'ABII';
-      case 'dinamico_ii':
-        return 'ADII';
-      case 'lider_ii':
-        return 'ALII';
-      case 'pratico_ii':
-        return 'APII';
-      case 'senior_ii':
-        return 'ASII';
-      case 'versatil_ii':
-        return 'AVII';
       
-      // Corporativos
-      case 'corp_compacto_enf':
-        return 'CORPCPENF';
-      case 'corp_efetivo_apto':
-        return 'CORPEFAP';
-      case 'corp_completo_apto':
-        return 'CORPCPTAP';
-      case 'corp_superior_apto':
-        return 'CORPSUPAP';
-      case 'corp_senior_apto':
-        return 'CORPSSSAP';
-      case 'corp_compacto_enf_cp':
-        return 'CORPCPENFC';
-      case 'corp_efetivo_apto_cp':
-        return 'CORPEFAPCP';
-      case 'corp_completo_apto_cp_ii':
-        return 'COAPCPII';
-      case 'corp_superior_apto_cp':
-        return 'CORPSUPAPC';
-      case 'corp_senior_apto_cp':
-        return 'CORPSSSAPC';
-      
-      // PME
-      case 'pme_compacto_enf':
-        return 'PMECPENF';
-      case 'pme_efetivo_apto':
-        return 'PMEEFAP';
-      case 'pme_completo_apto':
-        return 'PMECPAP';
-      case 'pme_superior_apto':
-        return 'PMESUPAP';
-      case 'pme_senior_apto':
-        return 'PMESSSAP';
-      case 'pme_compacto_enf_cp':
-        return 'PMECPENFCP';
-      case 'pme_efetivo_apto_cp':
-        return 'PMEEFAPCP';
-      case 'pme_completo_apto_cp':
-        return 'PMECPAPCP';
-      case 'pme_superior_apto_cp':
-        return 'PMESUPAPCP';
-      case 'pme_senior_apto_cp':
-        return 'PMESSSAPCP';
-      
+  
       default:
         return planoProduto.toUpperCase(); // Fallback
     }
@@ -623,12 +566,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       complemento: '',
       bairro: '',
       cep: '',
-      pisPasep: '',
       matricula: '',
-      lotacaoFuncionario: '',
-      declaracaoNascidoVivo: '',
-      cns: '',
-      dddCelular: '',
       receberComunicacaoEmail: 'nao',
       celular: '',
       email: '',
@@ -640,7 +578,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       dataCasamento: '',
       indicadorPessoaTrans: 'nao',
       nomeSocial: '',
-      identidadeGenero: ''
+      identidadeGenero: '',
+      tipoMotivo: 'I' // I=Inclusão, E=Exclusão, A=Alteração, P=Troca de plano
     };
     this.anexos = [];
   }
@@ -676,6 +615,67 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     } finally {
       this.buscandoTitular = false;
     }
+  }
+
+  // Buscar endereço por CEP
+  buscarCep(): void {
+    const cep = this.form.cep;
+    
+    if (!cep) {
+      this.limparEndereco();
+      return;
+    }
+
+    // Valida CEP
+    if (!this.viaCepService.validarCep(cep)) {
+      this.cepInvalido = true;
+      this.enderecoCarregado = false;
+      return;
+    }
+
+    this.cepInvalido = false;
+    this.isLoadingCep = true;
+    this.enderecoCarregado = false;
+
+    this.viaCepService.buscarCep(cep).subscribe({
+      next: (response: ViaCepResponse) => {
+        this.isLoadingCep = false;
+        
+        if (response.erro) {
+          this.cepInvalido = true;
+          this.enderecoCarregado = false;
+          this.limparEndereco();
+          this.showToast('Erro', 'CEP não encontrado', 'error');
+          return;
+        }
+
+        // Preenche os campos automaticamente
+        this.form.endereco = response.logradouro;
+        this.form.bairro = response.bairro;
+        this.form.cidade = response.localidade;
+        this.form.uf = response.uf;
+        this.form.cep = this.viaCepService.formatarCep(response.cep);
+        
+        this.enderecoCarregado = true;
+        this.cepInvalido = false;
+        this.showToast('Sucesso', 'Endereço preenchido automaticamente', 'success');
+      },
+      error: (error) => {
+        this.isLoadingCep = false;
+        this.cepInvalido = true;
+        this.enderecoCarregado = false;
+        this.showToast('Erro', 'Erro ao buscar CEP', 'error');
+        console.error('Erro ao buscar CEP:', error);
+      }
+    });
+  }
+
+  limparEndereco(): void {
+    this.form.endereco = '';
+    this.form.bairro = '';
+    this.form.cidade = '';
+    this.form.uf = '';
+    this.enderecoCarregado = false;
   }
 
   onFileSelected(event: Event) {

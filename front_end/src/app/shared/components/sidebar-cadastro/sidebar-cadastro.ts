@@ -37,8 +37,7 @@ export class SidebarCadastro implements OnInit, OnDestroy {
 
   beneficiariosSubItems: SubMenuItem[] = [
     { title: 'Inclusão', url: '/cadastro-caring/beneficiarios/inclusao' },
-    { title: 'Alteração Cadastral', url: '/cadastro-caring/beneficiarios' },
-    { title: 'Pesquisar', url: '/cadastro-caring/beneficiarios/listagem-cadastral' },
+    { title: 'Alteraração', url: '/cadastro-caring/beneficiarios' },
     { title: 'Solicitação de Cadastro', url: '/cadastro-caring/beneficiarios/solicitacao-cadastro' }
   ];
 
@@ -50,7 +49,23 @@ export class SidebarCadastro implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.profile = { nome: 'Usuário Teste', perfil: 'admin' };
+    // Carregar dados do usuário logado
+    const currentUser = this.authService.getCurrentUser();
+    this.profile = {
+      nome: currentUser?.nome || 'Usuário',
+      perfil: currentUser?.perfil || 'usuario'
+    };
+    
+    // Escutar mudanças no usuário logado
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.profile = {
+          nome: user.nome,
+          perfil: user.perfil
+        };
+      }
+    });
+    
     this.logoSubscription = this.logoService.logoUrl$.subscribe(url => (this.logoUrl = url));
     this.currentRoute = this.router.url;
     this.routeSubscription = this.router.events

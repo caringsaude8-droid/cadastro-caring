@@ -1,5 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { EmpresaContextService } from '../../../shared/services/empresa-context.service';
 
 export interface Beneficiario {
   id: number;
@@ -12,7 +15,28 @@ export interface Beneficiario {
   acomodacao: string;
   matricula_beneficiario: string;
   matricula_titular: string;
-  status?: string;
+  celular: string;
+  email: string;
+  // Campos adicionais para auto-preenchimento
+  nome_mae?: string;
+  sexo?: string;
+  estado_civil?: string;
+  admissao?: string;
+  plano_prod?: string;
+  endereco?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cep?: string;
+  telefone?: string;
+  rg?: string;
+  rg_orgao_expedidor?: string;
+  rg_uf_expedicao?: string;
+  nome_social?: string;
+  identidade_genero?: string;
+  indicador_pessoa_trans?: string;
+  data_casamento?: string;
+  benStatus: string; // Status do banco via API
 }
 
 // Interface para requisição de inclusão (JSON que a API esperaria)
@@ -47,85 +71,169 @@ export interface InclusaoBeneficiarioRequest {
   benTitularId?: number;
   benCodCartao?: string;
   benMotivoExclusao?: string;
+  benStatus?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class BeneficiariosService {
-  private beneficiarios: Beneficiario[] = [
-    { nome: 'Bruno Cabral de Araujo Pinto', cpf: '08786420640', nascimento: '19/11/1985', data_inclusao: new Date('2025-04-15'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '50005257', matricula_titular: '3198477', id: Date.now() + 1 },
-    { nome: 'Bruno Canevassi Leoni', cpf: '31212029879', nascimento: '15/03/1983', data_inclusao: new Date('2025-05-13'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '50004895', matricula_titular: '3198477', id: Date.now() + 2 },
-    { nome: 'Bruno Cardoso Ferreira', cpf: '70451184220', nascimento: '02/04/1983', data_inclusao: new Date('2025-04-19'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '3184274', matricula_titular: '3207695', id: Date.now() + 3 },
-    { nome: 'Bruno Closs Bruel', cpf: '70741440072', nascimento: '19/03/1985', data_inclusao: new Date('2025-05-13'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '3207695', matricula_titular: '3198477', id: Date.now() + 4 },
-    { nome: 'Bruno Fernando Dos Santos Medeiros', cpf: '08646904440', nascimento: '18/06/1999', data_inclusao: new Date('2025-04-25'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Filho(a)', acomodacao: 'APARTAMENTO', matricula_beneficiario: '123', matricula_titular: '50005257', id: Date.now() + 5 },
-    { nome: 'Bruno Lopes Quinzeiro', cpf: '03527737752', nascimento: '11/06/1990', data_inclusao: new Date('2025-05-13'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '40520412', matricula_titular: '3198477', id: Date.now() + 6 },
-    { nome: 'Bruno Nascimento de Oliveira', cpf: '05387731293', nascimento: '13/01/1990', data_inclusao: new Date('2025-05-13'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '50000630', matricula_titular: '3207695', id: Date.now() + 7 },
-    { nome: 'Bruno Nassar Palmeira Oliveira', cpf: '79469744268', nascimento: '24/08/1984', data_inclusao: new Date('2025-05-18'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '27173140', matricula_titular: '50005257', id: Date.now() + 8 },
-    { nome: 'Bruno Nassar Palmeira Oliveira Filho', cpf: '10343223329', nascimento: '08/08/2022', data_inclusao: new Date('2025-05-18'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Filho(a)', acomodacao: 'APARTAMENTO', matricula_beneficiario: '50005714', matricula_titular: '27173140', id: Date.now() + 9 },
-    { nome: 'Bruno Nicolas de Oliveira Correa', cpf: '52657426208', nascimento: '14/12/1992', data_inclusao: new Date('2025-05-13'), data_exclusao: new Date('2025-06-06'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '3175611', matricula_titular: '3207695', id: Date.now() + 10 },
-    { nome: 'Ana Beatriz Silva', cpf: '12345678901', nascimento: '05/02/1990', data_inclusao: new Date(), data_exclusao: null, tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '70000101', matricula_titular: '70000101', id: Date.now() + 11 },
-    { nome: 'Carlos Eduardo Mendes', cpf: '98765432100', nascimento: '22/09/1986', data_inclusao: new Date('2025-11-20'), data_exclusao: null, tipo_dependencia: 'Dependente', acomodacao: 'APARTAMENTO', matricula_beneficiario: '70000102', matricula_titular: '70000101', id: Date.now() + 12 },
-    { nome: 'Mariana Souza Ferreira', cpf: '45612378900', nascimento: '11/07/1995', data_inclusao: new Date('2025-10-02'), data_exclusao: null, tipo_dependencia: 'Filho(a)', acomodacao: 'APARTAMENTO', matricula_beneficiario: '70000103', matricula_titular: '70000101', id: Date.now() + 13 },
-    { nome: 'Pedro Henrique Lima', cpf: '78932145600', nascimento: '03/03/1988', data_inclusao: new Date('2025-09-15'), data_exclusao: new Date('2025-11-01'), tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '70000104', matricula_titular: '70000104', id: Date.now() + 14 },
-    { nome: 'João Pedro Almeida', cpf: '32165498700', nascimento: '28/12/1993', data_inclusao: new Date('2025-11-10'), data_exclusao: null, tipo_dependencia: 'Titular', acomodacao: 'APARTAMENTO', matricula_beneficiario: '70000105', matricula_titular: '70000105', id: Date.now() + 15 },
-    { nome: 'Luiza Ramos Couto', cpf: '65498732100', nascimento: '19/05/1998', data_inclusao: new Date('2025-11-22'), data_exclusao: null, tipo_dependencia: 'Dependente', acomodacao: 'APARTAMENTO', matricula_beneficiario: '70000106', matricula_titular: '70000105', id: Date.now() + 16 }
-  ];
+  private readonly apiUrl = 'http://localhost:8081/api/cadastro/v1';
+  private http = inject(HttpClient);
+  private empresaContextService = inject(EmpresaContextService);
 
-  list(): Beneficiario[] { return this.beneficiarios; }
+  private getEmpresaId(): number | null {
+    const empresa = this.empresaContextService.getEmpresaSelecionada();
+    return empresa?.id || null;
+  }
+
+  list(): Observable<Beneficiario[]> {
+    const empresa = this.empresaContextService.getEmpresaSelecionada();
+    if (!empresa?.id) {
+      console.error('❌ Empresa não selecionada ou sem ID para buscar beneficiários');
+      return of([]);
+    }
+
+    const params = new HttpParams().set('empresaId', empresa.id.toString());
+    const url = `${this.apiUrl}/beneficiarios`;
+    
+    return this.http.get<any[]>(url, { params }).pipe(
+      map(beneficiariosApi => beneficiariosApi.map(ben => this.mapearBeneficiarioApi(ben)))
+    );
+  }
+
+  private mapearBeneficiarioApi(apiData: any): Beneficiario {
+    // A API já retorna os dados mapeados, usar campos diretos
+    return {
+      id: apiData.id,
+      nome: apiData.nome || apiData.benNomeSegurado || '',
+      cpf: apiData.cpf || apiData.benCpf || '',
+      nascimento: apiData.nascimento || (apiData.benDtaNasc ? new Date(apiData.benDtaNasc).toISOString().split('T')[0] : ''),
+      data_inclusao: apiData.data_inclusao ? new Date(apiData.data_inclusao) : (apiData.benDtaInclusao ? new Date(apiData.benDtaInclusao) : new Date()),
+      data_exclusao: apiData.data_exclusao ? new Date(apiData.data_exclusao) : (apiData.benDtaExclusao ? new Date(apiData.benDtaExclusao) : null),
+      tipo_dependencia: apiData.tipo_dependencia || (apiData.benRelacaoDep === '00' ? 'titular' : 'dependente'),
+      acomodacao: apiData.acomodacao || this.mapearAcomodacao(apiData.benPlanoProd),
+      matricula_beneficiario: apiData.matricula_beneficiario || apiData.benMatricula || '',
+      matricula_titular: apiData.matricula_titular || '',
+      celular: apiData.celular || apiData.benDddCel || '',
+      email: apiData.email || apiData.benEmail || '',
+      // Campos adicionais para auto-preenchimento
+      nome_mae: apiData.nome_mae || apiData.benNomeDaMae || '',
+      sexo: apiData.sexo || apiData.benSexo || '',
+      estado_civil: apiData.estado_civil || apiData.benEstCivil || '',
+      admissao: apiData.admissao || (apiData.benAdmissao ? new Date(apiData.benAdmissao).toISOString().split('T')[0] : ''),
+      plano_prod: apiData.plano_prod || apiData.benPlanoProd || '',
+      endereco: apiData.endereco || apiData.benEndereco || '',
+      numero: apiData.numero || apiData.benNumero || '',
+      complemento: apiData.complemento || apiData.benComplemento || '',
+      bairro: apiData.bairro || apiData.benBairro || '',
+      cep: apiData.cep || apiData.benCep || '',
+      telefone: apiData.telefone || apiData.benTelefone || '',
+      rg: apiData.rg || apiData.benRg || '',
+      rg_orgao_expedidor: apiData.rg_orgao_expedidor || apiData.benRgOrgaoExpedidor || '',
+      rg_uf_expedicao: apiData.rg_uf_expedicao || apiData.benRgUfExpedicao || '',
+      nome_social: apiData.nome_social || apiData.benNomeSocial || '',
+      identidade_genero: apiData.identidade_genero || apiData.benIdentGenero || '',
+      indicador_pessoa_trans: apiData.indicador_pessoa_trans || apiData.benIndicPesTrans || '',
+      data_casamento: apiData.data_casamento || (apiData.benDataCasamento ? new Date(apiData.benDataCasamento).toISOString().split('T')[0] : ''),
+      benStatus: apiData.benStatus || 'Ativo' // Se não tem status na API, assumir Ativo
+    };
+  }
+
+  private mapearAcomodacao(planoProd: string): string {
+    const mapeamento: { [key: string]: string } = {
+      'ADMDTXCP': 'Apartamento',
+      'QUPLTXCP': 'Quarto',
+      'ENFLTXCP': 'Enfermaria'
+    };
+    return mapeamento[planoProd] || 'Standard';
+  }
 
   incluirBeneficiario(request: InclusaoBeneficiarioRequest): Observable<Beneficiario> {
-    const isTitular = request.benRelacaoDep === '00' || (request.benRelacaoDep || '').toLowerCase() === 'titular';
-    const novo: Beneficiario = {
-      id: Date.now(),
-      nome: request.benNomeSegurado,
-      cpf: request.benCpf,
-      nascimento: (request.benDtaNasc || '').split('T')[0] || '',
-      data_inclusao: request.benDtaInclusao ? new Date(request.benDtaInclusao) : new Date(),
-      data_exclusao: null,
-      tipo_dependencia: isTitular ? 'Titular' : 'Dependente',
-      acomodacao: 'APARTAMENTO',
-      matricula_beneficiario: (request.benMatricula || String(Math.floor(Math.random() * 90000000) + 10000000)),
-      matricula_titular: isTitular ? (request.benMatricula || '') : (this.beneficiarios.find(b => b.id === request.benTitularId)?.matricula_beneficiario || ''),
-      status: 'Pendente'
-    };
-    this.beneficiarios = [novo, ...this.beneficiarios];
-    return of(novo);
+    return this.http.post<Beneficiario>(`${this.apiUrl}/beneficiarios`, request);
   }
 
-  add(novo: Omit<Beneficiario, 'id' | 'data_inclusao' | 'data_exclusao'> & { data_inclusao?: Date; data_exclusao?: Date | null }): Beneficiario {
-    const entity: Beneficiario = {
-      ...novo,
-      id: Date.now(),
-      data_inclusao: novo.data_inclusao ?? new Date(),
-      data_exclusao: novo.data_exclusao ?? null,
-      status: novo.status ?? 'Pendente'
-    } as Beneficiario;
-    this.beneficiarios = [entity, ...this.beneficiarios];
-    return entity;
+  alterarBeneficiario(id: number, dados: Partial<Beneficiario>): Observable<Beneficiario> {
+    return this.http.put<Beneficiario>(`${this.apiUrl}/beneficiarios/${id}/alteracao`, dados);
   }
 
-  marcarExclusaoPorMatricula(matricula_beneficiario: string, data?: Date, status?: string) {
-    const when = data ?? new Date();
-    this.beneficiarios = this.beneficiarios.map(b =>
-      b.matricula_beneficiario === matricula_beneficiario ? { ...b, data_exclusao: when, status } : b
-    );
+  marcarComoExcluido(id: number, motivoExclusao: string): Observable<void> {
+    // IMPORTANTE: Apenas altera status, nunca exclui dados do banco
+    const dataExclusao = new Date().toISOString();
+    return this.http.put<void>(`${this.apiUrl}/beneficiarios/${id}`, {
+      benStatus: 'Excluído',
+      benMotivoExclusao: motivoExclusao,
+      benDtaExclusao: dataExclusao,
+      benTipoMotivo: 'E'
+    });
+  }
+
+  // Método de compatibilidade - usar marcarComoExcluido() preferenciamente
+  excluirBeneficiario(id: number, motivoExclusao: string): Observable<void> {
+    return this.marcarComoExcluido(id, motivoExclusao);
   }
 
   listarDependentes(titularId: number): Observable<Beneficiario[]> {
-    const titular = this.beneficiarios.find(b => b.id === titularId);
-    if (!titular) return of([]);
-    const dependentes = this.beneficiarios.filter(b => b.matricula_titular === titular.matricula_beneficiario && (b.tipo_dependencia || '').toLowerCase() !== 'titular');
-    return of(dependentes);
+    const empresa = this.empresaContextService.getEmpresaSelecionada();
+    if (!empresa?.id) {
+      console.error('❌ Empresa não selecionada para listar dependentes');
+      return of([]);
+    }
+
+    const params = new HttpParams().set('empresaId', empresa.id.toString());
+    return this.http.get<Beneficiario[]>(`${this.apiUrl}/beneficiarios/${titularId}/dependentes`, { params });
+  }
+
+  // Método para buscar dados brutos da API sem mapeamento (para auto-preenchimento)
+  listRaw(): Observable<any[]> {
+    const empresa = this.empresaContextService.getEmpresaSelecionada();
+    if (!empresa?.id) {
+      console.error('❌ Empresa não selecionada para listar beneficiários');
+      return of([]);
+    }
+
+    const params = new HttpParams().set('empresaId', empresa.id.toString());
+    const url = `${this.apiUrl}/beneficiarios`;
+    
+    // Retorna dados brutos da API sem mapeamento
+    return this.http.get<any[]>(url, { params });
   }
 
   buscarTitularPorCpf(cpf: string): Observable<Beneficiario | null> {
-    const clean = (cpf || '').replace(/\D/g, '');
-    const titular = this.beneficiarios.find(b => b.cpf.replace(/\D/g, '') === clean && (b.tipo_dependencia || '').toLowerCase() === 'titular');
-    return of(titular || null);
+    const empresa = this.empresaContextService.getEmpresaSelecionada();
+    if (!empresa?.id) {
+      console.error('❌ Empresa não selecionada para buscar titular');
+      return of(null);
+    }
+
+    const params = new HttpParams()
+      .set('empresaId', empresa.id.toString())
+      .set('cpf', cpf)
+      .set('tipo', 'titular');
+    return this.http.get<Beneficiario | null>(`${this.apiUrl}/beneficiarios/buscar`, { params });
   }
 
-  setStatusByCpf(cpf: string, status: string) {
-    this.beneficiarios = this.beneficiarios.map(b =>
-      b.cpf === cpf ? { ...b, status } : b
+  // Métodos auxiliares para busca e filtros
+  buscarPorFiltros(filtros: { nome?: string; cpf?: string; matricula?: string }): Observable<Beneficiario[]> {
+    // Usar endpoint de listagem normal e filtrar no frontend (mais confiável)
+    return this.list().pipe(
+      map(beneficiarios => {
+        return beneficiarios.filter(b => {
+          const matchNome = !filtros.nome || b.nome.toLowerCase().includes(filtros.nome.toLowerCase());
+          const matchCpf = !filtros.cpf || b.cpf === filtros.cpf;
+          const matchMatricula = !filtros.matricula || b.matricula_beneficiario === filtros.matricula;
+          return matchNome && matchCpf && matchMatricula;
+        });
+      })
     );
   }
+
+  // Métodos de compatibilidade para componentes existentes
+  // TODO: Migrar esses componentes para usar a API diretamente
+  
+  /** @deprecated Use list() com subscribe ao invés disso */
+  setStatusByCpf(cpf: string, status: string): void {
+    console.warn('⚠️ setStatusByCpf está deprecated. Use a API diretamente.');
+    // Método vazio para compatibilidade - a lógica deve ser migrada para API
+  }
+
+
 }

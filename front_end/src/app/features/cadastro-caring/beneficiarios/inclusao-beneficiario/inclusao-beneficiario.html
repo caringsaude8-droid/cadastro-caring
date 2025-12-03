@@ -142,51 +142,62 @@
       </div>
 
       <div class="form-row">
-        <div class="form-group third">
-          <label>Declaração Nascido Vivo</label>
-          <ui-input [(ngModel)]="form.declaracaoNascidoVivo" name="declaracaoNascidoVivo"></ui-input>
-        </div>
-        <div class="form-group third">
-          <label>Cartão Nacional de Saúde</label>
-          <ui-input [(ngModel)]="form.cns" name="cns"></ui-input>
-        </div>
+        <div class="form-group third"></div>
+        <div class="form-group third"></div>
         <div class="form-group third"></div>
       </div>
 
       <div class="section-title-bar">Endereço</div>
 
+      <!-- Campo CEP com busca automática -->
       <div class="form-row">
         <div class="form-group third">
-          <label>Endereço *</label>
-          <ui-input [(ngModel)]="form.endereco" name="endereco" [required]="true"></ui-input>
+          <label>CEP *</label>
+          <div class="cep-input-container">
+            <ui-input 
+              [(ngModel)]="form.cep" 
+              name="cep" 
+              placeholder="00000-000" 
+              [required]="true"
+              (ngModelChange)="buscarCep()"
+              [class.error]="cepInvalido">
+            </ui-input>
+            <div class="cep-status">
+              <span *ngIf="isLoadingCep" class="loading-cep">🔄 Buscando...</span>
+              <span *ngIf="enderecoCarregado" class="success-cep">✅ Endereço encontrado</span>
+              <span *ngIf="cepInvalido" class="error-cep">❌ CEP inválido</span>
+            </div>
+          </div>
         </div>
-        <div class="form-group third"></div>
-        <div class="form-group third"></div>
+        <div class="form-group third">
+          <label>Cidade *</label>
+          <ui-input [(ngModel)]="form.cidade" name="cidade" [required]="true" [readonly]="enderecoCarregado"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>UF *</label>
+          <ui-input [(ngModel)]="form.uf" name="uf" [required]="true" [readonly]="enderecoCarregado"></ui-input>
+        </div>
       </div>
 
       <div class="form-row">
+        <div class="form-group third">
+          <label>Endereço *</label>
+          <ui-input [(ngModel)]="form.endereco" name="endereco" [required]="true" [readonly]="enderecoCarregado"></ui-input>
+        </div>
+        <div class="form-group third">
+          <label>Bairro *</label>
+          <ui-input [(ngModel)]="form.bairro" name="bairro" [required]="true" [readonly]="enderecoCarregado"></ui-input>
+        </div>
         <div class="form-group third">
           <label>Número *</label>
           <ui-input [(ngModel)]="form.numero" name="numero" [required]="true"></ui-input>
         </div>
-        <div class="form-group third">
-          <label>Complemento *</label>
-          <ui-input [(ngModel)]="form.complemento" name="complemento" [required]="true"></ui-input>
-        </div>
-        <div class="form-group third">
-          <label>Bairro *</label>
-          <ui-input [(ngModel)]="form.bairro" name="bairro" [required]="true"></ui-input>
-        </div>
       </div>
 
       <div class="form-row">
         <div class="form-group third">
-          <label>CEP *</label>
-          <ui-input [(ngModel)]="form.cep" name="cep" placeholder="00000-000" [required]="true"></ui-input>
-        </div>
-        <div class="form-group third">
-          <label>PIS/PASEP</label>
-          <ui-input [(ngModel)]="form.pisPasep" name="pisPasep"></ui-input>
+          <label>Complemento</label>
+          <ui-input [(ngModel)]="form.complemento" name="complemento"></ui-input>
         </div>
         <div class="form-group third"></div>
       </div>
@@ -194,10 +205,6 @@
       
 
       <div class="form-row">
-        <div class="form-group third">
-          <label>Lotação do Func.</label>
-          <ui-input [(ngModel)]="form.lotacaoFuncionario" name="lotacaoFuncionario"></ui-input>
-        </div>
         <div class="form-group third"></div>
         <div class="form-group third"></div>
       </div>
@@ -205,8 +212,8 @@
       <div class="section-title-bar">Contato</div>
       <div class="form-row">
         <div class="form-group third">
-          <label>DDD Celular *</label>
-          <ui-input [(ngModel)]="form.dddCelular" name="dddCelular" [required]="true" placeholder="11"></ui-input>
+          <label>Celular (com DDD) *</label>
+          <ui-input [(ngModel)]="form.celular" name="celular" [required]="true" placeholder="(11) 99999-9999"></ui-input>
         </div>
         <div class="form-group third">
           <label>Receber comunicação por email? *</label>
@@ -215,10 +222,7 @@
             <option value="sim">Sim</option>
           </select>
         </div>
-        <div class="form-group third">
-          <label>Celular *</label>
-          <ui-input [(ngModel)]="form.celular" name="celular" [required]="true" placeholder="(11) 99999-9999"></ui-input>
-        </div>
+        <div class="form-group third"></div>
       </div>
 
       <div class="form-row">

@@ -50,6 +50,53 @@
     font-size: 0.85rem;
     font-weight: 600;
     color: #334155;
+    margin-bottom: 0.3rem;
+}
+
+/* Estilos para ViaCEP */
+.cep-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    position: relative;
+}
+
+.cep-status {
+    font-size: 0.75rem;
+    min-height: 1rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.loading-cep {
+    color: #3b82f6;
+    animation: pulse 1.5s infinite;
+}
+
+.success-cep {
+    color: #10b981;
+    font-weight: 500;
+}
+
+.error-cep {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+ui-input.error input {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+
+ui-input[readonly] input {
+    background-color: #f9fafb !important;
+    color: #6b7280 !important;
+    cursor: not-allowed;
 }
 
 .form-select {
