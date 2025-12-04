@@ -69,8 +69,7 @@
     <div *ngFor="let user of filteredUsers" class="user-card">
       <div class="user-header">
         <div class="user-avatar">
-          <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.nome" class="avatar-image">
-          <div *ngIf="!user.avatar" class="avatar-placeholder">{{user.nome.charAt(0).toUpperCase()}}</div>
+          <div class="avatar-placeholder">{{user.nome.charAt(0).toUpperCase()}}</div>
         </div>
         <div class="user-basic-info">
           <h3 class="user-name">{{user.nome}}</h3>
@@ -78,7 +77,7 @@
         </div>
         <div class="user-badges">
           <span class="badge" [class]="getPerfilClass(user.perfil)">{{getPerfilLabel(user.perfil)}}</span>
-          <span class="badge" [class]="getStatusClass(user.status)">{{getStatusLabel(user.status)}}</span>
+          <span class="badge" [class]="getStatusClass((user.status === true || user.status === 'ativo') ? 'ativo' : (user.status === false || user.status === 'inativo') ? 'inativo' : '')">{{getStatusLabel((user.status === true || user.status === 'ativo') ? 'ativo' : (user.status === false || user.status === 'inativo') ? 'inativo' : '')}}</span>
         </div>
       </div>
       <div class="user-actions">

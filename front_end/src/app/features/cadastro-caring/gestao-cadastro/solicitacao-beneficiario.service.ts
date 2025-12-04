@@ -41,6 +41,7 @@ export interface SolicitacaoRequest {
 export interface ProcessarSolicitacaoRequest {
   acao: 'APROVAR' | 'REJEITAR';
   observacoesAprovacao?: string;
+  dadosAprovacao?: any;
 }
 
 @Injectable({
@@ -57,6 +58,16 @@ export class SolicitacaoBeneficiarioService {
          */
         listarTodas(): Observable<SolicitacaoBeneficiario[]> {
           return this.http.get<SolicitacaoBeneficiario[]>(this.baseUrl).pipe(
+            catchError(error => of([]))
+          );
+        }
+
+        /**
+         * Listar todas as solicitações de uma empresa - GET /api/cadastro/v1/solicitacoes?empresaId=xx
+         */
+        listarTodasPorEmpresa(empresaId: number): Observable<SolicitacaoBeneficiario[]> {
+          const params = new HttpParams().set('empresaId', empresaId.toString());
+          return this.http.get<SolicitacaoBeneficiario[]>(this.baseUrl, { params }).pipe(
             catchError(error => of([]))
           );
         }
@@ -149,7 +160,7 @@ export class SolicitacaoBeneficiarioService {
    * Converte SolicitacaoBeneficiario para Solicitacao (formato antigo)
    */
   obterSolicitacoesCompatibilidade(): Observable<any[]> {
-    return this.listarPendentes().pipe(
+    return this.listarTodas().pipe(
       map((solicitacoes: SolicitacaoBeneficiario[]) => 
         solicitacoes.map(s => ({
           id: s.id?.toString() || '',

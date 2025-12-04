@@ -25,7 +25,18 @@ export class AprovacaoCadastroComponent {
   anexosSelecionado: Anexo[] = [];
   carregando = false;
 
-  constructor(private aprovacao: AprovacaoService, private beneficiarios: BeneficiariosService, private solicitacoesService: SolicitacaoBeneficiarioService) {}
+  // Modal de aprovação para inclusão
+  showApprovalModal = false;
+  approvalSolicitacao: Solicitacao | null = null;
+  dadosAprovacao = {
+    benCodCartao: '',
+    benCodUnimedSeg: ''
+  };
+
+  constructor(private aprovacao: AprovacaoService, private beneficiarios: BeneficiariosService, private solicitacoesService: SolicitacaoBeneficiarioService) {
+    // Carregar todas as solicitações ao inicializar
+    this.aprovacao.atualizarSolicitacoes();
+  }
 
   get lista(): Solicitacao[] {
     return this.aprovacao.list().filter(s => {
@@ -38,7 +49,28 @@ export class AprovacaoCadastroComponent {
 
   aprovar(id: string) {
     const s = this.aprovacao.list().find(x => x.id === id);
-    this.aprovacao.updateStatus(id, 'concluida');
+    if (!s) return;
+    
+    // Se for inclusão, abrir modal para preencher dados adicionais
+    if (s.tipo === 'inclusao') {
+      this.approvalSolicitacao = s;
+      this.dadosAprovacao = {
+        benCodCartao: '',
+        benCodUnimedSeg: ''
+      };
+      this.showApprovalModal = true;
+      return;
+    }
+    
+    // Para outros tipos, aprovar diretamente
+    this.processarAprovacao(id);
+  }
+
+  processarAprovacao(id: string, dadosAdicionais?: any) {
+    const s = this.aprovacao.list().find(x => x.id === id);
+    
+    // Passar dadosAdicionais para o método updateStatus
+    this.aprovacao.updateStatus(id, 'concluida', undefined, dadosAdicionais);
     if (!s) return;
     if (s.entidade === 'beneficiario' && s.identificador) {
       if (s.tipo === 'inclusao') {
@@ -145,6 +177,35 @@ export class AprovacaoCadastroComponent {
     this.showDetails = false;
     this.selected = null;
     this.motivoNegacao = '';
+  }
+
+  confirmarAprovacao() {
+    if (!this.approvalSolicitacao) return;
+    
+    // Criar objeto com dados adicionais para aprovação
+    const dadosAprovacao: any = {};
+    
+    if (this.dadosAprovacao.benCodCartao) {
+      dadosAprovacao.benCodCartao = this.dadosAprovacao.benCodCartao;
+    }
+    if (this.dadosAprovacao.benCodUnimedSeg) {
+      dadosAprovacao.benCodUnimedSeg = this.dadosAprovacao.benCodUnimedSeg;
+    }
+    
+    // Processar aprovação com dados adicionais
+    this.processarAprovacao(this.approvalSolicitacao.id, dadosAprovacao);
+    
+    // Fechar modal
+    this.closeApprovalModal();
+  }
+
+  closeApprovalModal() {
+    this.showApprovalModal = false;
+    this.approvalSolicitacao = null;
+    this.dadosAprovacao = {
+      benCodCartao: '',
+      benCodUnimedSeg: ''
+    };
   }
 
   aceitarSelecionado() {

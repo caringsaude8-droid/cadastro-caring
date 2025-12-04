@@ -103,16 +103,23 @@ export class AprovacaoService {
     return s;
   }
 
-  updateStatus(id: string, status: SolicitacaoStatus, observacao?: string): void {
+  updateStatus(id: string, status: SolicitacaoStatus, observacao?: string, dadosAprovacao?: any): void {
     // Tentar processar na nova API primeiro
     const idNumerico = parseInt(id);
     if (!isNaN(idNumerico)) {
       const acao = status === 'concluida' ? 'APROVAR' : 'REJEITAR';
       
-      this.solicitacaoService.processarSolicitacao(idNumerico, {
+      const request: any = {
         acao,
         observacoesAprovacao: observacao
-      }).subscribe({
+      };
+      
+      // Adicionar dadosAprovacao se fornecido
+      if (dadosAprovacao && Object.keys(dadosAprovacao).length > 0) {
+        request.dadosAprovacao = dadosAprovacao;
+      }
+      
+      this.solicitacaoService.processarSolicitacao(idNumerico, request).subscribe({
         next: (response) => {
           // Lista será atualizada manualmente ou via timer
         },

@@ -113,3 +113,32 @@
     <button class="btn btn-secondary btn-sm" (click)="closeDetails()">Fechar</button>
   </div>
 </div>
+
+<!-- Modal de Aprovação de Inclusão -->
+<div class="modal" [class.show]="showApprovalModal" *ngIf="showApprovalModal">
+  <div class="modal-content modal-medium">
+    <div class="modal-header">
+      <h3 class="modal-title">Aprovação de Inclusão</h3>
+      <button class="modal-close" (click)="closeApprovalModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Solicitação:</strong> {{ approvalSolicitacao?.descricao }}</p>
+      <p><strong>CPF:</strong> {{ approvalSolicitacao?.identificador }}</p>
+      
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Código do Cartão</label>
+          <input type="text" class="input" [(ngModel)]="dadosAprovacao.benCodCartao" placeholder="Digite o código do cartão">
+        </div>
+        <div class="form-group half">
+          <label>Código Unimed Seg</label>
+          <input type="text" class="input" [(ngModel)]="dadosAprovacao.benCodUnimedSeg" placeholder="Digite o código Unimed">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" (click)="confirmarAprovacao()">Aprovar</button>
+      <button class="btn btn-secondary" (click)="closeApprovalModal()">Cancelar</button>
+    </div>
+  </div>
+</div>

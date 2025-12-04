@@ -1,26 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
 import { UserDetailsModalComponent } from './components/user-details-modal/user-details-modal.component';
 import { UserFormModalComponent } from './components/user-form-modal/user-form-modal.component';
+import { UsuariosService, User } from './usuarios.service';
 
-interface User {
-  id: string;
-  cpf: string;
-  nome: string;
-  email: string;
-  senha: string;
-  status: 'ativo' | 'inativo';
-  telefone: string;
-  perfil: 'admin' | 'terapeuta' | 'recepcao' | 'supervisor';
-  usuario: string;
-  codigo: string;
-  dataUltimoAcesso: string;
-  dataCriacao: string;
-  avatar?: string;
-  especialidades?: string[];
-  departamento?: string;
-}
+
 
 interface UserStats {
   total: number;
@@ -44,62 +30,24 @@ export class UsuariosComponent implements OnInit {
   formMode: 'create' | 'edit' = 'create';
   selectedUser: User | null = null;
   
-  users: User[] = [
-    {
-      id: '1',
-      cpf: '123.456.789-01',
-      nome: 'Ana Santos Silva',
-      email: 'ana.santos@caring.com',
-      senha: '',
-      telefone: '(11) 99999-0001',
-      perfil: 'admin',
-      status: 'ativo',
-      dataUltimoAcesso: '2024-01-26',
-      dataCriacao: '2023-01-15',
-      usuario: 'ana.santos',
-      codigo: 'U001',
-      departamento: 'Administração'
-    },
-    {
-      id: '2',
-      cpf: '234.567.890-12',
-      nome: 'Dr. Pedro Lima Costa',
-      email: 'pedro.lima@caring.com',
-      senha: '',
-      telefone: '(11) 99999-0002',
-      perfil: 'terapeuta',
-      status: 'ativo',
-      dataUltimoAcesso: '2024-01-25',
-      dataCriacao: '2023-03-20',
-      usuario: 'pedro.lima',
-      codigo: 'U002',
-      especialidades: ['ABA', 'Fonoaudiologia'],
-      departamento: 'TEA'
-    },
-    {
-      id: '5',
-      cpf: '456.789.012-34',
-      nome: 'Julia Ferreira',
-      email: 'julia.ferreira@caring.com',
-      senha: '',
-      telefone: '(11) 99999-0005',
-      perfil: 'terapeuta',
-      status: 'ativo',
-      dataUltimoAcesso: '2024-01-20',
-      dataCriacao: '2024-01-15',
-      usuario: 'julia.ferreira',
-      codigo: 'U005',
-      especialidades: ['Psicologia'],
-      departamento: 'TEA'
-    }
-  ];
+  users: User[] = [];
 
   filteredUsers: User[] = [];
 
-  constructor() {}
+  constructor(private usuariosService: UsuariosService) {}
 
   ngOnInit() {
-    this.filteredUsers = [...this.users];
+    this.usuariosService.getUsuarios().subscribe({
+      next: (usuarios) => {
+        this.users = usuarios;
+        this.filteredUsers = [...this.users];
+      },
+      error: (err) => {
+        // Em caso de erro, mantém lista vazia
+        this.users = [];
+        this.filteredUsers = [];
+      }
+    });
   }
 
   get stats(): UserStats {
@@ -158,8 +106,12 @@ export class UsuariosComponent implements OnInit {
     return labels[status] || status;
   }
 
-  getStatusClass(status: string): string {
-    return `status-${status}`;
+  getStatusClass(status: string | boolean | undefined): string {
+    let s = '';
+    if (status === true || status === 'ativo') s = 'ativo';
+    else if (status === false || status === 'inativo') s = 'inativo';
+    else if (typeof status === 'string') s = status;
+    return `status-${s}`;
   }
 
   getPerfilClass(perfil: string): string {
@@ -189,10 +141,10 @@ export class UsuariosComponent implements OnInit {
   }
 
   editUser(user: User): void {
-    this.formMode = 'edit';
-    this.selectedUser = user;
-    this.showUserFormModal = true;
     this.closeUserDetailsModal();
+    this.formMode = 'edit';
+    this.selectedUser = { ...user };
+    this.showUserFormModal = true;
   }
 
   viewUserDetails(user: User): void {
@@ -214,28 +166,19 @@ export class UsuariosComponent implements OnInit {
   onSaveUser(userData: any): void {
     const userToSave: User = {
       ...userData,
-      id: userData.id.toString(),
-      dataUltimoAcesso: typeof userData.dataUltimoAcesso === 'string' ? userData.dataUltimoAcesso : userData.dataUltimoAcesso.toISOString(),
-      dataCriacao: typeof userData.dataCriacao === 'string' ? userData.dataCriacao : userData.dataCriacao.toISOString()
+      id: Number(userData.id),
+      status: userData.status === true || userData.status === 'ativo' ? 'ativo' : 'inativo'
     };
 
     if (this.formMode === 'create') {
-      this.users.push({
-        ...userToSave,
-        dataUltimoAcesso: new Date().toISOString(),
-        dataCriacao: new Date().toISOString()
-      });
+      this.users.push(userToSave);
     } else {
       const index = this.users.findIndex(u => u.id === userToSave.id);
       if (index !== -1) {
-        this.users[index] = {
-          ...userToSave,
-          dataUltimoAcesso: this.users[index].dataUltimoAcesso,
-          dataCriacao: this.users[index].dataCriacao
-        };
+        this.users[index] = userToSave;
       }
     }
-    
+    this.filteredUsers = [...this.users];
     this.closeUserFormModal();
   }
 }

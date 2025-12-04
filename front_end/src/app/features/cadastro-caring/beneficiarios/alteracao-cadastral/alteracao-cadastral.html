@@ -1,5 +1,3 @@
-
-
 <div class="empresa-info-bar" *ngIf="empresaSelecionada">
   <span>Empresa selecionada: <b>{{ empresaSelecionada.nome || empresaSelecionada.razaoSocial || empresaSelecionada.fantasia }}</b></span>
 </div>
@@ -179,6 +177,28 @@
         <label>Nome Social</label>
         <ui-input [(ngModel)]="form.nomeSocial" name="nomeSocial"></ui-input>
       </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group third">
+        <label>Código Unimed Seg</label>
+        <ui-input [(ngModel)]="form.benCodUnimedSeg" name="benCodUnimedSeg"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Código do Cartão</label>
+        <ui-input [(ngModel)]="form.benCodCartao" name="benCodCartao"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Motivo Exclusão</label>
+        <ui-input [(ngModel)]="form.benMotivoExclusao" name="benMotivoExclusao"></ui-input>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group third">
+        <label>ID Titular</label>
+        <ui-input [(ngModel)]="form.benTitularId" name="benTitularId" [readonly]="true"></ui-input>
+      </div>
+      <div class="form-group third"></div>
+      <div class="form-group third"></div>
     </div>
 
     <div class="form-row">

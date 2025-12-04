@@ -327,7 +327,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       
       // Campos adicionais que a API espera
       benTipoMotivo: 'I', // I=Inclusão (sempre I para inclusão)
-      benCodUnimedSeg: undefined, // Código Unimed do segurado (gerado pela API)
+      benCodUnimedSeg: undefined, // Código Unimed do segurado 
       benDtaExclusao: undefined, // Data de exclusão (null para inclusão)
       benCodCartao: undefined, // Código do cartão (gerado pela API)
       benMotivoExclusao: undefined, // Não usado em inclusão

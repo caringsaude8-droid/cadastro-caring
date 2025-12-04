@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+// Removido MatSnackBar
 import { InputComponent } from '../../../../shared/components/ui/input/input';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
 import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
@@ -89,7 +90,11 @@ export class AlteracaoCadastralComponent implements OnInit {
     indicadorPessoaTrans: 'nao',
     nomeSocial: '',
     identidadeGenero: '',
-    tipoMotivo: '' // Usuario deve selecionar
+    tipoMotivo: '', // Usuario deve selecionar
+    benCodUnimedSeg: '',
+    benCodCartao: '',
+    benMotivoExclusao: '',
+    benTitularId: ''
   };
 
   // Opções para tipo de motivo na alteração
@@ -127,7 +132,8 @@ export class AlteracaoCadastralComponent implements OnInit {
     private router: Router,
     private beneficiariosService: BeneficiariosService,
     private aprovacaoService: AprovacaoService,
-    private authService: AuthService
+    private authService: AuthService,
+    // Removido MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -232,7 +238,6 @@ export class AlteracaoCadastralComponent implements OnInit {
 
       // Preparar dados propostos conforme documentação da API
       const dadosPropostos = {
-        // Campos obrigatórios da API
         benTipoMotivo: this.form.tipoMotivo,
         benNomeSegurado: this.form.nomeSegurado,
         benCpf: this.form.cpf,
@@ -240,13 +245,8 @@ export class AlteracaoCadastralComponent implements OnInit {
         benRelacaoDep: this.mapDependencia(this.form.dependencia),
         benSexo: this.form.sexo,
         benEstCivil: this.form.estadoCivil,
-        
-        // Contatos
-        
         benDddCel: this.form.celular,
         benEmail: this.form.email,
-        
-        // Endereço - usando nomes corretos da API
         benEndereco: this.form.endereco,
         benNumero: this.form.numero,
         benComplemento: this.form.complemento,
@@ -254,39 +254,27 @@ export class AlteracaoCadastralComponent implements OnInit {
         benBairro: this.form.bairro,
         benCidade: this.form.cidade,
         benUf: this.form.uf,
-        
-        // Família
         benNomeDaMae: this.form.nomeMae,
-        
-        // Documentos - nomes corretos da API
-        
-        
-        // Campos específicos
         benNomeSocial: this.form.nomeSocial,
         benIdentGenero: this.form.identidadeGenero,
         benIndicPesTrans: this.form.indicadorPessoaTrans,
         benDataCasamento: this.form.dataCasamento,
-      
-        // Campos adicionais que podem ser necessários
         benDtaInclusao: this.form.dataInclusao,
         benDtaExclusao: this.form.dataExclusao,
         benPlanoProd: this.form.planoProd,
         benAdmissao: this.form.admissao,
         benMatricula: this.form.matricula,
-        benCodUnimedSeg: undefined,
-        benTitularId: undefined,
-        benCodCartao: undefined,
-        benMotivoExclusao: undefined,
+        benCodUnimedSeg: null,
+        benTitularId: null,
+        benCodCartao: null,
+        benMotivoExclusao: null,
         benEmpId: empresa.id,
         benStatus: 'ATIVO'
       };
-      
 
-      
       // Buscar beneficiário por CPF para obter ID
       const beneficiariosRaw = await this.beneficiariosService.listRaw().toPromise();
       const beneficiario = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === this.form.cpf);
-      
       if (!beneficiario) {
         alert('Beneficiário não encontrado. Verifique o CPF.');
         return;
@@ -294,7 +282,6 @@ export class AlteracaoCadastralComponent implements OnInit {
 
       const observacoes = `Alteração cadastral - Tipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}`;
       
-      // Usar nova API via AprovacaoService
       this.aprovacaoService.criarSolicitacaoAlteracao(
         beneficiario,
         dadosPropostos,
@@ -302,19 +289,21 @@ export class AlteracaoCadastralComponent implements OnInit {
         empresa.id
       ).subscribe({
         next: (response: any) => {
-          
           // Marcar beneficiário como Pendente
           this.beneficiariosService.alterarBeneficiario(beneficiario.id, { 
             benStatus: 'Pendente' 
           }).subscribe({
             next: () => {
-              alert(`Solicitação enviada!\nSua solicitação de alteração cadastral foi criada com sucesso.\n\nTipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}\nO beneficiário foi marcado como pendente e aguarda aprovação.`);
-              this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+              alert('✔ Solicitação criada com sucesso!');
+              setTimeout(() => {
+                this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+              }, 1000);
             },
             error: (error: any) => {
-              // Ainda navegar, pois a solicitação foi criada
-              alert(`Solicitação enviada!\nSua solicitação de alteração cadastral foi criada com sucesso.\n\nTipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}`);
-              this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+              alert('✔ Solicitação criada com sucesso!');
+              setTimeout(() => {
+                this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+              }, 1000);
             }
           });
         },

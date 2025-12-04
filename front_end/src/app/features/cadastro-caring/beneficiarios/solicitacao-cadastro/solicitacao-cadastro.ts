@@ -53,22 +53,19 @@ export class SolicitacaoCadastroComponent implements OnInit {
       return;
     }
     this.loading = true;
-    this.solicitacaoBeneficiarioService.listarTodas()
+    this.solicitacaoBeneficiarioService.listarTodasPorEmpresa(this.empresaSelecionada.id)
       .subscribe((solicitacoes: any[]) => {
         console.log('[API] solicitações recebidas (todas):', solicitacoes);
-        // Filtrar pelo ID da empresa selecionada
-        const empresaId = this.empresaSelecionada?.id;
-        const filtradas = solicitacoes
-          .filter(s => String(s.empresaId) === String(empresaId))
-          .map(s => ({
-            ...s,
-            tipo: (s.tipo || '').toLowerCase(),
-            status: mapStatus(s.status),
-            descricao: s.beneficiarioNome || s.descricao || '',
-            identificador: s.beneficiarioCpf || s.identificador || '',
-            data: s.dataSolicitacao || s.data || '',
-          }));
-        this.solicitacoes = filtradas;
+        // Mapeia os campos para o front
+        const mapeadas = solicitacoes.map(s => ({
+          ...s,
+          tipo: (s.tipo || '').toLowerCase(),
+          status: mapStatus(s.status),
+          descricao: s.beneficiarioNome || s.descricao || '',
+          identificador: s.beneficiarioCpf || s.identificador || '',
+          data: s.dataSolicitacao || s.data || '',
+        }));
+        this.solicitacoes = mapeadas;
         // Função utilitária para mapear status do backend para o front
         function mapStatus(status: string): string {
           const map: Record<string, string> = {
