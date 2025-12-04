@@ -58,14 +58,19 @@ export class LoginComponent {
         this.showToast('Login realizado', `Bem-vindo, ${response.user.nome}!`, 'success');
         
         // Se usuário tem empresa vinculada, redirecionar para beneficiários
-        if (response.user.empresaId) {
-          // Aguardar um momento para garantir que a empresa seja carregada
-          setTimeout(() => {
-            this.router.navigate(['/cadastro-caring/beneficiarios']);
-          }, 500);
-        } else {
-          this.router.navigate(['/home']);
-        }
+          if (response.user.perfil && response.user.perfil.toLowerCase() === 'user') {
+            // Redireciona perfil 'user' para /cadastro-caring
+            setTimeout(() => {
+              this.router.navigate(['/cadastro-caring']);
+            }, 500);
+          } else if (response.user.empresaId) {
+            // Redireciona outros perfis com empresa vinculada para beneficiários
+            setTimeout(() => {
+              this.router.navigate(['/cadastro-caring/beneficiarios']);
+            }, 500);
+          } else {
+            this.router.navigate(['/home']);
+          }
       },
       error: (error) => {
         console.error('Erro no login:', error);

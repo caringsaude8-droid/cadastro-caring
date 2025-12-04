@@ -26,7 +26,12 @@ export const authGuard: CanActivateFn = (route, state) => {
 
   // Caso o perfil do usuário esteja entre os permitidos
   const user = auth.getCurrentUser();
-  if (user && requiredProfiles.includes(user.perfil || '')) return true;
+  if (
+    user &&
+    requiredProfiles.some(
+      p => (user.perfil || '').toLowerCase() === p.toLowerCase()
+    )
+  ) return true;
 
   // Sem permissão: acesso negado
   return false;

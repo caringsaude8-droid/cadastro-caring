@@ -164,21 +164,36 @@ export class UsuariosComponent implements OnInit {
   }
 
   onSaveUser(userData: any): void {
-    const userToSave: User = {
-      ...userData,
-      id: Number(userData.id),
-      status: userData.status === true || userData.status === 'ativo' ? 'ativo' : 'inativo'
+    const { id, ...rest } = userData;
+    const sanitizeNumber = (value: string | undefined) => value ? value.replace(/\D/g, '') : '';
+    const userToSave: any = {
+      ...rest,
+      empresaId: rest.empresaId ? Number(rest.empresaId) : undefined,
+      status: (typeof rest.status === 'string' ? rest.status.toLowerCase() : rest.status) === 'ativo',
+      cpf: sanitizeNumber(rest.cpf),
+      telefone: sanitizeNumber(rest.telefone)
     };
 
     if (this.formMode === 'create') {
-      this.users.push(userToSave);
+      console.log('JSON enviado para API:', userToSave);
+      this.usuariosService.criarUsuario(userToSave).subscribe({
+        next: (createdUser) => {
+          this.users.push(createdUser);
+          this.filteredUsers = [...this.users];
+          this.closeUserFormModal();
+        },
+        error: () => {
+          // Aqui pode exibir uma mensagem de erro se quiser
+          this.closeUserFormModal();
+        }
+      });
     } else {
       const index = this.users.findIndex(u => u.id === userToSave.id);
       if (index !== -1) {
         this.users[index] = userToSave;
       }
+      this.filteredUsers = [...this.users];
+      this.closeUserFormModal();
     }
-    this.filteredUsers = [...this.users];
-    this.closeUserFormModal();
   }
 }

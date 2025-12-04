@@ -11,6 +11,8 @@ export interface User {
   perfil: string;
   telefone?: string | null;
   empresaId?: number | null;
+  cpf?: string;
+  senha?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,5 +31,8 @@ export class UsuariosService {
         }))
       )
     );
+  }
+  criarUsuario(user: Omit<User, 'id'>): Observable<User> {
+    return this.http.post<User>(this.apiUrl, user);
   }
 }

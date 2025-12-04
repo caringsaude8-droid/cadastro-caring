@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService, AuthUser } from '../../core/services/auth.service';
 
 interface QuickAction {
   title: string;
@@ -25,7 +26,7 @@ interface UserProfile {
   styleUrl: './cadastro-caring.css'
 })
 export class CadastroCaringComponent implements OnInit {
-  userProfile: UserProfile | null = null;
+  userProfile: AuthUser | null = null;
   quickActions: QuickAction[] = [
     {
       title: 'Beneficiários',
@@ -34,25 +35,13 @@ export class CadastroCaringComponent implements OnInit {
       icon: 'users',
       color: 'blue',
       clickable: true
-    },
-    {
-      title: 'Usuários',
-      description: 'Em definição',
-      route: '/cadastro-caring',
-      icon: 'users',
-      color: 'blue',
-      clickable: false
     }
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   ngOnInit() {
-    this.loadUserProfile();
-  }
-
-  private loadUserProfile() {
-    this.userProfile = { nome: 'Dr. João Silva', perfil: 'Administrador' };
+    this.userProfile = this.authService.getCurrentUser();
   }
 
   navigateTo(route: string) {

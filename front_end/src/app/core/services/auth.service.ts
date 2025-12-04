@@ -43,10 +43,13 @@ export class AuthService {
     if (user) {
       this.currentUserSubject.next(user);
       
-      // Se usuário tem empresa vinculada, carregar empresa automaticamente
-      if (user.empresaId && this.isAuthenticated()) {
-        this.carregarEmpresaDoUsuario(user.empresaId);
-      }
+      // Carregar empresa será feito após autenticação, não no construtor
+      // para evitar dependência circular com interceptors
+      setTimeout(() => {
+        if (user.empresaId && this.isAuthenticated()) {
+          this.carregarEmpresaDoUsuario(user.empresaId);
+        }
+      }, 100);
     }
 
     // Verifica autenticação quando página carrega ou usuário navega

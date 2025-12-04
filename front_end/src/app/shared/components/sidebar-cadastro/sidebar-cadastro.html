@@ -18,38 +18,40 @@
   </div>
 
   <nav class="navigation">
-    <a *ngFor="let item of topMenuItems" [routerLink]="item.url" class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <i [class]="'icon-' + item.icon"></i>
-      <span *ngIf="!collapsed">{{item.title}}</span>
-    </a>
-
-    <!-- Link direto: Cadastro Caring -->
-    <a class="nav-item" [routerLink]="'/cadastro-caring'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <i class="icon-building"></i>
-      <span *ngIf="!collapsed">Cadastro Caring</span>
-    </a>
-    <a class="nav-item" [routerLink]="'/cadastro-caring/gestao-cadastro'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <i class="icon-settings"></i>
-      <span *ngIf="!collapsed">Gestão Cadastro</span>
-    </a>
-    <a class="nav-item" [routerLink]="'/cadastro-caring/empresa'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <i class="icon-building"></i>
-      <span *ngIf="!collapsed">Empresas</span>
-    </a>
-
-    <!-- Grupo: Beneficiários -->
-    <div class="nav-group">
-      <button class="nav-item submenu-trigger" (click)="toggleBeneficiarios()">
-        <div class="nav-item-content">
-          <i class="icon-users"></i>
-          <span *ngIf="!collapsed">Beneficiários</span>
+    <!-- Só mostra menus restritos se perfil for 'user' OU empresaId presente -->
+        <ng-container *ngIf="profile?.perfil?.toLowerCase() !== 'user'">
+          <a *ngFor="let item of topMenuItems" [routerLink]="item.url" class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+            <i [class]="'icon-' + item.icon"></i>
+            <span *ngIf="!collapsed">{{item.title}}</span>
+          </a>
+        </ng-container>
+        <a class="nav-item" [routerLink]="'/cadastro-caring'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <i class="icon-building"></i>
+          <span *ngIf="!collapsed">Cadastro Caring</span>
+        </a>
+        <ng-container *ngIf="profile?.perfil?.toLowerCase() !== 'user'">
+          <a class="nav-item" [routerLink]="'/cadastro-caring/gestao-cadastro'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+            <i class="icon-settings"></i>
+            <span *ngIf="!collapsed">Gestão Cadastro</span>
+          </a>
+          <a class="nav-item" [routerLink]="'/cadastro-caring/empresa'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+            <i class="icon-building"></i>
+            <span *ngIf="!collapsed">Empresas</span>
+          </a>
+        </ng-container>
+        <!-- Grupo: Beneficiários -->
+        <div class="nav-group">
+          <button class="nav-item submenu-trigger" (click)="toggleBeneficiarios()">
+            <div class="nav-item-content">
+              <i class="icon-users"></i>
+              <span *ngIf="!collapsed">Beneficiários</span>
+            </div>
+            <i *ngIf="!collapsed" class="icon-chevron-down submenu-icon" [class.rotated]="beneficiariosOpen"></i>
+          </button>
+          <div *ngIf="!collapsed && beneficiariosOpen" class="submenu">
+            <a *ngFor="let subItem of beneficiariosSubItems" [routerLink]="subItem.url" class="submenu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{subItem.title}}</a>
+          </div>
         </div>
-        <i *ngIf="!collapsed" class="icon-chevron-down submenu-icon" [class.rotated]="beneficiariosOpen"></i>
-      </button>
-      <div *ngIf="!collapsed && beneficiariosOpen" class="submenu">
-        <a *ngFor="let subItem of beneficiariosSubItems" [routerLink]="subItem.url" class="submenu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{subItem.title}}</a>
-      </div>
-    </div>
 
     
   </nav>

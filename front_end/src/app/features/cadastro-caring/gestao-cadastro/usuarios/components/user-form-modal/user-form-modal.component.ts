@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { EmpresaService, Empresa } from '../../../../empresa/empresa.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { User } from '../../usuarios.service';
@@ -18,13 +19,18 @@ export class UserFormModalComponent implements OnInit, OnChanges {
   @Output() close = new EventEmitter<void>();
   @Output() save = new EventEmitter<User>();
 
-  formData: Partial<User> = {
+  formData: Partial<User> & { empresaId?: number; senha?: string; cpf?: string } = {
     nome: '',
     email: '',
     status: 'ativo',
     telefone: '',
-    perfil: 'admin'
+    perfil: 'admin',
+    empresaId: undefined,
+    senha: '',
+    cpf: ''
   };
+
+  empresas: Empresa[] = [];
 
   readonly perfilOptions = [
     { value: 'admin', label: 'Administrador' },
@@ -39,9 +45,17 @@ export class UserFormModalComponent implements OnInit, OnChanges {
   get modalTitle(): string { return this.mode === 'create' ? 'Novo Usuário' : 'Editar Usuário'; }
   get submitButtonText(): string { return this.mode === 'create' ? 'Criar Usuário' : 'Salvar Alterações'; }
 
-  ngOnInit(): void { this.resetForm(); }
+  constructor(private empresaService: EmpresaService) {}
+
+  ngOnInit(): void {
+    this.resetForm();
+    this.empresaService.listarEmpresas().subscribe({
+      next: (empresas: Empresa[]) => { this.empresas = empresas; },
+      error: () => { this.empresas = []; }
+    });
+  }
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.show && this.mode === 'edit' && this.user) {
+    if (this.show) {
       this.resetForm();
     }
   }
@@ -53,7 +67,10 @@ export class UserFormModalComponent implements OnInit, OnChanges {
         email: this.user.email || '',
         status: this.user.status || 'ativo',
         telefone: this.user.telefone || '',
-        perfil: this.user.perfil || 'admin'
+        perfil: this.user.perfil || 'admin',
+        empresaId: this.user['empresaId'] || undefined,
+        senha: '',
+        cpf: this.user['cpf'] || ''
       };
     } else {
       this.formData = {
@@ -61,7 +78,10 @@ export class UserFormModalComponent implements OnInit, OnChanges {
         email: '',
         status: 'ativo',
         telefone: '',
-        perfil: 'admin'
+        perfil: 'admin',
+        empresaId: undefined,
+        senha: '',
+        cpf: ''
       };
     }
   }
@@ -70,25 +90,30 @@ export class UserFormModalComponent implements OnInit, OnChanges {
 
   onSubmit(): void {
     if (this.isFormValid()) {
-      const userData: User = {
+      const userData: any = {
         id: this.mode === 'edit' && this.user ? this.user.id : Date.now(),
         nome: this.formData.nome!,
         email: this.formData.email!,
-        status: this.formData.status as any,
+        senha: this.formData.senha!,
+        perfil: (this.formData.perfil as string).toUpperCase(),
         telefone: this.formData.telefone!,
-        perfil: this.formData.perfil as any
+        empresaId: this.formData.empresaId,
+        cpf: this.formData.cpf!,
+        status: this.formData.status
       };
-
       this.save.emit(userData);
     }
   }
 
   isFormValid(): boolean {
+    const isUserPerfil = this.formData.perfil === 'user';
     return !!(
       this.formData.nome?.trim() &&
       this.formData.email?.trim() &&
-      this.formData.status &&
-      this.formData.perfil
+      this.formData.senha?.trim() &&
+      this.formData.perfil &&
+      this.formData.cpf?.trim() &&
+      (!isUserPerfil || this.formData.empresaId)
     );
   }
 }
