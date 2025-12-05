@@ -72,6 +72,7 @@ export interface InclusaoBeneficiarioRequest {
   benCodCartao?: string;
   benMotivoExclusao?: string;
   benStatus?: string;
+  benNumero?: string;
 }
 
 @Injectable({ providedIn: 'root' })

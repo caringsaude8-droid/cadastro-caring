@@ -171,15 +171,14 @@ export class AprovacaoService {
   /**
    * Método helper para criar solicitação de exclusão de beneficiário
    */
-  criarSolicitacaoExclusao(beneficiario: any, motivo: string, observacoes?: string): Observable<any> {
-    
+  criarSolicitacaoExclusao(beneficiario: any, motivo: string, observacoes?: string, empresaId?: number): Observable<any> {
     const request: SolicitacaoRequest = {
       beneficiarioId: beneficiario.id,
       tipo: 'EXCLUSAO',
       motivoExclusao: motivo,
-      observacoesSolicitacao: observacoes
+      observacoesSolicitacao: observacoes,
+      empresaId
     };
-
     return this.solicitacaoService.criarSolicitacao(request);
   }
 

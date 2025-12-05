@@ -1,6 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
 
 @Component({
@@ -32,7 +33,7 @@ export class CartaoVirtualComponent implements OnInit {
   @Input() logoUrl = '';
   autoDownload = false;
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(private route: ActivatedRoute, private empresaContextService: EmpresaContextService) {}
 
   ngOnInit(): void {
     if (this.embedded) return;
@@ -42,7 +43,9 @@ export class CartaoVirtualComponent implements OnInit {
       this.matricula = params.get('matricula_beneficiario') || params.get('matricula') || '';
       this.acomodacao = params.get('acomodacao') || '';
       this.plano = params.get('plano') || '';
-      this.empresa = params.get('empresa') || '';
+      // Buscar nome da empresa vinculada ao beneficiário
+      const empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+      this.empresa = empresaSelecionada?.nome || params.get('empresa') || '';
       this.codigoEmpresa = params.get('codigoEmpresa') || '';
       this.numeroProduto = params.get('numeroProduto') || '';
       this.vigencia = params.get('vigencia') || '';

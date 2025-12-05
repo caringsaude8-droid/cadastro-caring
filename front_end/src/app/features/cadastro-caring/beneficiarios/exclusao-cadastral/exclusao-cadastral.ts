@@ -7,8 +7,10 @@ import { BeneficiariosService } from '../beneficiarios.service';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
 import { InputComponent } from '../../../../shared/components/ui/input/input';
 import { AuthService } from '../../../../core/services/auth.service';
+import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
 
 type BeneficiarioInfo = {
+  id?: number;
   nome?: string;
   cpf?: string;
   matricula?: string;
@@ -39,7 +41,14 @@ export class ExclusaoCadastralComponent implements OnInit {
     { value: 'outro', label: 'Outro' }
   ];
 
-  constructor(private route: ActivatedRoute, private router: Router, private aprovacao: AprovacaoService, private beneficiarios: BeneficiariosService, private auth: AuthService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private aprovacao: AprovacaoService,
+    private beneficiarios: BeneficiariosService,
+    private auth: AuthService,
+    private empresaContextService: EmpresaContextService
+  ) {}
 
   ngOnInit(): void {
     const qp = this.route.snapshot.queryParamMap;
@@ -110,21 +119,7 @@ export class ExclusaoCadastralComponent implements OnInit {
       });
     }
 
-    try {
-      const selected = localStorage.getItem('selectedClinic');
-      const clinica = selected ? JSON.parse(selected) : null;
-      const user = this.auth.getCurrentUser();
-      const author = user?.nome || 'Usuário';
-      this.aprovacao.add({
-        tipo: 'exclusao',
-        entidade: 'beneficiario',
-        identificador: this.beneficiario.cpf || this.beneficiario.matricula || '',
-        descricao: this.motivo ? `Exclusão do beneficiário ${this.beneficiario.nome || ''} por ${this.motivo}`.trim() : `Exclusão do beneficiário ${this.beneficiario.nome || ''}`.trim(),
-        solicitante: author,
-        codigoEmpresa: clinica?.codigo,
-        observacao: this.mensagem ? `${author}: ${this.mensagem}` : undefined
-      });
-    } catch {}
+    this.salvarExclusao();
 
     this.successMessage = 'Status atualizado com sucesso';
     setTimeout(() => {
@@ -139,5 +134,43 @@ export class ExclusaoCadastralComponent implements OnInit {
     const parts = val.split('-');
     const chosen = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
     this.dateError = chosen < today ? 'Selecione uma data igual ou posterior a hoje.' : '';
+  }
+
+  async salvarExclusao() {
+    try {
+      const empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+      const user = this.auth.getCurrentUser();
+      const author = user?.nome || 'Usuário';
+      // Buscar beneficiarioId se possível
+      let beneficiarioId = this.beneficiario.id;
+      if (!beneficiarioId && this.beneficiario.cpf) {
+        const beneficiariosRaw = await this.beneficiarios.listRaw().toPromise();
+        const encontrado = beneficiariosRaw?.find(b => b.cpf === this.beneficiario.cpf || b.benCpf === this.beneficiario.cpf);
+        beneficiarioId = encontrado?.id;
+      }
+      this.aprovacao.criarSolicitacaoExclusao(
+        { ...this.beneficiario, id: beneficiarioId },
+        this.motivo,
+        this.mensagem,
+        empresaSelecionada?.id
+      ).subscribe({
+        next: (response: any) => {
+          console.log('✅ Solicitação de exclusão criada:', response);
+          // Log do JSON da solicitação
+          console.log('🔎 JSON da solicitação de exclusão:', JSON.stringify({
+            beneficiarioId,
+            tipo: 'EXCLUSAO',
+            motivoExclusao: this.motivo,
+            observacoesSolicitacao: this.mensagem,
+            empresaId: empresaSelecionada?.id
+          }, null, 2));
+        },
+        error: (error: any) => {
+          console.error('❌ Erro na chamada POST /solicitacoes:', error);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Erro ao salvar exclusão:', error);
+    }
   }
 }

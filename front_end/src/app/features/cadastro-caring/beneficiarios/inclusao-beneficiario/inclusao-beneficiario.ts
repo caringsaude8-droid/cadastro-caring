@@ -247,58 +247,42 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     
     // Garantir que o status 'Pendente' seja definido explicitamente
     request.benStatus = 'Pendente';
-    
-    console.log('📤 Request enviado para API:', request);
-    
-    // Chamada para API - salva beneficiário com status 'Pendente'
-    this.service.incluirBeneficiario(request).subscribe({
-      next: (beneficiario: Beneficiario) => {
-        console.log('✅ Beneficiário salvo na API:', beneficiario);
-        console.log('📊 Status retornado pela API:', beneficiario.benStatus);
-        
-        // Verificar se o status foi persistido corretamente
-        if (!beneficiario.benStatus || beneficiario.benStatus !== 'Pendente') {
-          console.warn('⚠️ Status não foi definido como "Pendente" pela API. Status atual:', beneficiario.benStatus);
+    console.log('📤 Request preparado para solicitação:', request);
+
+    // Gerar solicitação para aprovação
+    console.log('empresaSelecionada antes da solicitação:', this.empresaSelecionada);
+    const currentUser = this.authService.getCurrentUser();
+      const solicitacao = {
+        tipo: 'INCLUSAO',
+        empresaId: this.empresaSelecionada?.id,
+        beneficiarioId: null,
+        motivoExclusao: null,
+        observacoesSolicitacao: this.form.nomeSegurado, // ou outro campo de observação
+        dadosPropostos: {
+          ...request
         }
-        
-        // Gerar solicitação para aprovação
-        const currentUser = this.authService.getCurrentUser();
-        const solicitacao = {
-          tipo: 'inclusao' as const,
-          entidade: 'beneficiario',
-          identificador: beneficiario.cpf || this.form.cpf || '',
-          descricao: `${beneficiario.nome || this.form.nomeSegurado || ''}`,
-          solicitante: currentUser?.nome || 'Usuário',
-          codigoEmpresa: this.empresaSelecionada?.codigoEmpresa || String(this.empresaSelecionada?.id) || ''
-        };
-        
-        console.log('📝 Criando solicitação de aprovação:', solicitacao);
-        const solicitacaoCriada = this.aprovacao.add(solicitacao);
-        console.log('✅ Solicitação criada com ID:', solicitacaoCriada.id);
-        
-        this.showToast('Sucesso', 'Beneficiário incluído com sucesso', 'success');
-        this.limparForm();
-      },
-      error: (error: any) => {
-        console.error('Erro ao incluir beneficiário:', error);
-        this.showToast('Erro', 'Erro ao incluir beneficiário: ' + (error?.error?.message || 'Erro desconhecido'), 'error');
-      },
-      complete: () => {
-        this.loading = false;
-      }
-    });
+      };
+
+    // LOG do JSON da solicitação
+    console.log('🔎 JSON da solicitação de inclusão:', JSON.stringify(solicitacao, null, 2));
+
+    console.log('📝 Criando solicitação de aprovação:', solicitacao);
+    const solicitacaoCriada = await this.aprovacao.criarSolicitacaoInclusao(solicitacao).toPromise();
+    console.log('✅ Solicitação criada com ID:', solicitacaoCriada.id);
+
+    this.showToast('Sucesso', 'Solicitação de inclusão criada com sucesso', 'success');
+    this.limparForm();
+    this.loading = false;
   }
 
   // Método para converter o formulário para o formato JSON esperado pela API
   private async converterFormParaAPI(): Promise<InclusaoBeneficiarioRequest> {
     const request: InclusaoBeneficiarioRequest = {
-      // Campos obrigatórios
+      // ...todos os campos do beneficiário, exceto 'tipo'...
       benEmpId: this.empresaSelecionada?.id || 0,
       benNomeSegurado: this.form.nomeSegurado || '',
       benCpf: this.form.cpf || '',
       benRelacaoDep: await this.mapearRelacaoDependencia(this.form.relacaoDep || ''),
-      
-      // Campos opcionais com dados do formulário
       benDtaNasc: this.form.dataNascimento ? this.formatarDataParaAPI(this.form.dataNascimento) : undefined,
       benSexo: this.form.sexo ? this.converterSexo(this.form.sexo) : undefined,
       benEstCivil: this.form.estadoCivil ? this.converterEstadoCivil(this.form.estadoCivil) : undefined,
@@ -318,20 +302,15 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benIndicPesTrans: this.form.indicadorPessoaTrans || undefined,
       benNomeSocial: this.form.nomeSocial || undefined,
       benIdentGenero: this.form.identidadeGenero || undefined,
-      
-      // Data de inclusão (data atual)
-      benDtaInclusao: new Date().toISOString().split('T')[0], // YYYY-MM-DD
-      
-      // ID do titular (se for dependente)
+      benDtaInclusao: this.formatarDataParaAPI(new Date().toISOString().split('T')[0]),
       benTitularId: this.titularEncontrado?.id || undefined,
-      
-      // Campos adicionais que a API espera
       benTipoMotivo: 'I', // I=Inclusão (sempre I para inclusão)
-      benCodUnimedSeg: undefined, // Código Unimed do segurado 
-      benDtaExclusao: undefined, // Data de exclusão (null para inclusão)
-      benCodCartao: undefined, // Código do cartão (gerado pela API)
-      benMotivoExclusao: undefined, // Não usado em inclusão
-      benStatus: 'Pendente' // Status inicial - aguardando aprovação
+      benCodUnimedSeg: undefined,
+      benDtaExclusao: undefined,
+      benCodCartao: undefined,
+      benMotivoExclusao: undefined,
+      benStatus: 'Pendente',
+      benNumero: this.form.numero || undefined
     };
 
     return request;
@@ -339,11 +318,16 @@ export class InclusaoBeneficiarioComponent implements OnInit {
 
   // Utilitários de conversão
   private formatarDataParaAPI(data: string): string {
-    // Converter de DD/MM/YYYY para YYYY-MM-DD
-    if (data.includes('/')) {
-      const [dia, mes, ano] = data.split('/');
-      return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    // Se já está no formato dd/MM/yyyy, retorna direto
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(data)) {
+      return data;
     }
+    // Se está no formato yyyy-MM-dd, converte para dd/MM/yyyy
+    if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+      const [ano, mes, dia] = data.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+    // Se está em outro formato, retorna como está
     return data;
   }
 

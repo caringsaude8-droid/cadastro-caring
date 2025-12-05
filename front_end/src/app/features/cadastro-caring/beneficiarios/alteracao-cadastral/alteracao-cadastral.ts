@@ -271,7 +271,6 @@ export class AlteracaoCadastralComponent implements OnInit {
         benEmpId: empresa.id,
         benStatus: 'ATIVO'
       };
-
       // Buscar beneficiário por CPF para obter ID
       const beneficiariosRaw = await this.beneficiariosService.listRaw().toPromise();
       const beneficiario = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === this.form.cpf);
@@ -282,51 +281,34 @@ export class AlteracaoCadastralComponent implements OnInit {
 
       const observacoes = `Alteração cadastral - Tipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}`;
       
+      console.log('🚀 Disparando solicitação de alteração cadastral:', {
+        beneficiarioId: beneficiario.id,
+        empresaId: empresa.id,
+        dados: dadosPropostos,
+        timestamp: new Date().toISOString()
+      });
       this.aprovacaoService.criarSolicitacaoAlteracao(
         beneficiario,
         dadosPropostos,
         observacoes,
-        empresa.id
+        empresa.id // empresaId enviado corretamente
       ).subscribe({
         next: (response: any) => {
-          // Marcar beneficiário como Pendente
-          this.beneficiariosService.alterarBeneficiario(beneficiario.id, { 
-            benStatus: 'Pendente' 
-          }).subscribe({
-            next: () => {
-              alert('✔ Solicitação criada com sucesso!');
-              setTimeout(() => {
-                this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
-              }, 1000);
-            },
-            error: (error: any) => {
-              alert('✔ Solicitação criada com sucesso!');
-              setTimeout(() => {
-                this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
-              }, 1000);
-            }
-          });
+          console.log('✅ Solicitação criada (resposta do POST /solicitacoes):', response);
+          // Log do JSON da solicitação
+          console.log('🔎 JSON da solicitação de alteração:', JSON.stringify({
+            beneficiarioId: beneficiario.id,
+            dadosPropostos,
+            observacoesSolicitacao: observacoes,
+            empresaId: empresa.id
+          }, null, 2));
+          alert('✔ Solicitação de alteração criada com sucesso!');
+          setTimeout(() => {
+            this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+          }, 1000);
         },
         error: (error: any) => {
-          console.log('⚠️ Erro na solicitação:', error);
-          
-          // Não exibir mensagens de erro de autenticação - apenas logar
-          if (error.status === 401 || error.status === 403) {
-            console.log('🔐 Erro de autenticação/autorização - interceptor vai lidar com isso');
-            return;
-          }
-          
-          let errorMessage = 'Erro desconhecido';
-          
-          if (error.status === 400) {
-            errorMessage = error.error?.message || 'Dados inválidos. Verifique os campos.';
-          } else if (error.status === 500) {
-            errorMessage = 'Erro interno do servidor. Tente novamente.';
-          } else {
-            errorMessage = error.error?.message || error.message || 'Erro na comunicação com o servidor.';
-          }
-          
-          alert(`Erro ao criar solicitação de alteração:\n\n${errorMessage}`);
+          console.error('❌ Erro na chamada POST /solicitacoes:', error);
         }
       });
       
