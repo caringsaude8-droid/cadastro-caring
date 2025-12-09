@@ -30,15 +30,16 @@
 }
 
 .detail-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 
 .detail-grid .item {
-    display: flex;
-    gap: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  align-items: flex-start;
 }
 
 .detail-grid .item.wide {
@@ -46,13 +47,17 @@
 }
 
 .detail-grid .label {
-    color: #64748b;
-    min-width: 140px;
+  color: #64748b;
+  min-width: 90px;
+  font-size: 0.85rem;
+  line-height: 1.2;
 }
 
 .detail-grid .value {
-    color: #1e293b;
-    font-weight: 600;
+  color: #1e293b;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.2;
 }
 
 .blocked-msg {

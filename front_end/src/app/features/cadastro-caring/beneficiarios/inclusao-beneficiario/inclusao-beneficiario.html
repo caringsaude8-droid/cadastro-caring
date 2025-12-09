@@ -43,6 +43,10 @@
 
   <div class="form-card">
     <form class="benef-form" (ngSubmit)="salvar()">
+      <!-- ...existing code... -->
+      <div class="correcao-banner" *ngIf="isModoCorrecao">
+        <strong>Modo Correção:</strong> Você está corrigindo uma solicitação rejeitada. Revise os dados e salve para reenviar.
+      </div>
       <div class="section-title-bar">Dados do Beneficiário</div>
       <div class="form-row">
         <div class="form-group third">
@@ -305,17 +309,23 @@
         </table>
       </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" [disabled]="loading">
-          <span *ngIf="!loading">💾 Salvar Beneficiário</span>
-          <span *ngIf="loading">⏳ Salvando...</span>
-        </button>
-        <button type="button" class="btn-secondary" (click)="limparForm()" [disabled]="loading">
-          🗑️ Limpar Formulário
-        </button>
-        <button type="button" class="btn-secondary" (click)="voltarParaBeneficiarios()">
-          ← Voltar para Lista
-        </button>
+      <div class="form-actions" style="display: flex; align-items: flex-end; justify-content: space-between;">
+        <div style="flex: 1; max-width: 350px; margin-right: 24px;">
+          <label style="font-weight: 500;">Observações da Solicitação</label>
+          <textarea [(ngModel)]="form.observacoesSolicitacao" name="observacoesSolicitacao" rows="2" placeholder="Digite observações relevantes..." style="width: 100%; resize: vertical;"></textarea>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-end;">
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            <span *ngIf="!loading">💾 Salvar Beneficiário</span>
+            <span *ngIf="loading">⏳ Salvando...</span>
+          </button>
+          <button type="button" class="btn-secondary" (click)="limparForm()" [disabled]="loading">
+            🗑️ Limpar Formulário
+          </button>
+          <button type="button" class="btn-secondary" (click)="voltarParaBeneficiarios()">
+            ← Voltar para Lista
+          </button>
+        </div>
       </div>
     </form>
   </div>

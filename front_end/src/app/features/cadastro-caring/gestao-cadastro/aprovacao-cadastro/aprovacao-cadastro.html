@@ -70,12 +70,22 @@
       <div class="item"><span class="label">Identificador:</span><span class="value">{{ d.identificador }}</span></div>
       <div class="item"><span class="label">Solicitante:</span><span class="value">{{ d.solicitante }} <span *ngIf="d.codigoEmpresa">({{ d.codigoEmpresa }})</span></span></div>
       <div class="item"><span class="label">Descrição:</span><span class="value">{{ d.descricao }}</span></div>
-      <div class="item" *ngIf="d.observacao"><span class="label">Observação da solicitação:</span><span class="value">{{ d.observacao }}</span></div>
+      <!-- Observação do solicitante será exibida apenas no histórico abaixo -->
       <div class="item"><span class="label">Status atual:</span><span class="value">{{ d.status }}</span></div>
     </div>
 
     <div class="section-subtitle">Histórico</div>
-    <div class="history-list" *ngIf="d.historico?.length">
+    <div class="history-list">
+      <div class="history-item" *ngIf="d.observacoesSolicitacao">
+        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">Solicitante</span>
+        <span class="history-observacao">— {{ d.observacoesSolicitacao }}</span>
+      </div>
+      <div *ngIf="d.observacoesAprovacao" class="history-item">
+        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">Admin</span>
+        <span class="history-observacao">— {{ d.observacoesAprovacao }}</span>
+      </div>
       <div class="history-item" *ngFor="let h of d.historico" [ngClass]="{'solicitante': h.status === 'pendente' && (h.observacao || '').includes('Ajustes do solicitante')}">
         <span class="history-date">{{ h.data | date:'dd/MM/yyyy HH:mm' }}</span>
         <span class="history-status">{{ h.status }}</span>

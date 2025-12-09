@@ -194,9 +194,9 @@ export class AprovacaoCadastroComponent {
     
     // Processar aprovação com dados adicionais
     this.processarAprovacao(this.approvalSolicitacao.id, dadosAprovacao);
-    
     // Fechar modal
     this.closeApprovalModal();
+    this.atualizarLista();
   }
 
   closeApprovalModal() {
@@ -212,12 +212,23 @@ export class AprovacaoCadastroComponent {
     if (!this.selected || this.selected.status === 'concluida') return;
     this.aprovar(this.selected.id);
     this.closeDetails();
+    this.atualizarLista();
   }
 
   negarSelecionado() {
     if (!this.selected || this.selected.status === 'concluida') return;
     this.aprovacao.updateStatus(this.selected.id, 'aguardando', this.motivoNegacao || '');
+    // Adiciona observação ao histórico local
+    if (this.selected) {
+      if (!this.selected.historico) this.selected.historico = [];
+      this.selected.historico.push({
+        data: new Date().toISOString(),
+        status: 'aguardando',
+        observacao: this.motivoNegacao || 'Negação sem observação.'
+      });
+    }
     this.closeDetails();
+    this.atualizarLista();
   }
 
   baixarAnexo(idx: number) {

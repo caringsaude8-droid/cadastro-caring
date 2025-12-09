@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AprovacaoService, Solicitacao } from '../../gestao-cadastro/aprovacao.service';
@@ -26,13 +27,15 @@ export class SolicitacaoCadastroComponent implements OnInit {
   showDetails = false;
   selected: Solicitacao | null = null;
   loading = false;
+  selectedDadosPropostos: Array<{ key: string; value: any }> = [];
 
   constructor(
     private aprovacao: AprovacaoService, 
     private auth: AuthService,
     private empresaContextService: EmpresaContextService,
     private beneficiariosService: BeneficiariosService,
-    private solicitacaoBeneficiarioService: SolicitacaoBeneficiarioService
+    private solicitacaoBeneficiarioService: SolicitacaoBeneficiarioService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -56,15 +59,19 @@ export class SolicitacaoCadastroComponent implements OnInit {
     this.solicitacaoBeneficiarioService.listarTodasPorEmpresa(this.empresaSelecionada.id)
       .subscribe((solicitacoes: any[]) => {
         console.log('[API] solicitações recebidas (todas):', solicitacoes);
+        if (solicitacoes && solicitacoes.length > 0) {
+          console.log('[API] Exemplo de solicitação recebida:', JSON.stringify(solicitacoes[0], null, 2));
+        }
         // Mapeia os campos para o front
-        const mapeadas = solicitacoes.map(s => ({
-          ...s,
-          tipo: (s.tipo || '').toLowerCase(),
-          status: mapStatus(s.status),
-          descricao: s.beneficiarioNome || s.descricao || '',
-          identificador: s.beneficiarioCpf || s.identificador || '',
-          data: s.dataSolicitacao || s.data || '',
-        }));
+          const mapeadas = solicitacoes.map(s => ({
+            ...s,
+            tipo: (s.tipo || '').toLowerCase(),
+            status: mapStatus(s.status),
+            descricao: s.beneficiarioNome || s.descricao || '',
+            identificador: s.beneficiarioCpf || s.identificador || '',
+            data: s.dataSolicitacao || s.data || '',
+            historico: s.historico || []
+          }));
         this.solicitacoes = mapeadas;
         // Função utilitária para mapear status do backend para o front
         function mapStatus(status: string): string {
@@ -111,6 +118,17 @@ export class SolicitacaoCadastroComponent implements OnInit {
   openDetails(s: Solicitacao) {
     this.selected = s;
     if (!this.ajustes[s.id]) this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' };
+    // Extrai os dados propostos diretamente do JSON, se existir
+    let dadosPropostos: any = {};
+    if (s.dadosJson) {
+      try {
+        dadosPropostos = JSON.parse(s.dadosJson);
+      } catch {}
+    }
+    // Exibe apenas os valores dos campos propostos, sem nomes amigáveis
+    this.selectedDadosPropostos = Object.entries(dadosPropostos)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([_, value]) => ({ key: '', value }));
     this.showDetails = true;
   }
 
@@ -120,6 +138,7 @@ export class SolicitacaoCadastroComponent implements OnInit {
   }
 
   salvarAjustes(s: Solicitacao) {
+      console.log('DEBUG - salvarAjustes chamado para:', s);
     const state = this.ensureAjusteState(s.id);
     const texto = state.mensagem || '';
     const user = this.auth.getCurrentUser();
@@ -127,7 +146,18 @@ export class SolicitacaoCadastroComponent implements OnInit {
     const obs = [texto ? `${author}: ${texto}` : '', `(${state.anexos.length} documento(s) anexado(s))`]
       .filter(Boolean)
       .join(' • ');
-    this.aprovacao.updateStatus(s.id, 'pendente', obs);
+
+    // Agrupar dados propostos conforme esperado pela API
+    let dadosPropostos = {};
+    try {
+      dadosPropostos = s.dadosPropostos || (s.dadosJson ? JSON.parse(s.dadosJson).dadosPropostos || JSON.parse(s.dadosJson) : {});
+    } catch {
+      dadosPropostos = {};
+    }
+    // Garante que o objeto passado é { dadosPropostos: { ... } }
+    const payload = { dadosPropostos };
+    console.log('DEBUG - Enviando para updateStatus:', JSON.stringify(payload));
+    this.aprovacao.updateStatus(s.id, 'pendente', obs, payload);
     localStorage.setItem(this.keyFor(s.id), JSON.stringify(state));
   }
 
@@ -175,4 +205,29 @@ export class SolicitacaoCadastroComponent implements OnInit {
   }
 
   private keyFor(id: string) { return `solicitacaoAjustes:${id}`; }
+
+  // Abre o formulário de inclusão para correção de solicitação rejeitada
+  corrigirSolicitacao(s: Solicitacao) {
+    if (!s.dadosJson) {
+      alert('Não há dados propostos para correção nesta solicitação.');
+      return;
+    }
+    let dadosParaPreencher = {};
+    try {
+      const dadosJsonObj = typeof s.dadosJson === 'string' ? JSON.parse(s.dadosJson) : s.dadosJson;
+      dadosParaPreencher = dadosJsonObj.dadosPropostos || dadosJsonObj;
+    } catch (e) {
+      console.warn('Falha ao extrair dadosPropostos:', e);
+      dadosParaPreencher = {};
+    }
+    this.router.navigate([
+      '/cadastro-caring/beneficiarios/inclusao'
+    ], {
+      state: {
+        dados: JSON.stringify(dadosParaPreencher),
+        solicitacaoId: s.id,
+        modoCorrecao: true
+      }
+    });
+  }
 }

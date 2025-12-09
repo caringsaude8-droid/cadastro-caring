@@ -89,11 +89,9 @@
       <div class="detail-grid">
         <div class="item"><span class="label">Data:</span><span class="value">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span></div>
         <div class="item"><span class="label">Tipo:</span><span class="value">{{ d.tipo }}</span></div>
-        <div class="item"><span class="label">Entidade:</span><span class="value">{{ d.entidade }}</span></div>
         <div class="item"><span class="label">Identificador:</span><span class="value">{{ d.identificador }}</span></div>
-      <div class="item wide"><span class="label">Descrição:</span><span class="value">{{ d.descricao }}</span></div>
-      <div class="item wide" *ngIf="d.observacao"><span class="label">Observação da aprovação:</span><span class="value">{{ d.observacao }}</span></div>
-    </div>
+        <div class="item wide"><span class="label">Descrição:</span><span class="value">{{ d.descricao }}</span></div>
+      </div>
 
     <div class="section-subtitle">Histórico</div>
     <div class="history-list" *ngIf="d.historico?.length">
@@ -103,6 +101,26 @@
         <span class="history-observacao" *ngIf="h.observacao">— {{ h.observacao }}</span>
       </div>
     </div>
+
+    <!-- Observação do solicitante como item do histórico -->
+    <div class="history-list" *ngIf="d.observacoesSolicitacao">
+      <div class="history-item">
+        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">Solicitante</span>
+        <span class="history-observacao">— {{ d.observacoesSolicitacao }}</span>
+      </div>
+    </div>
+
+    <!-- Observação da aprovação como item do histórico -->
+    <div class="history-list" *ngIf="d.observacoesAprovacao">
+      <div class="history-item">
+        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">Admin</span>
+        <span class="history-observacao">— {{ d.observacoesAprovacao }}</span>
+      </div>
+    </div>
+
+    
 
       <div *ngIf="d.status === 'concluida'" class="blocked-msg">
         <i class="icon-lock"></i>
@@ -161,6 +179,9 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary btn-sm" (click)="closeDetails()"><i class="icon-x"></i> Fechar</button>
+      <button *ngIf="selected && selected.status === 'aguardando'" class="btn btn-primary btn-sm" (click)="corrigirSolicitacao(selected)">
+        <i class="icon-edit"></i> Corrigir e Reenviar
+      </button>
     </div>
   </div>
 </div>

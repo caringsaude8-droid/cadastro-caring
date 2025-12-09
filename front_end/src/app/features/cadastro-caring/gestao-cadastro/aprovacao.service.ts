@@ -8,6 +8,7 @@ export type SolicitacaoStatus = 'pendente' | 'aguardando' | 'concluida';
 export type SolicitacaoTipo = 'inclusao' | 'alteracao' | 'exclusao';
 
 export interface Solicitacao {
+    dadosJson?: string;
   id: string;
   tipo: SolicitacaoTipo;
   entidade: string;
@@ -18,7 +19,10 @@ export interface Solicitacao {
   data: string;
   status: SolicitacaoStatus;
   observacao?: string;
+  observacoesSolicitacao?: string;
   historico?: { data: string; status: SolicitacaoStatus; observacao?: string }[];
+  observacoesAprovacao?: string;
+  dadosPropostos?: any;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -46,7 +50,7 @@ export class AprovacaoService {
     beneficiarioId?: number;
     motivoExclusao?: string;
     dadosPropostos?: any;
-  }): Solicitacao {
+  }): Solicitacao | void {
     
     // Se temos dados para criar na nova API, fazer isso
     if (partial.beneficiarioId || partial.tipo === 'inclusao') {
@@ -60,11 +64,11 @@ export class AprovacaoService {
 
       this.solicitacaoService.criarSolicitacao(request).subscribe({
         next: (response) => {
-          // Não precisa recarregar automaticamente - será feito manualmente
+          // Solicitação criada com sucesso
         },
         error: (error) => {
-          // Fallback: criar localmente para não quebrar o fluxo
-          this.criarSolicitacaoLocal(partial);
+          // Exibir erro ao usuário
+          alert('Erro ao criar solicitação: ' + (error?.message || 'Falha desconhecida. Tente novamente.'));
         }
       });
     } else {
@@ -72,8 +76,8 @@ export class AprovacaoService {
       return this.criarSolicitacaoLocal(partial);
     }
 
-    // Retornar uma solicitação temporária
-    return this.criarSolicitacaoLocal(partial);
+    // Não retorna solicitação temporária se for integração com API
+    return;
   }
 
   private criarSolicitacaoLocal(partial: Omit<Solicitacao, 'id' | 'data' | 'status'> & { 
@@ -107,18 +111,29 @@ export class AprovacaoService {
     // Tentar processar na nova API primeiro
     const idNumerico = parseInt(id);
     if (!isNaN(idNumerico)) {
-      const acao = status === 'concluida' ? 'APROVAR' : 'REJEITAR';
-      
-      const request: any = {
-        acao,
-        observacoesAprovacao: observacao
-      };
-      
-      // Adicionar dadosAprovacao se fornecido
-      if (dadosAprovacao && Object.keys(dadosAprovacao).length > 0) {
-        request.dadosAprovacao = dadosAprovacao;
+      let request: any;
+      if (status === 'pendente' && dadosAprovacao && dadosAprovacao.dadosPropostos) {
+        // Para correção, enviar exatamente o objeto recebido (já está no formato correto)
+        request = {
+          observacoesSolicitacao: observacao,
+          dadosPropostos: dadosAprovacao.dadosPropostos
+        };
+        // Se o objeto já veio pronto, use diretamente:
+        if (Object.keys(dadosAprovacao).length === 2 && 'observacoesSolicitacao' in dadosAprovacao && 'dadosPropostos' in dadosAprovacao) {
+          request = dadosAprovacao;
+        }
+      } else {
+        // Fluxo antigo para aprovação/rejeição
+        const acao = status === 'concluida' ? 'APROVAR' : 'REJEITAR';
+        request = {
+          acao,
+          observacoesAprovacao: observacao
+        };
+        if (dadosAprovacao && Object.keys(dadosAprovacao).length > 0) {
+          request.dadosAprovacao = dadosAprovacao;
+        }
       }
-      
+      console.log('DEBUG - Payload final enviado para processarSolicitacao:', JSON.stringify(request));
       this.solicitacaoService.processarSolicitacao(idNumerico, request).subscribe({
         next: (response) => {
           // Lista será atualizada manualmente ou via timer
@@ -174,9 +189,13 @@ export class AprovacaoService {
   criarSolicitacaoExclusao(beneficiario: any, motivo: string, observacoes?: string, empresaId?: number): Observable<any> {
     const request: SolicitacaoRequest = {
       beneficiarioId: beneficiario.id,
+      beneficiarioNome: typeof beneficiario.nome === 'string' && beneficiario.nome ? beneficiario.nome : (typeof beneficiario.benNomeSegurado === 'string' ? beneficiario.benNomeSegurado : ''),
+      beneficiarioCpf: typeof beneficiario.cpf === 'string' && beneficiario.cpf ? beneficiario.cpf : (typeof beneficiario.benCpf === 'string' ? beneficiario.benCpf : ''),
       tipo: 'EXCLUSAO',
-      motivoExclusao: motivo,
-      observacoesSolicitacao: observacoes,
+      motivoExclusao: typeof motivo === 'string' ? motivo : '',
+      observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : '',
+      observacoes: typeof observacoes === 'string' ? observacoes : '',
+      observacoesAprovacao: typeof observacoes === 'string' ? observacoes : '',
       empresaId
     };
     return this.solicitacaoService.criarSolicitacao(request);
@@ -193,9 +212,13 @@ export class AprovacaoService {
   ): Observable<any> {
     const request: SolicitacaoRequest = {
       beneficiarioId: beneficiario.id,
+      beneficiarioNome: typeof beneficiario.nome === 'string' && beneficiario.nome ? beneficiario.nome : (typeof beneficiario.benNomeSegurado === 'string' ? beneficiario.benNomeSegurado : ''),
+      beneficiarioCpf: typeof beneficiario.cpf === 'string' && beneficiario.cpf ? beneficiario.cpf : (typeof beneficiario.benCpf === 'string' ? beneficiario.benCpf : ''),
       tipo: 'ALTERACAO',
       dadosPropostos: dadosPropostos,
-      observacoesSolicitacao: observacoes,
+      observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : '',
+      observacoes: typeof observacoes === 'string' ? observacoes : '',
+      observacoesAprovacao: typeof observacoes === 'string' ? observacoes : '',
       empresaId
     };
     return this.solicitacaoService.criarSolicitacao(request);
@@ -205,14 +228,24 @@ export class AprovacaoService {
    * Método helper para criar solicitação de inclusão de beneficiário
    */
   criarSolicitacaoInclusao(dadosPropostos: any, observacoes?: string): Observable<any> {
+    // Se o parâmetro já é o objeto completo da solicitação, apenas repasse para o serviço
+    // (mantém compatibilidade com chamadas antigas que passavam só dadosPropostos)
+    if (dadosPropostos && typeof dadosPropostos === 'object' && 'beneficiarioNome' in dadosPropostos && 'beneficiarioCpf' in dadosPropostos) {
+      return this.solicitacaoService.criarSolicitacao(dadosPropostos);
+    }
+
+    // Fluxo antigo: montar request a partir de dadosPropostos e observações
     const empresa = this.empresaContextService.getEmpresaSelecionada();
     const request: SolicitacaoRequest = {
       tipo: 'INCLUSAO',
+      empresaId: empresa?.id,
+      beneficiarioNome: typeof dadosPropostos.benNomeSegurado === 'string' ? dadosPropostos.benNomeSegurado : '',
+      beneficiarioCpf: typeof dadosPropostos.benCpf === 'string' ? dadosPropostos.benCpf : '',
       dadosPropostos: dadosPropostos,
-      observacoesSolicitacao: observacoes,
-      empresaId: empresa?.id
+      observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : '',
+      observacoes: typeof observacoes === 'string' ? observacoes : '',
+      observacoesAprovacao: typeof observacoes === 'string' ? observacoes : ''
     };
-
     return this.solicitacaoService.criarSolicitacao(request);
   }
  

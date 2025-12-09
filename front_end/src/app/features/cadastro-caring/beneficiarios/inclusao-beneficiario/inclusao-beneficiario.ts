@@ -50,7 +50,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     indicadorPessoaTrans: 'nao',
     nomeSocial: '',
     identidadeGenero: '',
-    tipoMotivo: 'I' // I=Inclusão, E=Exclusão, A=Alteração, P=Troca de plano
+    tipoMotivo: 'I', // I=Inclusão, E=Exclusão, A=Alteração, P=Troca de plano
+    observacoesSolicitacao: ''
   };
 
   // Empresa e carregamento
@@ -135,6 +136,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     { value: 'outro', label: 'Outro' }
   ];
 
+  isModoCorrecao = false;
+
   constructor(
     private service: BeneficiariosService, 
     private aprovacao: AprovacaoService,
@@ -155,15 +158,76 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   ngOnInit() {
     // Obter empresa selecionada (garantido pelo guard)
     this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
-    
+
     if (this.empresaSelecionada) {
       this.empresaInfo = `Empresa: ${this.empresaSelecionada.nome} (${this.empresaSelecionada.codigoEmpresa})`;
-      
       // Pré-preencher campos da empresa
       this.form.codigoEmpresa = this.empresaSelecionada.codigoEmpresa;
       this.form.numeroEmpresa = this.empresaSelecionada.numeroEmpresa;
     }
-    
+
+    // Verifica se veio dados de correção de solicitação rejeitada
+    const nav = window.history.state;
+    if (nav && nav.modoCorrecao && nav.dados) {
+      this.isModoCorrecao = true;
+      try {
+        const dados = typeof nav.dados === 'string' ? JSON.parse(nav.dados) : nav.dados;
+        const dadosParaPreencher = dados.dadosPropostos || dados;
+        // Função para converter dd/MM/yyyy para yyyy-MM-dd
+        const brToHtmlDate = (data: string) => {
+          if (!data || !/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return data;
+          const [dia, mes, ano] = data.split('/');
+          return `${ano}-${mes}-${dia}`;
+        };
+        this.form.nomeSegurado = dadosParaPreencher.benNomeSegurado || '';
+        this.form.cpf = dadosParaPreencher.benCpf || '';
+        this.form.relacaoDep = dadosParaPreencher.benRelacaoDep || '';
+        this.form.dataNascimento = brToHtmlDate(dadosParaPreencher.benDtaNasc || '');
+        this.form.sexo = dadosParaPreencher.benSexo || '';
+        // Conversão reversa para estado civil
+        const estadoCivilReverso = (codigo: string) => {
+          switch ((codigo || '').toUpperCase()) {
+            case 'S': return 'solteiro';
+            case 'M': return 'casado';
+            case 'D': return 'divorciado';
+            case 'W': return 'viuvo';
+            default: return '';
+          }
+        };
+        // Conversão reversa para plano prod
+        const planoProdReverso = (codigo: string) => {
+          switch ((codigo || '').toUpperCase()) {
+            case 'ADMDTXCP': return 'unimed_adm_dinamico';
+            // Adicione outros casos conforme necessário
+            default: return '';
+          }
+        };
+        this.form.estadoCivil = estadoCivilReverso(dadosParaPreencher.benEstCivil);
+        this.form.planoProd = planoProdReverso(dadosParaPreencher.benPlanoProd);
+        this.form.cidade = dadosParaPreencher.benCidade || '';
+        this.form.uf = dadosParaPreencher.benUf || '';
+        this.form.admissao = brToHtmlDate(dadosParaPreencher.benAdmissao || '');
+        this.form.nomeMae = dadosParaPreencher.benNomeDaMae || '';
+        this.form.endereco = dadosParaPreencher.benEndereco || '';
+        this.form.complemento = dadosParaPreencher.benComplemento || '';
+        this.form.bairro = dadosParaPreencher.benBairro || '';
+        this.form.cep = dadosParaPreencher.benCep || '';
+        this.form.matricula = dadosParaPreencher.benMatricula || '';
+        this.form.celular = dadosParaPreencher.benDddCel || '';
+        this.form.email = dadosParaPreencher.benEmail || '';
+        this.form.dataCasamento = brToHtmlDate(dadosParaPreencher.benDataCasamento || '');
+        this.form.indicadorPessoaTrans = dadosParaPreencher.benIndicPesTrans || '';
+        this.form.nomeSocial = dadosParaPreencher.benNomeSocial || '';
+        this.form.identidadeGenero = dadosParaPreencher.benIdentGenero || '';
+        this.form.dataInclusaoExclusao = brToHtmlDate(dadosParaPreencher.benDtaInclusao || '');
+        this.form.numero = dadosParaPreencher.benNumero || '';
+        // Se quiser, pode guardar o id da solicitação para uso posterior
+        // this.solicitacaoId = nav.solicitacaoId;
+      } catch (e) {
+        console.warn('Falha ao preencher dados de correção:', e);
+      }
+    }
+
     // Carregar titulares via Observable
     this.service.list().subscribe({
       next: (beneficiarios) => {
@@ -234,42 +298,69 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     }
 
     // Validação específica para dependentes
-    if (this.form.relacaoDep !== 'titular' && !this.titularEncontrado) {
-      this.showToast('Erro', 'É necessário selecionar um titular válido para dependentes', 'error');
-      return;
+    if (this.form.relacaoDep !== 'titular') {
+      if (!this.cpfTitular || this.cpfTitular.length < 11) {
+        this.showToast('Erro', 'Digite o CPF do titular para dependentes', 'error');
+        return;
+      }
+      // Buscar titular pelo CPF antes de salvar
+      const titular = await this.service.buscarTitularPorCpf(this.cpfTitular).toPromise();
+      if (!titular) {
+        this.showToast('Erro', 'Titular não encontrado para o CPF informado', 'error');
+        return;
+      }
+      this.titularEncontrado = titular;
     }
-    
+
+    // Formatar visualmente CPF e celular no form
+    this.form.cpf = this.formatarCpf(this.form.cpf);
+    this.form.celular = this.formatarCelular(this.form.celular);
+
     this.loading = true;
     this.errorMessage = '';
-    
+
     // Converter formulário para formato da API
     const request = await this.converterFormParaAPI();
-    
-    // Garantir que o status 'Pendente' seja definido explicitamente
     request.benStatus = 'Pendente';
-    console.log('📤 Request preparado para solicitação:', request);
 
-    // Gerar solicitação para aprovação
-    console.log('empresaSelecionada antes da solicitação:', this.empresaSelecionada);
+    // Verifica se está em modo de correção de solicitação rejeitada
+    const nav = window.history.state;
+    if (nav && nav.modoCorrecao && nav.solicitacaoId) {
+      // PUT para correção
+      try {
+        const id = nav.solicitacaoId;
+        const payload = {
+          observacoesSolicitacao: this.form.observacoesSolicitacao || '',
+          dadosPropostos: request
+        };
+        // Chama o endpoint PUT
+        await this.service.atualizarSolicitacao(id, payload).toPromise();
+        this.showToast('Sucesso', 'Solicitação corrigida e reenviada com sucesso', 'success');
+        this.limparForm();
+      } catch (e) {
+        this.showToast('Erro', 'Falha ao corrigir solicitação', 'error');
+      }
+      this.loading = false;
+      return;
+    }
+
+    // Fluxo normal de inclusão
     const currentUser = this.authService.getCurrentUser();
-      const solicitacao = {
-        tipo: 'INCLUSAO',
-        empresaId: this.empresaSelecionada?.id,
-        beneficiarioId: null,
-        motivoExclusao: null,
-        observacoesSolicitacao: this.form.nomeSegurado, // ou outro campo de observação
-        dadosPropostos: {
-          ...request
-        }
-      };
-
-    // LOG do JSON da solicitação
-    console.log('🔎 JSON da solicitação de inclusão:', JSON.stringify(solicitacao, null, 2));
-
-    console.log('📝 Criando solicitação de aprovação:', solicitacao);
+    const solicitacao = {
+      tipo: 'INCLUSAO',
+      empresaId: this.empresaSelecionada?.id,
+      beneficiarioId: null,
+      motivoExclusao: null,
+      observacoesSolicitacao: this.form.observacoesSolicitacao || '',
+      beneficiarioNome: this.form.nomeSegurado || '',
+      beneficiarioCpf: (this.form.cpf || '').replace(/\D/g, ''),
+      observacoes: '',
+      observacoesAprovacao: '',
+      dadosPropostos: {
+        ...request
+      }
+    };
     const solicitacaoCriada = await this.aprovacao.criarSolicitacaoInclusao(solicitacao).toPromise();
-    console.log('✅ Solicitação criada com ID:', solicitacaoCriada.id);
-
     this.showToast('Sucesso', 'Solicitação de inclusão criada com sucesso', 'success');
     this.limparForm();
     this.loading = false;
@@ -277,11 +368,13 @@ export class InclusaoBeneficiarioComponent implements OnInit {
 
   // Método para converter o formulário para o formato JSON esperado pela API
   private async converterFormParaAPI(): Promise<InclusaoBeneficiarioRequest> {
+    // Garante que apenas números vão para o JSON
+    const cpfNumeros = (this.form.cpf || '').replace(/\D/g, '');
+    const celularNumeros = (this.form.celular || '').replace(/\D/g, '');
     const request: InclusaoBeneficiarioRequest = {
-      // ...todos os campos do beneficiário, exceto 'tipo'...
       benEmpId: this.empresaSelecionada?.id || 0,
       benNomeSegurado: this.form.nomeSegurado || '',
-      benCpf: this.form.cpf || '',
+      benCpf: cpfNumeros,
       benRelacaoDep: await this.mapearRelacaoDependencia(this.form.relacaoDep || ''),
       benDtaNasc: this.form.dataNascimento ? this.formatarDataParaAPI(this.form.dataNascimento) : undefined,
       benSexo: this.form.sexo ? this.converterSexo(this.form.sexo) : undefined,
@@ -296,15 +389,15 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benBairro: this.form.bairro || undefined,
       benCep: this.form.cep || undefined,
       benMatricula: this.form.matricula || undefined,
-      benDddCel: this.form.celular || undefined,
+      benDddCel: celularNumeros,
       benEmail: this.form.email || undefined,
       benDataCasamento: this.form.dataCasamento ? this.formatarDataParaAPI(this.form.dataCasamento) : undefined,
       benIndicPesTrans: this.form.indicadorPessoaTrans || undefined,
       benNomeSocial: this.form.nomeSocial || undefined,
       benIdentGenero: this.form.identidadeGenero || undefined,
       benDtaInclusao: this.formatarDataParaAPI(new Date().toISOString().split('T')[0]),
-      benTitularId: this.titularEncontrado?.id || undefined,
-      benTipoMotivo: 'I', // I=Inclusão (sempre I para inclusão)
+      benTitularId: this.form.relacaoDep !== 'titular' ? this.titularEncontrado?.id : undefined,
+      benTipoMotivo: 'I',
       benCodUnimedSeg: undefined,
       benDtaExclusao: undefined,
       benCodCartao: undefined,
@@ -312,8 +405,24 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benStatus: 'Pendente',
       benNumero: this.form.numero || undefined
     };
-
     return request;
+  }
+  // Formata o CPF para o padrão 000.000.000-00
+  private formatarCpf(cpf: string): string {
+    const numeros = (cpf || '').replace(/\D/g, '');
+    if (numeros.length !== 11) return numeros;
+    return `${numeros.substring(0,3)}.${numeros.substring(3,6)}.${numeros.substring(6,9)}-${numeros.substring(9,11)}`;
+  }
+
+  // Formata o celular para o padrão (00) 00000-0000 ou (00) 0000-0000
+  private formatarCelular(celular: string): string {
+    const numeros = (celular || '').replace(/\D/g, '');
+    if (numeros.length === 11) {
+      return `(${numeros.substring(0,2)}) ${numeros.substring(2,7)}-${numeros.substring(7,11)}`;
+    } else if (numeros.length === 10) {
+      return `(${numeros.substring(0,2)}) ${numeros.substring(2,6)}-${numeros.substring(6,10)}`;
+    }
+    return numeros;
   }
 
   // Utilitários de conversão
@@ -377,11 +486,9 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       // Empresariais Básicos
       case 'unimed_adm_dinamico':
         return 'ADMDTXCP';
-      
-      
-  
+      // Adicione outros casos conforme necessário
       default:
-        return planoProduto.toUpperCase(); // Fallback
+        return planoProduto ? planoProduto.toUpperCase() : '';
     }
   }
 
@@ -399,18 +506,15 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     }
     
     // Fallback para códigos básicos
-    const mapeamentoBasico: { [key: string]: string } = {
-      'esposa': '01',
-      'companheiro': '02',
-      'companheira': '02', 
+    const mapeamentoBasico: Record<string, string> = {
+      'companheira': '02',
       'marido': '09',
       'pai': '50',
       'mae': '51',
       'sogro': '52',
       'sogra': '53'
     };
-    
-    return mapeamentoBasico[relacaoLower] || '01';
+    return mapeamentoBasico[relacaoLower] ?? '01';
   }
 
   private async calcularCodigoParentesco(tipoParentesco: string, sexo: string): Promise<string> {
@@ -563,7 +667,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       indicadorPessoaTrans: 'nao',
       nomeSocial: '',
       identidadeGenero: '',
-      tipoMotivo: 'I' // I=Inclusão, E=Exclusão, A=Alteração, P=Troca de plano
+      tipoMotivo: 'I', // I=Inclusão, E=Exclusão, A=Alteração, P=Troca de plano
+      observacoesSolicitacao: ''
     };
     this.anexos = [];
   }
@@ -585,13 +690,13 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     
     try {
       const titular = await this.service.buscarTitularPorCpf(this.cpfTitular).toPromise();
-      
-      if (titular) {
+      console.log('DEBUG titular retornado:', titular);
+      if (titular && titular.benRelacaoDep === '00') {
         this.titularEncontrado = titular;
         this.showToast('Sucesso', `Titular encontrado: ${titular.nome}`, 'success');
       } else {
         this.titularEncontrado = null;
-        this.showToast('Erro', 'Titular não encontrado', 'error');
+        this.showToast('Erro', 'Titular não encontrado ou não é do tipo titular', 'error');
       }
     } catch (error) {
       this.titularEncontrado = null;

@@ -24,6 +24,12 @@ type BeneficiarioInfo = {
   styleUrl: './exclusao-cadastral.css'
 })
 export class ExclusaoCadastralComponent implements OnInit {
+    // Formata o CPF para o padrão 000.000.000-00
+    private formatarCpf(cpf: string): string {
+      const numeros = (cpf || '').replace(/\D/g, '');
+      if (numeros.length !== 11) return numeros;
+      return `${numeros.substring(0,3)}.${numeros.substring(3,6)}.${numeros.substring(6,9)}-${numeros.substring(9,11)}`;
+    }
   beneficiario: BeneficiarioInfo = {};
   motivo: string = '';
   dataExclusao: string = '';
@@ -139,31 +145,42 @@ export class ExclusaoCadastralComponent implements OnInit {
   async salvarExclusao() {
     try {
       const empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
-      const user = this.auth.getCurrentUser();
-      const author = user?.nome || 'Usuário';
-      // Buscar beneficiarioId se possível
+      // Buscar beneficiarioId, nome e cpf se necessário
       let beneficiarioId = this.beneficiario.id;
-      if (!beneficiarioId && this.beneficiario.cpf) {
+      let beneficiarioNome = this.beneficiario.nome || '';
+      // Formatar visualmente o CPF no form
+      this.beneficiario.cpf = this.formatarCpf(this.beneficiario.cpf || '');
+      let beneficiarioCpf = (this.beneficiario.cpf || '').replace(/\D/g, '');
+      if ((!beneficiarioId || !beneficiarioNome || !beneficiarioCpf) && this.beneficiario.cpf) {
         const beneficiariosRaw = await this.beneficiarios.listRaw().toPromise();
-        const encontrado = beneficiariosRaw?.find(b => b.cpf === this.beneficiario.cpf || b.benCpf === this.beneficiario.cpf);
+        const encontrado = beneficiariosRaw?.find(b => b.cpf === (this.beneficiario.cpf || '').replace(/\D/g, '') || b.benCpf === (this.beneficiario.cpf || '').replace(/\D/g, ''));
         beneficiarioId = encontrado?.id;
+        beneficiarioNome = encontrado?.nome || encontrado?.benNomeSegurado || beneficiarioNome;
+        beneficiarioCpf = (encontrado?.cpf || encontrado?.benCpf || beneficiarioCpf || '').replace(/\D/g, '');
       }
+
+      // Monta objeto principal da solicitação
+      const solicitacao = {
+        beneficiarioId,
+        beneficiarioNome,
+        beneficiarioCpf,
+        tipo: 'EXCLUSAO',
+        motivoExclusao: this.motivo,
+        observacoesSolicitacao: this.mensagem,
+        observacoes: '',
+        observacoesAprovacao: '',
+        empresaId: empresaSelecionada?.id
+      };
+
       this.aprovacao.criarSolicitacaoExclusao(
-        { ...this.beneficiario, id: beneficiarioId },
+        solicitacao,
         this.motivo,
         this.mensagem,
         empresaSelecionada?.id
       ).subscribe({
         next: (response: any) => {
           console.log('✅ Solicitação de exclusão criada:', response);
-          // Log do JSON da solicitação
-          console.log('🔎 JSON da solicitação de exclusão:', JSON.stringify({
-            beneficiarioId,
-            tipo: 'EXCLUSAO',
-            motivoExclusao: this.motivo,
-            observacoesSolicitacao: this.mensagem,
-            empresaId: empresaSelecionada?.id
-          }, null, 2));
+          console.log('🔎 JSON da solicitação de exclusão:', JSON.stringify(solicitacao, null, 2));
         },
         error: (error: any) => {
           console.error('❌ Erro na chamada POST /solicitacoes:', error);

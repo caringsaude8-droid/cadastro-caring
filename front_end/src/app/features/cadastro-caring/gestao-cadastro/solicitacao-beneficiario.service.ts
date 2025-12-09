@@ -31,10 +31,14 @@ export interface SolicitacaoBeneficiario {
 
 export interface SolicitacaoRequest {
   beneficiarioId?: number;
+  beneficiarioNome?: string;
+  beneficiarioCpf?: string;
   tipo: 'INCLUSAO' | 'ALTERACAO' | 'EXCLUSAO';
   motivoExclusao?: string;
   dadosPropostos?: any;
   observacoesSolicitacao?: string;
+  observacoes?: string;
+  observacoesAprovacao?: string;
   empresaId?: number;
 }
 
@@ -172,7 +176,8 @@ export class SolicitacaoBeneficiarioService {
           codigoEmpresa: '', // TODO: Adicionar empresa_id na API
           data: s.dataSolicitacao?.toString() || new Date().toISOString(),
           status: this.convertStatusParaAntigo(s.status || 'PENDENTE'),
-          observacao: s.observacoesSolicitacao,
+          observacoesSolicitacao: s.observacoesSolicitacao,
+          observacoesAprovacao: s.observacoesAprovacao,
           historico: []
         }))
       )

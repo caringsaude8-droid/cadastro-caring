@@ -94,7 +94,8 @@ export class AlteracaoCadastralComponent implements OnInit {
     benCodUnimedSeg: '',
     benCodCartao: '',
     benMotivoExclusao: '',
-    benTitularId: ''
+    benTitularId: '',
+    observacoesSolicitacao: ''
   };
 
   // Opções para tipo de motivo na alteração
@@ -221,7 +222,8 @@ export class AlteracaoCadastralComponent implements OnInit {
 
   async salvar() {
     console.log('💾 Salvando alteração com tipoMotivo:', this.form.tipoMotivo);
-    
+
+    // Validação dos campos obrigatórios
     if (!this.form.nomeSegurado?.trim() || !this.form.cpf?.trim() || !this.form.tipoMotivo) {
       alert('Por favor, preencha todos os campos obrigatórios, incluindo o tipo de movimentação.');
       return;
@@ -230,22 +232,25 @@ export class AlteracaoCadastralComponent implements OnInit {
     try {
       const empresa = this.empresaContextService.getEmpresaSelecionada();
       const usuario = this.authService.getCurrentUser();
-
       if (!empresa || !usuario) {
         alert('Erro: Contexto de empresa ou usuário não encontrado.');
         return;
       }
 
-      // Preparar dados propostos conforme documentação da API
+      // Formatar visualmente CPF e celular no form
+      this.form.cpf = this.formatarCpf(this.form.cpf);
+      this.form.celular = this.formatarCelular(this.form.celular);
+
+      // Monta dadosPropostos (apenas dados do DTO)
       const dadosPropostos = {
         benTipoMotivo: this.form.tipoMotivo,
         benNomeSegurado: this.form.nomeSegurado,
-        benCpf: this.form.cpf,
+        benCpf: (this.form.cpf || '').replace(/\D/g, ''),
         benDtaNasc: this.form.dataNascimento,
         benRelacaoDep: this.mapDependencia(this.form.dependencia),
         benSexo: this.form.sexo,
         benEstCivil: this.form.estadoCivil,
-        benDddCel: this.form.celular,
+        benDddCel: (this.form.celular || '').replace(/\D/g, ''),
         benEmail: this.form.email,
         benEndereco: this.form.endereco,
         benNumero: this.form.numero,
@@ -271,7 +276,8 @@ export class AlteracaoCadastralComponent implements OnInit {
         benEmpId: empresa.id,
         benStatus: 'ATIVO'
       };
-      // Buscar beneficiário por CPF para obter ID
+
+      // Busca beneficiário por CPF para obter ID
       const beneficiariosRaw = await this.beneficiariosService.listRaw().toPromise();
       const beneficiario = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === this.form.cpf);
       if (!beneficiario) {
@@ -279,29 +285,30 @@ export class AlteracaoCadastralComponent implements OnInit {
         return;
       }
 
-      const observacoes = `Alteração cadastral - Tipo: ${this.getTipoMotivoTexto(this.form.tipoMotivo)}`;
-      
-      console.log('🚀 Disparando solicitação de alteração cadastral:', {
+      // Monta objeto principal da solicitação
+      const solicitacao = {
         beneficiarioId: beneficiario.id,
-        empresaId: empresa.id,
-        dados: dadosPropostos,
-        timestamp: new Date().toISOString()
-      });
+        beneficiarioNome: beneficiario.nome || beneficiario.benNomeSegurado || '',
+        beneficiarioCpf: beneficiario.cpf || beneficiario.benCpf || '',
+        tipo: 'ALTERACAO',
+        dadosPropostos,
+        observacoesSolicitacao: this.form.observacoesSolicitacao || '',
+        observacoes: '',
+        observacoesAprovacao: '',
+        empresaId: empresa.id
+      };
+
+      console.log('🚀 Disparando solicitação de alteração cadastral:', solicitacao);
+
       this.aprovacaoService.criarSolicitacaoAlteracao(
         beneficiario,
         dadosPropostos,
-        observacoes,
-        empresa.id // empresaId enviado corretamente
+        solicitacao.observacoesSolicitacao,
+        empresa.id
       ).subscribe({
         next: (response: any) => {
           console.log('✅ Solicitação criada (resposta do POST /solicitacoes):', response);
-          // Log do JSON da solicitação
-          console.log('🔎 JSON da solicitação de alteração:', JSON.stringify({
-            beneficiarioId: beneficiario.id,
-            dadosPropostos,
-            observacoesSolicitacao: observacoes,
-            empresaId: empresa.id
-          }, null, 2));
+          console.log('🔎 JSON da solicitação de alteração:', JSON.stringify(solicitacao, null, 2));
           alert('✔ Solicitação de alteração criada com sucesso!');
           setTimeout(() => {
             this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
@@ -311,10 +318,16 @@ export class AlteracaoCadastralComponent implements OnInit {
           console.error('❌ Erro na chamada POST /solicitacoes:', error);
         }
       });
-      
     } catch (error) {
       alert('Erro ao salvar alteração. Tente novamente.');
     }
+  }
+
+  // Formata o CPF para o padrão 000.000.000-00
+  private formatarCpf(cpf: string): string {
+    const numeros = (cpf || '').replace(/\D/g, '');
+    if (numeros.length !== 11) return numeros;
+    return `${numeros.substring(0,3)}.${numeros.substring(3,6)}.${numeros.substring(6,9)}-${numeros.substring(9,11)}`;
   }
 
   private getTipoMotivoTexto(codigo: string): string {

@@ -1,4 +1,13 @@
-import { Injectable, inject } from '@angular/core';
+// Interface para requisição de alteração cadastral
+export interface AlteracaoCadastralRequest {
+  // Replicar campos relevantes do form conforme uso no PUT
+  nomeSegurado?: string;
+  cpf?: string;
+  dataNascimento?: string;
+  // ... outros campos conforme uso ...
+  observacoesSolicitacao?: string;
+}
+import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -37,6 +46,8 @@ export interface Beneficiario {
   indicador_pessoa_trans?: string;
   data_casamento?: string;
   benStatus: string; // Status do banco via API
+  observacoesSolicitacao?: string;
+  benRelacaoDep?: string;
 }
 
 // Interface para requisição de inclusão (JSON que a API esperaria)
@@ -73,13 +84,23 @@ export interface InclusaoBeneficiarioRequest {
   benMotivoExclusao?: string;
   benStatus?: string;
   benNumero?: string;
+  observacoesSolicitacao?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class BeneficiariosService {
   private readonly apiUrl = 'http://localhost:8081/api/cadastro/v1';
-  private http = inject(HttpClient);
-  private empresaContextService = inject(EmpresaContextService);
+  constructor(
+    private http: HttpClient,
+    private empresaContextService: EmpresaContextService
+  ) {}
+  /**
+   * Atualiza uma solicitação rejeitada (correção) - PUT /api/cadastro/v1/solicitacoes/{id}
+   */
+  atualizarSolicitacao(id: string | number, payload: any): Observable<any> {
+    const url = `${this.apiUrl}/solicitacoes/${id}`;
+    return this.http.put(url, payload);
+  }
 
   private getEmpresaId(): number | null {
     const empresa = this.empresaContextService.getEmpresaSelecionada();
@@ -135,7 +156,8 @@ export class BeneficiariosService {
       identidade_genero: apiData.identidade_genero || apiData.benIdentGenero || '',
       indicador_pessoa_trans: apiData.indicador_pessoa_trans || apiData.benIndicPesTrans || '',
       data_casamento: apiData.data_casamento || (apiData.benDataCasamento ? this.parseApiDateToIso(apiData.benDataCasamento) : ''),
-      benStatus: apiData.benStatus || 'Ativo' // Se não tem status na API, assumir Ativo
+      benStatus: apiData.benStatus || 'Ativo', // Se não tem status na API, assumir Ativo
+      benRelacaoDep: apiData.benRelacaoDep
     };
   }
 
@@ -246,11 +268,21 @@ export class BeneficiariosService {
       return of(null);
     }
 
-    const params = new HttpParams()
-      .set('empresaId', empresa.id.toString())
-      .set('cpf', cpf)
-      .set('tipo', 'titular');
-    return this.http.get<Beneficiario | null>(`${this.apiUrl}/beneficiarios/buscar`, { params });
+    const params = new HttpParams().set('cpf', cpf).set('empresaId', empresa.id.toString());
+    return this.http.get<any>(`${this.apiUrl}/beneficiarios/buscar`, { params }).pipe(
+      map(result => {
+        if (!result) return null;
+        // Se vier array, pega o primeiro item não nulo
+        let data = null;
+        if (Array.isArray(result)) {
+          data = result.find(item => !!item);
+        } else {
+          data = result;
+        }
+        if (!data) return null;
+        return this.mapearBeneficiarioApi(data);
+      })
+    );
   }
 
   // Métodos auxiliares para busca e filtros
