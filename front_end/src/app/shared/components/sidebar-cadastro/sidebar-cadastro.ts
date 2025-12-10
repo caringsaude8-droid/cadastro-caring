@@ -37,8 +37,10 @@ export class SidebarCadastro implements OnInit, OnDestroy {
 
   beneficiariosSubItems: SubMenuItem[] = [
     { title: 'Inclusão', url: '/cadastro-caring/beneficiarios/inclusao' },
-    { title: 'Alteraração', url: '/cadastro-caring/beneficiarios' },
-    { title: 'Solicitação de Cadastro', url: '/cadastro-caring/beneficiarios/solicitacao-cadastro' }
+    { title: 'Alteração', url: '/cadastro-caring/beneficiarios' },
+    { title: 'Solicitação de Cadastro', url: '/cadastro-caring/beneficiarios/solicitacao-cadastro' },
+    { title: 'Relatório Beneficiários', url: '/cadastro-caring/beneficiarios/relatorio-beneficiarios' },
+    { title: 'Relatório Solicitações', url: '/cadastro-caring/beneficiarios/relatorio-solicitacao' }
   ];
 
 

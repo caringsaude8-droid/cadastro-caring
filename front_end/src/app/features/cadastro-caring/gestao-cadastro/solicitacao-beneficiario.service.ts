@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 // Interfaces alinhadas com o backend
@@ -108,6 +108,7 @@ export class SolicitacaoBeneficiarioService {
       );
     }
   private readonly baseUrl = 'http://localhost:8081/api/cadastro/v1/solicitacoes';
+  private readonly historicoUrl = 'http://localhost:8081/api/cadastro/v1/historico';
 
   constructor(private http: HttpClient) {}
 
@@ -155,6 +156,17 @@ export class SolicitacaoBeneficiarioService {
       catchError(error => {
         console.error('❌ Erro ao buscar solicitação:', error);
         throw error;
+      })
+    );
+  }
+
+  listarHistorico(id: number): Observable<any[]> {
+    console.log('[API] Histórico URL:', `${this.baseUrl}/${id}/historico`, 'ID:', id);
+    return this.http.get<any[]>(`${this.baseUrl}/${id}/historico`).pipe(
+      tap(resp => console.log('[API] Histórico resposta:', resp)),
+      catchError(error => {
+        console.error('❌ Erro ao buscar histórico:', error);
+        return of([]);
       })
     );
   }

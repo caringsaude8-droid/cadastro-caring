@@ -11,6 +11,8 @@ import { InclusaoBeneficiarioComponent } from './features/cadastro-caring/benefi
 import { ExclusaoCadastralComponent } from './features/cadastro-caring/beneficiarios/exclusao-cadastral/exclusao-cadastral';
 import { CartaoVirtualComponent } from './features/cadastro-caring/beneficiarios/cartao-virtual/cartao-virtual';
 import { SolicitacaoCadastroComponent } from './features/cadastro-caring/beneficiarios/solicitacao-cadastro/solicitacao-cadastro';
+import { RelatorioBeneficiariosComponent } from './features/cadastro-caring/beneficiarios/relatorio-beneficiarios/relatorio-beneficiarios';
+import { RelatorioSolicitacaoComponent } from './features/cadastro-caring/beneficiarios/relatorio-solicitacao/relatorio-solicitacao';
 import { GestaoCadastroComponent } from './features/cadastro-caring/gestao-cadastro/gestao-cadastro';
 import { ConsultarBeneficiarioComponent } from './features/cadastro-caring/gestao-cadastro/consultar-beneficiario/consultar-beneficiario';
 import { LoginComponent } from './core/login/login.component';
@@ -43,6 +45,8 @@ export const routes: Routes = [
       { path: 'cadastro-caring/beneficiarios/cartao-virtual', component: CartaoVirtualComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/alteracao-cadastral', component: AlteracaoCadastralComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/beneficiarios/solicitacao-cadastro', component: SolicitacaoCadastroComponent, canActivate: [empresaGuard] },
+      { path: 'cadastro-caring/beneficiarios/relatorio-beneficiarios', component: RelatorioBeneficiariosComponent, canActivate: [empresaGuard] },
+      { path: 'cadastro-caring/beneficiarios/relatorio-solicitacao', component: RelatorioSolicitacaoComponent, canActivate: [empresaGuard] },
       { path: 'cadastro-caring/gestao-cadastro/relatorios-cadastro', component: RelatoriosCadastroComponent },
       { path: 'cadastro-caring/relatorios', redirectTo: 'cadastro-caring/gestao-cadastro/relatorios-cadastro' },
       { path: 'usuarios', redirectTo: 'cadastro-caring/gestao-cadastro/usuarios' },

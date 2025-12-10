@@ -24,6 +24,12 @@ export class AprovacaoCadastroComponent {
   motivoNegacao: string = '';
   anexosSelecionado: Anexo[] = [];
   carregando = false;
+  dadosDetalhes: any = null;
+  showInclusaoDetails = false;
+  historicoCompleto: { valorNovo: string; usuarioNome: string; dataOperacao: string }[] = [];
+
+  showBenefDetails = false;
+  benefDetalhes: any = null;
 
   // Modal de aprovação para inclusão
   showApprovalModal = false;
@@ -58,6 +64,22 @@ export class AprovacaoCadastroComponent {
         benCodCartao: '',
         benCodUnimedSeg: ''
       };
+      const idNum = parseInt(s.id);
+      if (!isNaN(idNum)) {
+        this.solicitacoesService.buscarPorId(idNum).subscribe({
+          next: (resp: any) => {
+            try {
+              const dadosObj = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
+              const propostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
+              if (propostos) {
+                this.dadosAprovacao.benCodCartao = propostos.benCodCartao || this.dadosAprovacao.benCodCartao;
+                this.dadosAprovacao.benCodUnimedSeg = propostos.benCodUnimedSeg || this.dadosAprovacao.benCodUnimedSeg;
+              }
+            } catch {}
+          },
+          error: () => {}
+        });
+      }
       this.showApprovalModal = true;
       return;
     }
@@ -77,10 +99,18 @@ export class AprovacaoCadastroComponent {
         // Para inclusão aprovada, buscar beneficiário (status 'Pendente') e ativar
         this.beneficiarios.buscarPorFiltros({ cpf: s.identificador }).subscribe({
           next: (beneficiarios) => {
-            const beneficiario = beneficiarios.find(b => b.cpf === s.identificador && (b.benStatus === 'Pendente' || !b.benStatus));
+            const cpfId = (s.identificador || '').replace(/\D/g, '');
+            const beneficiario = beneficiarios.find(b => (b.cpf || '').replace(/\D/g, '') === cpfId && (b.benStatus === 'Pendente' || !b.benStatus));
             if (beneficiario) {
-              // Atualizar status de 'Pendente' para 'Ativo' via API
-              this.beneficiarios.alterarBeneficiario(beneficiario.id, { benStatus: 'Ativo' }).subscribe({
+              // Atualizar status e persistir códigos informados na aprovação
+              const updatePayload: any = { benStatus: 'ATIVO' };
+              if (dadosAdicionais?.benCodCartao) {
+                updatePayload.benCodCartao = dadosAdicionais.benCodCartao;
+              }
+              if (dadosAdicionais?.benCodUnimedSeg) {
+                updatePayload.benCodUnimedSeg = dadosAdicionais.benCodUnimedSeg;
+              }
+              this.beneficiarios.alterarBeneficiario(beneficiario.id, updatePayload).subscribe({
                 next: () => console.log('✅ Beneficiário aprovado - Status alterado para Ativo:', s.identificador),
                 error: (error) => console.error('❌ Erro ao ativar beneficiário:', error)
               });
@@ -90,6 +120,44 @@ export class AprovacaoCadastroComponent {
           },
           error: (error) => console.error('❌ Erro ao buscar beneficiário para aprovação:', error)
         });
+      } else if (s.tipo === 'alteracao') {
+        // Para alteração: obter dados propostos da solicitação e persistir os códigos
+        const idNum = parseInt(s.id);
+        if (!isNaN(idNum)) {
+          this.solicitacoesService.buscarPorId(idNum).subscribe({
+            next: (resp: any) => {
+              try {
+                const dadosObj = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
+                const propostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
+                // Buscar beneficiário por CPF
+                const cpf = (s.identificador || '').replace(/\D/g, '');
+                this.beneficiarios.buscarPorFiltros({ cpf }).subscribe({
+                  next: (beneficiarios) => {
+                    const beneficiario = beneficiarios.find(b => (b.cpf || '').replace(/\D/g, '') === cpf);
+                    if (beneficiario) {
+                      const updatePayload: any = {};
+                      // Preferir códigos informados como dadosAdicionais (dadosAprovacao), senão usar propostos
+                      const fonte = dadosAdicionais && Object.keys(dadosAdicionais).length > 0 ? dadosAdicionais : propostos;
+                      if (fonte?.benCodCartao) updatePayload.benCodCartao = fonte.benCodCartao;
+                      if (fonte?.benCodUnimedSeg) updatePayload.benCodUnimedSeg = fonte.benCodUnimedSeg;
+                      if (propostos?.benTitularId) updatePayload.benTitularId = propostos.benTitularId;
+                      if (propostos?.benMotivoExclusao) updatePayload.benMotivoExclusao = propostos.benMotivoExclusao;
+                      // Persistir alterações de códigos
+                      if (Object.keys(updatePayload).length > 0) {
+                        this.beneficiarios.alterarBeneficiario(beneficiario.id, updatePayload).subscribe({
+                          next: () => console.log('✅ Beneficiário atualizado com códigos via ALTERACAO:', s.identificador),
+                          error: (error) => console.error('❌ Erro ao atualizar códigos na alteração:', error)
+                        });
+                      }
+                    }
+                  },
+                  error: (error) => console.error('❌ Erro ao buscar beneficiário para alteração:', error)
+                });
+              } catch {}
+            },
+            error: () => {}
+          });
+        }
       } else if (s.tipo === 'exclusao') {
         // Para exclusão, buscar o beneficiário e processar exclusão via API
         this.beneficiarios.buscarPorFiltros({ cpf: s.identificador }).subscribe({
@@ -147,6 +215,10 @@ export class AprovacaoCadastroComponent {
   openDetails(s: Solicitacao) {
     this.selected = s;
     this.motivoNegacao = '';
+    this.dadosDetalhes = s?.dadosPropostos || null;
+    this.showInclusaoDetails = false;
+    this.historicoCompleto = [];
+    this.enriquecerTitularInfo();
     try {
       const saved = localStorage.getItem(`solicitacaoAjustes:${s.id}`);
       const parsed = saved ? JSON.parse(saved) : null;
@@ -155,17 +227,38 @@ export class AprovacaoCadastroComponent {
     this.showDetails = true;
     const idNum = parseInt(s.id);
     if (!isNaN(idNum)) {
+      console.log('[UI] Abrindo detalhes, ID:', idNum);
+      this.solicitacoesService.listarHistorico(idNum).subscribe({
+        next: (lista: any[]) => {
+          try {
+            console.log('[UI] Histórico recebido (aprovacao):', lista);
+            const toIso = (d: any): string => {
+              if (!d) return new Date().toISOString();
+              if (d instanceof Date) return d.toISOString();
+              if (typeof d === 'string') return d;
+              try { return new Date(d).toISOString(); } catch { return new Date().toISOString(); }
+            };
+            const m = (e: any) => ({
+              valorNovo: String(e?.valorNovo ?? ''),
+              usuarioNome: String(e?.usuarioNome ?? ''),
+              dataOperacao: toIso(e?.dataOperacao)
+            });
+            const mapped = Array.isArray(lista) ? lista.map(m) : [];
+            this.historicoCompleto = mapped.sort((a, b) => new Date(a.dataOperacao).getTime() - new Date(b.dataOperacao).getTime());
+            console.log('[UI] Histórico mapeado (aprovacao):', this.historicoCompleto);
+          } catch {}
+        },
+        error: () => {}
+      });
       this.solicitacoesService.buscarPorId(idNum).subscribe({
         next: (resp: any) => {
           try {
-            const dados = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
-            if (dados) {
-              const keys = Object.keys(dados);
-              console.log('🧾 Dados da solicitação:', { id: s.id, keys });
-              if (keys.includes('benDependencia')) {
-                console.warn('⚠️ Campo benDependencia encontrado em dadosJson');
-              }
-            }
+            const dadosObj = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
+            const propostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
+            this.dadosDetalhes = propostos || this.dadosDetalhes;
+            this.enriquecerTitularInfo();
+
+            console.log('[UI] Detalhe da solicitação carregado (aprovacao)');
           } catch {}
         },
         error: () => {}
@@ -173,25 +266,95 @@ export class AprovacaoCadastroComponent {
     }
   }
 
+  private async enriquecerTitularInfo() {
+    try {
+      const d = this.dadosDetalhes as any;
+      if (!d) return;
+      const isTitular = String(d.benRelacaoDep || '').trim() === '00';
+      if (isTitular) return;
+      const titularId = d.benTitularId;
+      if ((!d.benTitularNome || !d.benTitularCpf) && titularId) {
+        const raw = await this.beneficiarios.listRaw().toPromise();
+        const titular = raw?.find(b => b.id === titularId);
+        if (titular) {
+          d.benTitularNome = titular.nome || titular.benNomeSegurado || '';
+          d.benTitularCpf = titular.cpf || titular.benCpf || '';
+          this.dadosDetalhes = { ...d };
+        }
+      }
+    } catch {}
+  }
+
   closeDetails() {
     this.showDetails = false;
     this.selected = null;
     this.motivoNegacao = '';
+    this.showInclusaoDetails = false;
   }
+
+  openInclusaoDetails() {
+    if (this.selected?.tipo === 'inclusao') {
+      this.showInclusaoDetails = true;
+    }
+  }
+
+  closeInclusaoDetails() {
+    this.showInclusaoDetails = false;
+  }
+
+  openBenefDetails() {
+    const cpf = (this.selected?.identificador || '').replace(/\D/g, '');
+    if (!cpf) return;
+    this.beneficiarios.list().subscribe({
+      next: (lista) => {
+        const b = lista.find(x => (x.cpf || '').replace(/\D/g, '') === cpf);
+        if (b) {
+          this.benefDetalhes = {
+            nome: b.nome,
+            cpf: b.cpf,
+            nascimento: b.nascimento,
+            benStatus: b.benStatus,
+            matricula: b.matricula_beneficiario,
+            cidade: b.endereco ? undefined : b.endereco,
+            endereco: (b as any).endereco || '',
+            numero: (b as any).numero || '',
+            complemento: (b as any).complemento || '',
+            bairro: (b as any).bairro || '',
+            cep: (b as any).cep || '',
+            celular: b.celular,
+            email: b.email,
+            planoProd: (b as any).plano_prod || '',
+            admissao: (b as any).admissao || '',
+            benCodUnimedSeg: (b as any).benCodUnimedSeg || '',
+            benCodCartao: (b as any).benCodCartao || ''
+          };
+          this.showBenefDetails = true;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  closeBenefDetails() {
+    this.showBenefDetails = false;
+    this.benefDetalhes = null;
+  }
+
+  observacaoAprovacao: string = '';
 
   confirmarAprovacao() {
     if (!this.approvalSolicitacao) return;
-    
     // Criar objeto com dados adicionais para aprovação
     const dadosAprovacao: any = {};
-    
     if (this.dadosAprovacao.benCodCartao) {
       dadosAprovacao.benCodCartao = this.dadosAprovacao.benCodCartao;
     }
     if (this.dadosAprovacao.benCodUnimedSeg) {
       dadosAprovacao.benCodUnimedSeg = this.dadosAprovacao.benCodUnimedSeg;
     }
-    
+    if (this.observacaoAprovacao) {
+      dadosAprovacao.observacoesAprovacao = this.observacaoAprovacao;
+    }
     // Processar aprovação com dados adicionais
     this.processarAprovacao(this.approvalSolicitacao.id, dadosAprovacao);
     // Fechar modal

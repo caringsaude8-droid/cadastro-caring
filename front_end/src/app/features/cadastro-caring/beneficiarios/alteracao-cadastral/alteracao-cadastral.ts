@@ -184,6 +184,9 @@ export class AlteracaoCadastralComponent implements OnInit {
       if (params.get('telefone')) this.form.telefone = params.get('telefone')!;
       if (params.get('celular')) this.form.celular = params.get('celular')!;
       if (params.get('email')) this.form.email = params.get('email')!;
+      // Códigos de carteirinha
+      if (params.get('benCodUnimedSeg')) this.form.benCodUnimedSeg = params.get('benCodUnimedSeg')!;
+      if (params.get('benCodCartao')) this.form.benCodCartao = params.get('benCodCartao')!;
       
 
       
@@ -203,7 +206,8 @@ export class AlteracaoCadastralComponent implements OnInit {
         try {
           // Usar listRaw para obter dados brutos com campos 'ben'
           const beneficiariosRaw = await this.beneficiariosService.listRaw().toPromise();
-          const beneficiarioCompleto = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === cpf);
+          const cpfNumeros = (cpf || '').replace(/\D/g, '');
+          const beneficiarioCompleto = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === cpfNumeros);
           
           if (beneficiarioCompleto) {
             console.log('📋 Beneficiário encontrado com dados brutos:', beneficiarioCompleto);
@@ -241,6 +245,9 @@ export class AlteracaoCadastralComponent implements OnInit {
       this.form.cpf = this.formatarCpf(this.form.cpf);
       this.form.celular = this.formatarCelular(this.form.celular);
 
+      // Converte o nome do plano para o código antes de montar o objeto
+      const planoProdCodigo = this.mapearPlanoProduto(this.form.planoProd);
+
       // Monta dadosPropostos (apenas dados do DTO)
       const dadosPropostos = {
         benTipoMotivo: this.form.tipoMotivo,
@@ -266,20 +273,21 @@ export class AlteracaoCadastralComponent implements OnInit {
         benDataCasamento: this.form.dataCasamento,
         benDtaInclusao: this.form.dataInclusao,
         benDtaExclusao: this.form.dataExclusao,
-        benPlanoProd: this.form.planoProd,
+        benPlanoProd: planoProdCodigo,
         benAdmissao: this.form.admissao,
         benMatricula: this.form.matricula,
-        benCodUnimedSeg: null,
-        benTitularId: null,
-        benCodCartao: null,
-        benMotivoExclusao: null,
+        benCodUnimedSeg: this.form.benCodUnimedSeg || null,
+        benTitularId: this.form.benTitularId || null,
+        benCodCartao: this.form.benCodCartao || null,
+        benMotivoExclusao: this.form.benMotivoExclusao || null,
         benEmpId: empresa.id,
         benStatus: 'ATIVO'
       };
 
       // Busca beneficiário por CPF para obter ID
       const beneficiariosRaw = await this.beneficiariosService.listRaw().toPromise();
-      const beneficiario = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === this.form.cpf);
+      const cpfNumerosBusca = (this.form.cpf || '').replace(/\D/g, '');
+      const beneficiario = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === cpfNumerosBusca);
       if (!beneficiario) {
         alert('Beneficiário não encontrado. Verifique o CPF.');
         return;
@@ -367,6 +375,11 @@ export class AlteracaoCadastralComponent implements OnInit {
     }
     if (beneficiario.benNomeSocial) this.form.nomeSocial = beneficiario.benNomeSocial;
     if (beneficiario.benIdentGenero) this.form.identidadeGenero = beneficiario.benIdentGenero;
+    // Códigos e relacionamentos
+    if (beneficiario.benCodUnimedSeg) this.form.benCodUnimedSeg = beneficiario.benCodUnimedSeg;
+    if (beneficiario.benCodCartao) this.form.benCodCartao = beneficiario.benCodCartao;
+    if (beneficiario.benTitularId) this.form.benTitularId = String(beneficiario.benTitularId);
+    if (beneficiario.benMotivoExclusao) this.form.benMotivoExclusao = beneficiario.benMotivoExclusao;
     console.log('✅ Auto-preenchimento concluído');
   }
 
@@ -461,4 +474,3 @@ export class AlteracaoCadastralComponent implements OnInit {
     link.click();
   }
 }
-

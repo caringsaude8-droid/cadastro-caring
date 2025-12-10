@@ -1,0 +1,43 @@
+<app-page-header [title]="'Cadastro Caring — Relatório de Solicitações'" [subtitle]="'Movimentações cadastrais com exportação'" [icon]="'file-text'"></app-page-header>
+
+<div class="relatorio-container">
+  <div class="toolbar caring-card">
+    <input class="input" [(ngModel)]="termo" placeholder="Filtrar por nº, nome, CPF, tipo ou status" (input)="filtrar()">
+    <button class="btn btn-primary" (click)="exportarCsv()" [disabled]="filtered.length===0">Exportar Excel</button>
+  </div>
+
+  <div class="caring-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Solicitante</th>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Tipo</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th>Obs. Solicitação</th>
+          <th>Obs. Aprovação</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filtered">
+          <td>{{ r.solicitante }}</td>
+          <td>{{ r.nome }}</td>
+          <td>{{ r.cpf }}</td>
+          <td>{{ r.tipo }}</td>
+          <td>{{ r.status }}</td>
+          <td>{{ r.data | date:'yyyy-MM-dd' }}</td>
+          <td>{{ r.observacoesSolicitacao }}</td>
+          <td>{{ r.observacoesAprovacao }}</td>
+        </tr>
+        <tr *ngIf="filtered.length===0 && !loading">
+          <td colspan="8" class="empty">Sem registros</td>
+        </tr>
+        <tr *ngIf="loading">
+          <td colspan="8" class="loading-row">Carregando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -60,7 +60,11 @@
 <div *ngIf="showDetails" class="modal-card" (click)="$event.stopPropagation()">
   <div class="modal-header">
     <h3>Detalhes da Solicitação</h3>
-    <button class="modal-close" (click)="closeDetails()">×</button>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn btn-icon" title="Ver beneficiário" (click)="openBenefDetails()">🔎</button>
+      <button class="btn btn-icon" *ngIf="selected?.tipo === 'inclusao'" title="Ver dados da inclusão" (click)="openInclusaoDetails()">🔎</button>
+      <button class="modal-close" (click)="closeDetails()">×</button>
+    </div>
   </div>
   <div class="modal-body" *ngIf="selected as d">
     <div class="detail-grid">
@@ -76,20 +80,15 @@
 
     <div class="section-subtitle">Histórico</div>
     <div class="history-list">
-      <div class="history-item" *ngIf="d.observacoesSolicitacao">
-        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
-        <span class="history-status">Solicitante</span>
-        <span class="history-observacao">— {{ d.observacoesSolicitacao }}</span>
+      <div class="history-item" *ngFor="let h of historicoCompleto">
+        <span class="history-date">{{ h.dataOperacao | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">{{ h.usuarioNome }}</span>
+        <span class="history-observacao">— {{ h.valorNovo }}</span>
       </div>
-      <div *ngIf="d.observacoesAprovacao" class="history-item">
-        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
-        <span class="history-status">Admin</span>
-        <span class="history-observacao">— {{ d.observacoesAprovacao }}</span>
-      </div>
-      <div class="history-item" *ngFor="let h of d.historico" [ngClass]="{'solicitante': h.status === 'pendente' && (h.observacao || '').includes('Ajustes do solicitante')}">
-        <span class="history-date">{{ h.data | date:'dd/MM/yyyy HH:mm' }}</span>
-        <span class="history-status">{{ h.status }}</span>
-        <span class="history-observacao" *ngIf="h.observacao">— {{ h.observacao }}</span>
+    </div>
+    <div class="history-list" *ngIf="historicoCompleto.length === 0">
+      <div class="history-item">
+        <span class="history-status">Sem histórico disponível</span>
       </div>
     </div>
 
@@ -107,8 +106,9 @@
       </div>
     </div>
 
-    <div class="section-subtitle" *ngIf="d.status !== 'concluida'">Ação</div>
-    <div class="action-grid" *ngIf="d.status !== 'concluida'">
+    <div class="section-subtitle" *ngIf="d.status === 'pendente'">Observação da aprovação</div>
+    <textarea *ngIf="d.status === 'pendente'" class="input" rows="2" [(ngModel)]="observacaoAprovacao" placeholder="Observação para aprovação"></textarea>
+    <div class="action-grid" *ngIf="d.status === 'pendente'">
       <button class="btn btn-primary btn-sm" (click)="aceitarSelecionado()"><i class="icon-check-circle"></i> Aceitar</button>
       <button class="btn btn-secondary btn-sm" (click)="negarSelecionado()"><i class="icon-refresh"></i> Negar</button>
     </div>
@@ -121,6 +121,47 @@
   </div>
   <div class="modal-footer">
     <button class="btn btn-secondary btn-sm" (click)="closeDetails()">Fechar</button>
+  </div>
+</div>
+
+<!-- Modal interno: Detalhes da Inclusão -->
+<div *ngIf="showInclusaoDetails" class="modal-backdrop" (click)="closeInclusaoDetails()"></div>
+<div *ngIf="showInclusaoDetails" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Detalhes da Inclusão</h3>
+    <button class="modal-close" (click)="closeInclusaoDetails()">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-grid" *ngIf="dadosDetalhes">
+      <div class="item"><span class="label">Relação Dep.:</span><span class="value">{{ dadosDetalhes.benRelacaoDepLabel || (dadosDetalhes.benRelacaoDep === '00' ? 'Titular' : 'Dependente') }}</span></div>
+      <div class="item" *ngIf="dadosDetalhes.benRelacaoDep === '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benNomeSegurado }}</span></div>
+      <div class="item" *ngIf="dadosDetalhes.benRelacaoDep !== '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benTitularNome }} ({{ dadosDetalhes.benTitularCpf }})</span></div>
+      <div class="item"><span class="label">Nome:</span><span class="value">{{ dadosDetalhes.benNomeSegurado }}</span></div>
+      <div class="item"><span class="label">CPF:</span><span class="value">{{ dadosDetalhes.benCpf }}</span></div>
+      <div class="item"><span class="label">Nascimento:</span><span class="value">{{ dadosDetalhes.benDtaNasc }}</span></div>
+      <div class="item"><span class="label">Sexo:</span><span class="value">{{ dadosDetalhes.benSexo }}</span></div>
+      <div class="item"><span class="label">Estado Civil:</span><span class="value">{{ dadosDetalhes.benEstCivil }}</span></div>
+      <div class="item"><span class="label">Mãe:</span><span class="value">{{ dadosDetalhes.benNomeDaMae }}</span></div>
+      <div class="item"><span class="label">Endereço:</span><span class="value">{{ dadosDetalhes.benEndereco }}</span></div>
+      <div class="item"><span class="label">Número:</span><span class="value">{{ dadosDetalhes.benNumero }}</span></div>
+      <div class="item"><span class="label">Complemento:</span><span class="value">{{ dadosDetalhes.benComplemento }}</span></div>
+      <div class="item"><span class="label">Bairro:</span><span class="value">{{ dadosDetalhes.benBairro }}</span></div>
+      <div class="item"><span class="label">Cidade/UF:</span><span class="value">{{ dadosDetalhes.benCidade }} / {{ dadosDetalhes.benUf }}</span></div>
+      <div class="item"><span class="label">CEP:</span><span class="value">{{ dadosDetalhes.benCep }}</span></div>
+      <div class="item"><span class="label">Matrícula:</span><span class="value">{{ dadosDetalhes.benMatricula }}</span></div>
+      <div class="item"><span class="label">Celular:</span><span class="value">{{ dadosDetalhes.benDddCel }}</span></div>
+      <div class="item"><span class="label">E-mail:</span><span class="value">{{ dadosDetalhes.benEmail }}</span></div>
+      <div class="item"><span class="label">Plano:</span><span class="value">{{ dadosDetalhes.benPlanoProd }}</span></div>
+      <div class="item"><span class="label">Admissão:</span><span class="value">{{ dadosDetalhes.benAdmissao }}</span></div>
+      <div class="item"><span class="label">Data Inclusão:</span><span class="value">{{ dadosDetalhes.benDtaInclusao }}</span></div>
+      <div class="item"><span class="label">Status:</span><span class="value">{{ dadosDetalhes.benStatus }}</span></div>
+      <div class="item"><span class="label">Código do Cartão:</span><span class="value">{{ dadosDetalhes.benCodCartao }}</span></div>
+      <div class="item"><span class="label">Código Unimed Seg:</span><span class="value">{{ dadosDetalhes.benCodUnimedSeg }}</span></div>
+      <div class="item"><span class="label">Código da Carterinha:</span><span class="value">{{ (dadosDetalhes.benCodUnimedSeg || '') + (dadosDetalhes.benCodCartao || '') }}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeInclusaoDetails()">Fechar</button>
   </div>
 </div>
 
@@ -150,5 +191,36 @@
       <button class="btn btn-primary" (click)="confirmarAprovacao()">Aprovar</button>
       <button class="btn btn-secondary" (click)="closeApprovalModal()">Cancelar</button>
     </div>
+  </div>
+</div>
+<!-- Modal interno: Detalhes do Beneficiário -->
+<div *ngIf="showBenefDetails" class="modal-backdrop" (click)="closeBenefDetails()"></div>
+<div *ngIf="showBenefDetails" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Detalhes do Beneficiário</h3>
+    <button class="modal-close" (click)="closeBenefDetails()">×</button>
+  </div>
+  <div class="modal-body" *ngIf="benefDetalhes as r">
+    <div class="detail-grid">
+      <div class="item"><span class="label">Nome:</span><span class="value">{{ r.nome }}</span></div>
+      <div class="item"><span class="label">CPF:</span><span class="value">{{ r.cpf }}</span></div>
+      <div class="item"><span class="label">Nascimento:</span><span class="value">{{ r.nascimento }}</span></div>
+      <div class="item"><span class="label">Status:</span><span class="value">{{ r.benStatus }}</span></div>
+      <div class="item"><span class="label">Matrícula:</span><span class="value">{{ r.matricula }}</span></div>
+      <div class="item"><span class="label">Endereço:</span><span class="value">{{ r.endereco }}</span></div>
+      <div class="item"><span class="label">Número:</span><span class="value">{{ r.numero }}</span></div>
+      <div class="item"><span class="label">Complemento:</span><span class="value">{{ r.complemento }}</span></div>
+      <div class="item"><span class="label">Bairro:</span><span class="value">{{ r.bairro }}</span></div>
+      <div class="item"><span class="label">CEP:</span><span class="value">{{ r.cep }}</span></div>
+      <div class="item"><span class="label">Celular:</span><span class="value">{{ r.celular }}</span></div>
+      <div class="item"><span class="label">E-mail:</span><span class="value">{{ r.email }}</span></div>
+      <div class="item"><span class="label">Plano:</span><span class="value">{{ r.planoProd }}</span></div>
+      <div class="item"><span class="label">Admissão:</span><span class="value">{{ r.admissao }}</span></div>
+      <div class="item"><span class="label">Código Unimed Seg:</span><span class="value">{{ r.benCodUnimedSeg }}</span></div>
+      <div class="item"><span class="label">Código do Cartão:</span><span class="value">{{ r.benCodCartao }}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeBenefDetails()">Fechar</button>
   </div>
 </div>

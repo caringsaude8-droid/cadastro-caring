@@ -126,7 +126,8 @@
       <div class="form-row">
         <div class="form-group third">
           <label>CPF *</label>
-          <ui-input [(ngModel)]="form.cpf" name="cpf" [required]="true" placeholder="000.000.000-00"></ui-input>
+          <ui-input [(ngModel)]="form.cpf" name="cpf" [required]="true" placeholder="000.000.000-00" (valueChange)="onCpfInput($event)"></ui-input>
+          <div class="form-error" *ngIf="cpfDuplicado" style="color:#dc2626; font-size:0.85rem; margin-top:6px;">CPF já cadastrado para esta empresa</div>
         </div>
       </div>
 

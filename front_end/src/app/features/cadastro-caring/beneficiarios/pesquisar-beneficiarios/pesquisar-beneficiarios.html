@@ -158,7 +158,10 @@
 <div *ngIf="showExclusao" class="modal-card">
   <div class="modal-header">
     <h3>Exclusão de Beneficiário</h3>
-    <button class="modal-close" (click)="closeExclusao()">×</button>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn btn-icon" title="Ver beneficiário" (click)="openBenefDetailsExclusao()">🔎</button>
+      <button class="modal-close" (click)="closeExclusao()">×</button>
+    </div>
   </div>
   <div class="modal-body">
     <div class="exclusion-grid">
@@ -186,6 +189,36 @@
 
 
 <!-- Card de Carterinha Virtual (fora de qualquer outro modal) -->
+</div>
+<div *ngIf="showBenefDetails" class="modal-backdrop" (click)="closeBenefDetails()"></div>
+<div *ngIf="showBenefDetails" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Detalhes do Beneficiário</h3>
+    <button class="modal-close" (click)="closeBenefDetails()">×</button>
+  </div>
+  <div class="modal-body" *ngIf="benefDetalhes as r">
+    <div class="detail-grid">
+      <div class="item"><span class="label">Nome:</span><span class="value">{{ r.nome }}</span></div>
+      <div class="item"><span class="label">CPF:</span><span class="value">{{ r.cpf }}</span></div>
+      <div class="item"><span class="label">Nascimento:</span><span class="value">{{ r.nascimento }}</span></div>
+      <div class="item"><span class="label">Status:</span><span class="value">{{ r.benStatus }}</span></div>
+      <div class="item"><span class="label">Matrícula:</span><span class="value">{{ r.matricula }}</span></div>
+      <div class="item"><span class="label">Endereço:</span><span class="value">{{ r.endereco }}</span></div>
+      <div class="item"><span class="label">Número:</span><span class="value">{{ r.numero }}</span></div>
+      <div class="item"><span class="label">Complemento:</span><span class="value">{{ r.complemento }}</span></div>
+      <div class="item"><span class="label">Bairro:</span><span class="value">{{ r.bairro }}</span></div>
+      <div class="item"><span class="label">CEP:</span><span class="value">{{ r.cep }}</span></div>
+      <div class="item"><span class="label">Celular:</span><span class="value">{{ r.celular }}</span></div>
+      <div class="item"><span class="label">E-mail:</span><span class="value">{{ r.email }}</span></div>
+      <div class="item"><span class="label">Plano:</span><span class="value">{{ r.planoProd }}</span></div>
+      <div class="item"><span class="label">Admissão:</span><span class="value">{{ r.admissao }}</span></div>
+      <div class="item"><span class="label">Código Unimed Seg:</span><span class="value">{{ r.benCodUnimedSeg }}</span></div>
+      <div class="item"><span class="label">Código do Cartão:</span><span class="value">{{ r.benCodCartao }}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeBenefDetails()">Fechar</button>
+  </div>
 </div>
 <div *ngIf="showCarterinha" class="modal-backdrop" (click)="closeCarterinha()"></div>
 <div *ngIf="showCarterinha" class="modal-card" (click)="$event.stopPropagation()">

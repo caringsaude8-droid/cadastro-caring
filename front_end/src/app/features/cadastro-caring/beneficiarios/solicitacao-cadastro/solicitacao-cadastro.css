@@ -4,6 +4,23 @@
     margin: 0 auto;
 }
 
+.modal-card {
+  max-height: 88vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(800px, 92vw);
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
 .table-wrapper {
     padding: 1rem;
 }
@@ -92,6 +109,16 @@
     font-weight: 600;
     color: #374151;
     margin: 0.5rem 0;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 6px;
 }
 
 .form-row {

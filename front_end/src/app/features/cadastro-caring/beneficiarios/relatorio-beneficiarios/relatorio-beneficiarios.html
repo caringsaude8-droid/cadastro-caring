@@ -1,0 +1,46 @@
+<app-page-header [title]="'Cadastro Caring — Relatório de Beneficiários'" [subtitle]="'Lista completa do contrato com exportação'" [icon]="'users'"></app-page-header>
+
+<div class="relatorio-container">
+  <div class="toolbar caring-card">
+    <input class="input" [(ngModel)]="termo" placeholder="Filtrar por nome, CPF ou matrícula" (input)="filtrar()">
+    <button class="btn btn-primary" (click)="exportarCsv()" [disabled]="filtered.length===0">Exportar Excel</button>
+  </div>
+
+  <div class="caring-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Nascim.</th>
+          <th>Inclusão</th>
+          <th>Exclusão</th>
+          <th>Dependência</th>
+          <th>Acomodação</th>
+          <th>Matrícula</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filtered">
+          <td>{{ r.nome }}</td>
+          <td>{{ r.cpf }}</td>
+          <td>{{ r.nascimento }}</td>
+          <td>{{ r.data_inclusao | date:'yyyy-MM-dd' }}</td>
+          <td>{{ r.data_exclusao | date:'yyyy-MM-dd' }}</td>
+          <td>{{ r.tipo_dependencia }}</td>
+          <td>{{ r.acomodacao }}</td>
+          <td>{{ r.matricula_beneficiario }}</td>
+          <td>{{ r.benStatus }}</td>
+        </tr>
+        <tr *ngIf="filtered.length===0 && !loading">
+          <td colspan="9" class="empty">Sem registros</td>
+        </tr>
+        <tr *ngIf="loading">
+          <td colspan="9" class="loading-row">Carregando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+

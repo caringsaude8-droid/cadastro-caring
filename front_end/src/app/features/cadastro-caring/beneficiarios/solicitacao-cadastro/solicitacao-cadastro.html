@@ -83,7 +83,10 @@
   <div *ngIf="showDetails" class="modal-card" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Detalhes da Solicitação</h3>
-      <button class="modal-close" (click)="closeDetails()">×</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-icon" title="Ver beneficiário" (click)="openBenefDetails()">🔎</button>
+        <button class="modal-close" (click)="closeDetails()">×</button>
+      </div>
     </div>
     <div class="modal-body" *ngIf="selected as d">
       <div class="detail-grid">
@@ -94,29 +97,16 @@
       </div>
 
     <div class="section-subtitle">Histórico</div>
-    <div class="history-list" *ngIf="d.historico?.length">
-      <div class="history-item" *ngFor="let h of d.historico" [ngClass]="{'solicitante': h.status === 'pendente' && (h.observacao || '').includes('Ajustes do solicitante')}">
-        <span class="history-date">{{ h.data | date:'dd/MM/yyyy HH:mm' }}</span>
-        <span class="history-status">{{ h.status }}</span>
-        <span class="history-observacao" *ngIf="h.observacao">— {{ h.observacao }}</span>
+    <div class="history-list">
+      <div class="history-item" *ngFor="let h of historicoCompleto">
+        <span class="history-date">{{ h.dataOperacao | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span class="history-status">{{ h.usuarioNome }}</span>
+        <span class="history-observacao">— {{ h.valorNovo }}</span>
       </div>
     </div>
-
-    <!-- Observação do solicitante como item do histórico -->
-    <div class="history-list" *ngIf="d.observacoesSolicitacao">
+    <div class="history-list" *ngIf="historicoCompleto.length === 0">
       <div class="history-item">
-        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
-        <span class="history-status">Solicitante</span>
-        <span class="history-observacao">— {{ d.observacoesSolicitacao }}</span>
-      </div>
-    </div>
-
-    <!-- Observação da aprovação como item do histórico -->
-    <div class="history-list" *ngIf="d.observacoesAprovacao">
-      <div class="history-item">
-        <span class="history-date">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span>
-        <span class="history-status">Admin</span>
-        <span class="history-observacao">— {{ d.observacoesAprovacao }}</span>
+        <span class="history-status">Sem histórico disponível</span>
       </div>
     </div>
 
@@ -184,4 +174,36 @@
       </button>
     </div>
   </div>
+</div>
+
+<div *ngIf="showBenefDetails" class="modal-backdrop" (click)="closeBenefDetails()"></div>
+<div *ngIf="showBenefDetails" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Detalhes do Beneficiário</h3>
+    <button class="modal-close" (click)="closeBenefDetails()">×</button>
+  </div>
+  <div class="modal-body" *ngIf="benefDetalhes as r">
+    <div class="detail-grid">
+      <div class="item"><span class="label">Nome:</span><span class="value">{{ r.nome }}</span></div>
+      <div class="item"><span class="label">CPF:</span><span class="value">{{ r.cpf }}</span></div>
+      <div class="item"><span class="label">Nascimento:</span><span class="value">{{ r.nascimento }}</span></div>
+      <div class="item"><span class="label">Status:</span><span class="value">{{ r.benStatus }}</span></div>
+      <div class="item"><span class="label">Matrícula:</span><span class="value">{{ r.matricula }}</span></div>
+      <div class="item"><span class="label">Endereço:</span><span class="value">{{ r.endereco }}</span></div>
+      <div class="item"><span class="label">Número:</span><span class="value">{{ r.numero }}</span></div>
+      <div class="item"><span class="label">Complemento:</span><span class="value">{{ r.complemento }}</span></div>
+      <div class="item"><span class="label">Bairro:</span><span class="value">{{ r.bairro }}</span></div>
+      <div class="item"><span class="label">CEP:</span><span class="value">{{ r.cep }}</span></div>
+      <div class="item"><span class="label">Celular:</span><span class="value">{{ r.celular }}</span></div>
+      <div class="item"><span class="label">E-mail:</span><span class="value">{{ r.email }}</span></div>
+      <div class="item"><span class="label">Plano:</span><span class="value">{{ r.planoProd }}</span></div>
+      <div class="item"><span class="label">Admissão:</span><span class="value">{{ r.admissao }}</span></div>
+      <div class="item"><span class="label">Código Unimed Seg:</span><span class="value">{{ r.benCodUnimedSeg }}</span></div>
+      <div class="item"><span class="label">Código do Cartão:</span><span class="value">{{ r.benCodCartao }}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeBenefDetails()">Fechar</button>
+  </div>
+  
 </div>

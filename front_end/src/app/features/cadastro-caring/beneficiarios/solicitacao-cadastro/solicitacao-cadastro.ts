@@ -28,6 +28,9 @@ export class SolicitacaoCadastroComponent implements OnInit {
   selected: Solicitacao | null = null;
   loading = false;
   selectedDadosPropostos: Array<{ key: string; value: any }> = [];
+  historicoCompleto: { valorNovo: string; usuarioNome: string; dataOperacao: string }[] = [];
+  showBenefDetails = false;
+  benefDetalhes: any = null;
 
   constructor(
     private aprovacao: AprovacaoService, 
@@ -117,6 +120,7 @@ export class SolicitacaoCadastroComponent implements OnInit {
 
   openDetails(s: Solicitacao) {
     this.selected = s;
+    this.historicoCompleto = [];
     if (!this.ajustes[s.id]) this.ajustes[s.id] = { mensagem: '', anexos: [], docTipo: '' };
     // Extrai os dados propostos diretamente do JSON, se existir
     let dadosPropostos: any = {};
@@ -130,11 +134,51 @@ export class SolicitacaoCadastroComponent implements OnInit {
       .filter(([_, value]) => value !== undefined && value !== null && value !== '')
       .map(([_, value]) => ({ key: '', value }));
     this.showDetails = true;
+    const idNum = parseInt(s.id);
+    if (!isNaN(idNum)) {
+      console.log('[UI] Abrindo detalhes (solicitante), ID:', idNum);
+      this.solicitacaoBeneficiarioService.listarHistorico(idNum).subscribe({
+        next: (lista: any[]) => {
+          try {
+            console.log('[UI] Histórico recebido (solicitante):', lista);
+            const toIso = (d: any): string => {
+              if (!d) return new Date().toISOString();
+              if (d instanceof Date) return d.toISOString();
+              if (typeof d === 'string') return d;
+              try { return new Date(d).toISOString(); } catch { return new Date().toISOString(); }
+            };
+            const m = (e: any) => ({
+              valorNovo: String(e?.valorNovo ?? ''),
+              usuarioNome: String(e?.usuarioNome ?? ''),
+              dataOperacao: toIso(e?.dataOperacao)
+            });
+            const mapped = Array.isArray(lista) ? lista.map(m) : [];
+            this.historicoCompleto = mapped.sort((a, b) => new Date(a.dataOperacao).getTime() - new Date(b.dataOperacao).getTime());
+            console.log('[UI] Histórico mapeado (solicitante):', this.historicoCompleto);
+          } catch {}
+        },
+        error: (err) => { console.log('Erro ao buscar histórico:', err); }
+      });
+
+      this.solicitacaoBeneficiarioService.buscarPorId(idNum).subscribe({
+        next: () => {},
+        error: (err) => { console.log('Erro ao buscar detalhe da solicitação:', err); }
+      });
+    }
+
   }
 
   closeDetails() {
     this.showDetails = false;
     this.selected = null;
+  }
+
+  detalharBeneficiario(s: Solicitacao) {
+    const cpf = String(s?.identificador || '').replace(/\D/g, '');
+    if (!cpf) return;
+    this.closeDetails();
+    const query = new URLSearchParams({ cpf }).toString();
+    this.router.navigateByUrl(`/cadastro-caring/beneficiarios/alteracao-cadastral?${query}`);
   }
 
   salvarAjustes(s: Solicitacao) {
@@ -197,6 +241,43 @@ export class SolicitacaoCadastroComponent implements OnInit {
     link.href = a.dataUrl;
     link.download = a.nome;
     link.click();
+  }
+
+  openBenefDetails() {
+    const cpf = (this.selected?.identificador || '').replace(/\D/g, '');
+    if (!cpf) return;
+    this.beneficiariosService.list().subscribe({
+      next: (lista) => {
+        const b = lista.find(x => (x.cpf || '').replace(/\D/g, '') === cpf);
+        if (b) {
+          this.benefDetalhes = {
+            nome: b.nome,
+            cpf: b.cpf,
+            nascimento: b.nascimento,
+            benStatus: b.benStatus,
+            matricula: b.matricula_beneficiario,
+            endereco: (b as any).endereco || '',
+            numero: (b as any).numero || '',
+            complemento: (b as any).complemento || '',
+            bairro: (b as any).bairro || '',
+            cep: (b as any).cep || '',
+            celular: b.celular,
+            email: b.email,
+            planoProd: (b as any).plano_prod || '',
+            admissao: (b as any).admissao || '',
+            benCodUnimedSeg: (b as any).benCodUnimedSeg || '',
+            benCodCartao: (b as any).benCodCartao || ''
+          };
+          this.showBenefDetails = true;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  closeBenefDetails() {
+    this.showBenefDetails = false;
+    this.benefDetalhes = null;
   }
 
   private ensureAjusteState(id: string) {

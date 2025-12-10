@@ -56,6 +56,7 @@ export interface InclusaoBeneficiarioRequest {
   benTipoMotivo?: string;
   benCodUnimedSeg?: string;
   benRelacaoDep: string;
+  benRelacaoDepLabel?: string;
   benDtaNasc?: string;
   benSexo?: string;
   benEstCivil?: string;
@@ -80,6 +81,8 @@ export interface InclusaoBeneficiarioRequest {
   benNomeSocial?: string;
   benIdentGenero?: string;
   benTitularId?: number;
+  benTitularCpf?: string;
+  benTitularNome?: string;
   benCodCartao?: string;
   benMotivoExclusao?: string;
   benStatus?: string;
@@ -292,7 +295,7 @@ export class BeneficiariosService {
       map(beneficiarios => {
         return beneficiarios.filter(b => {
           const matchNome = !filtros.nome || b.nome.toLowerCase().includes(filtros.nome.toLowerCase());
-          const matchCpf = !filtros.cpf || b.cpf === filtros.cpf;
+          const matchCpf = !filtros.cpf || (b.cpf || '').replace(/\D/g, '') === (filtros.cpf || '').replace(/\D/g, '');
           const matchMatricula = !filtros.matricula || b.matricula_beneficiario === filtros.matricula;
           return matchNome && matchCpf && matchMatricula;
         });

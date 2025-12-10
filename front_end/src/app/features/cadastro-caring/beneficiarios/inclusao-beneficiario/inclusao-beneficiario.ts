@@ -154,6 +154,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   titularCpfSearch: string = '';
   selectedTitularCpf: string = '';
   selectedTitular: any = null;
+  cpfDuplicado = false;
 
   ngOnInit() {
     // Obter empresa selecionada (garantido pelo guard)
@@ -297,14 +298,26 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       return;
     }
 
+    // Bloquear CPF duplicado
+    const cpfNumerosValid = (this.form.cpf || '').replace(/\D/g, '');
+    if (cpfNumerosValid.length === 11) {
+      const jaExiste = await this.verificarCpfExistente(cpfNumerosValid);
+      if (jaExiste) {
+        this.cpfDuplicado = true;
+        this.showToast('Erro', 'CPF já cadastrado para esta empresa', 'error');
+        return;
+      }
+    }
+
     // Validação específica para dependentes
     if (this.form.relacaoDep !== 'titular') {
-      if (!this.cpfTitular || this.cpfTitular.length < 11) {
+      const cpfTitularNumeros = (this.cpfTitular || '').replace(/\D/g, '');
+      if (!cpfTitularNumeros || cpfTitularNumeros.length < 11) {
         this.showToast('Erro', 'Digite o CPF do titular para dependentes', 'error');
         return;
       }
       // Buscar titular pelo CPF antes de salvar
-      const titular = await this.service.buscarTitularPorCpf(this.cpfTitular).toPromise();
+      const titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
       if (!titular) {
         this.showToast('Erro', 'Titular não encontrado para o CPF informado', 'error');
         return;
@@ -366,6 +379,28 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     this.loading = false;
   }
 
+  async onCpfInput(value: string) {
+    const numeros = (value || '').replace(/\D/g, '');
+    if (numeros.length === 11) {
+      const existe = await this.verificarCpfExistente(numeros);
+      this.cpfDuplicado = !!existe;
+      if (existe) {
+        this.showToast('Erro', 'CPF já cadastrado para esta empresa', 'error');
+      }
+    } else {
+      this.cpfDuplicado = false;
+    }
+  }
+
+  private async verificarCpfExistente(cpfNumeros: string): Promise<boolean> {
+    try {
+      const beneficiariosRaw = await this.service.listRaw().toPromise();
+      return !!beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === cpfNumeros);
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Método para converter o formulário para o formato JSON esperado pela API
   private async converterFormParaAPI(): Promise<InclusaoBeneficiarioRequest> {
     // Garante que apenas números vão para o JSON
@@ -376,6 +411,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benNomeSegurado: this.form.nomeSegurado || '',
       benCpf: cpfNumeros,
       benRelacaoDep: await this.mapearRelacaoDependencia(this.form.relacaoDep || ''),
+      benRelacaoDepLabel: this.form.relacaoDep || '',
       benDtaNasc: this.form.dataNascimento ? this.formatarDataParaAPI(this.form.dataNascimento) : undefined,
       benSexo: this.form.sexo ? this.converterSexo(this.form.sexo) : undefined,
       benEstCivil: this.form.estadoCivil ? this.converterEstadoCivil(this.form.estadoCivil) : undefined,
@@ -397,6 +433,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benIdentGenero: this.form.identidadeGenero || undefined,
       benDtaInclusao: this.formatarDataParaAPI(new Date().toISOString().split('T')[0]),
       benTitularId: this.form.relacaoDep !== 'titular' ? this.titularEncontrado?.id : undefined,
+      benTitularCpf: this.form.relacaoDep !== 'titular' ? (this.titularEncontrado?.cpf || undefined) : undefined,
+      benTitularNome: this.form.relacaoDep !== 'titular' ? (this.titularEncontrado?.nome || undefined) : undefined,
       benTipoMotivo: 'I',
       benCodUnimedSeg: undefined,
       benDtaExclusao: undefined,
@@ -681,7 +719,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
 
   // Buscar titular por CPF
   async buscarTitular() {
-    if (!this.cpfTitular || this.cpfTitular.length < 11) {
+    const cpfTitularNumeros = (this.cpfTitular || '').replace(/\D/g, '');
+    if (!cpfTitularNumeros || cpfTitularNumeros.length < 11) {
       this.showToast('Aviso', 'Digite um CPF válido', 'error');
       return;
     }
@@ -689,7 +728,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     this.buscandoTitular = true;
     
     try {
-      const titular = await this.service.buscarTitularPorCpf(this.cpfTitular).toPromise();
+      const titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
       console.log('DEBUG titular retornado:', titular);
       if (titular && titular.benRelacaoDep === '00') {
         this.titularEncontrado = titular;

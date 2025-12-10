@@ -34,6 +34,9 @@ type BeneficiarioRow = Beneficiario & {
   indicadorPessoaTrans?: string;
   nomeSocial?: string;
   identidadeGenero?: string;
+  benCodUnimedSeg?: string;
+  benCodCartao?: string;
+  codigo_carterinha?: string;
 };
 
 @Component({
@@ -105,6 +108,8 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   exData = '';
   minDate = '';
   dateError = '';
+  showBenefDetails = false;
+  benefDetalhes: any = null;
 
   showCarterinha = false;
   cardNome = '';
@@ -153,6 +158,9 @@ export class PesquisarBeneficiariosComponent implements OnInit {
     if (r.indicador_pessoa_trans) params.indicador_pessoa_trans = r.indicador_pessoa_trans;
     if (r.indicadorPessoaTrans) params.indicadorPessoaTrans = r.indicadorPessoaTrans;
     if (r.data_casamento) params.data_casamento = r.data_casamento;
+    // Códigos de carteirinha
+    if (r.benCodUnimedSeg) params.benCodUnimedSeg = r.benCodUnimedSeg;
+    if (r.benCodCartao) params.benCodCartao = r.benCodCartao;
 
     const query = new URLSearchParams(params).toString();
     this.router.navigateByUrl(`/cadastro-caring/beneficiarios/alteracao-cadastral?${query}`);
@@ -161,6 +169,35 @@ export class PesquisarBeneficiariosComponent implements OnInit {
 
   openExclusao() { this.showExclusao = true; }
   closeExclusao() { this.showExclusao = false; }
+
+  openBenefDetailsExclusao() {
+    const r = this.selectedRow;
+    if (!r) return;
+    this.benefDetalhes = {
+      nome: r.nome,
+      cpf: r.cpf,
+      nascimento: r.nascimento,
+      benStatus: this.statusOf(r),
+      matricula: r.matricula_beneficiario,
+      endereco: (r as any).endereco || '',
+      numero: (r as any).numero || '',
+      complemento: (r as any).complemento || '',
+      bairro: (r as any).bairro || '',
+      cep: (r as any).cep || '',
+      celular: (r as any).celular,
+      email: (r as any).email,
+      planoProd: (r as any).plano_prod || '',
+      admissao: (r as any).admissao || '',
+      benCodUnimedSeg: (r as any).benCodUnimedSeg || '',
+      benCodCartao: (r as any).benCodCartao || ''
+    };
+    this.showBenefDetails = true;
+  }
+
+  closeBenefDetails() {
+    this.showBenefDetails = false;
+    this.benefDetalhes = null;
+  }
 
   formatDateBR(d: Date | null): string {
     if (!d) return '';
@@ -456,6 +493,9 @@ export class PesquisarBeneficiariosComponent implements OnInit {
     if (row.rg_uf_expedicao) params.rg_uf_expedicao = row.rg_uf_expedicao;
     if (row.nome_social) params.nome_social = row.nome_social;
     if (row.identidade_genero) params.identidade_genero = row.identidade_genero;
+    // Códigos de carteirinha
+    if (row.benCodUnimedSeg) params.benCodUnimedSeg = row.benCodUnimedSeg;
+    if (row.benCodCartao) params.benCodCartao = row.benCodCartao;
     if (row.indicador_pessoa_trans) params.indicador_pessoa_trans = row.indicador_pessoa_trans;
     if (row.data_casamento) params.data_casamento = row.data_casamento;
 
@@ -486,7 +526,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
     console.log('🔵 gerarCarterinha chamado', this.selectedRow);
     this.cardNome = this.selectedRow.nome || '';
     this.cardCpf = this.selectedRow.cpf || '';
-    this.cardCodigo = this.selectedRow.matricula_beneficiario || '';
+    this.cardCodigo = (this.selectedRow.codigo_carterinha || '').trim() || this.selectedRow.matricula_beneficiario || '';
     // Não fecha o modal de detalhes!
     this.closeExclusao();
     this.showCarterinha = true;
@@ -543,6 +583,10 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   }
 
   private mapearDadosBrutos(raw: any): BeneficiarioRow {
+    const codUnimed = raw.benCodUnimedSeg || raw.cod_unimed_seg || '';
+    const codCartao = raw.benCodCartao || raw.cod_cartao || '';
+    const codigoCarterinha = [codUnimed, codCartao].filter(v => !!v).join('');
+
     return {
       id: raw.id,
       nome: raw.benNomeSegurado || raw.nome || '',
@@ -554,6 +598,9 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       acomodacao: this.mapearAcomodacao(raw.benPlanoProd),
       matricula_beneficiario: raw.benMatricula || raw.matricula_beneficiario || '',
       matricula_titular: raw.matricula_titular || '',
+      benCodUnimedSeg: codUnimed,
+      benCodCartao: codCartao,
+      codigo_carterinha: codigoCarterinha,
       
       // Campos detalhados com dados brutos da API
       benStatus: raw.benStatus || 'Ativo',
