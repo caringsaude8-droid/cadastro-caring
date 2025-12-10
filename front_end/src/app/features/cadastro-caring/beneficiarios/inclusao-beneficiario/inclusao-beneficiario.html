@@ -72,7 +72,7 @@
                   [(ngModel)]="cpfTitular" 
                   name="cpfTitular" 
                   placeholder="000.000.000-00" 
-                  maxlength="14">
+                  [onlyDigits]="true" [maxlength]="11">
                 </ui-input>
               </div>
               <div class="selection-row" *ngIf="titularEncontrado">
@@ -126,7 +126,7 @@
       <div class="form-row">
         <div class="form-group third">
           <label>CPF *</label>
-          <ui-input [(ngModel)]="form.cpf" name="cpf" [required]="true" placeholder="000.000.000-00" (valueChange)="onCpfInput($event)"></ui-input>
+          <ui-input [(ngModel)]="form.cpf" name="cpf" [required]="true" placeholder="000.000.000-00" (valueChange)="onCpfInput($event)" [onlyDigits]="true" [maxlength]="11"></ui-input>
           <div class="form-error" *ngIf="cpfDuplicado" style="color:#dc2626; font-size:0.85rem; margin-top:6px;">CPF já cadastrado para esta empresa</div>
         </div>
       </div>
@@ -142,7 +142,7 @@
         </div>
         <div class="form-group third">
           <label>Matrícula *</label>
-          <ui-input [(ngModel)]="form.matricula" name="matricula" [required]="true"></ui-input>
+          <ui-input [(ngModel)]="form.matricula" name="matricula" [required]="true" [onlyDigits]="true"></ui-input>
         </div>
       </div>
 
@@ -164,6 +164,7 @@
               name="cep" 
               placeholder="00000-000" 
               [required]="true"
+              [onlyDigits]="true" [maxlength]="8"
               (ngModelChange)="buscarCep()"
               [class.error]="cepInvalido">
             </ui-input>
@@ -195,7 +196,7 @@
         </div>
         <div class="form-group third">
           <label>Número *</label>
-          <ui-input [(ngModel)]="form.numero" name="numero" [required]="true"></ui-input>
+          <ui-input [(ngModel)]="form.numero" name="numero" [required]="true" [onlyDigits]="true"></ui-input>
         </div>
       </div>
 
@@ -218,7 +219,7 @@
       <div class="form-row">
         <div class="form-group third">
           <label>Celular (com DDD) *</label>
-          <ui-input [(ngModel)]="form.celular" name="celular" [required]="true" placeholder="(11) 99999-9999"></ui-input>
+          <ui-input [(ngModel)]="form.celular" name="celular" [required]="true" placeholder="(11) 99999-9999" [onlyDigits]="true" [maxlength]="11"></ui-input>
         </div>
         <div class="form-group third">
           <label>Receber comunicação por email? *</label>
@@ -310,12 +311,12 @@
         </table>
       </div>
 
-      <div class="form-actions" style="display: flex; align-items: flex-end; justify-content: space-between;">
-        <div style="flex: 1; max-width: 350px; margin-right: 24px;">
+      <div class="form-actions" style="display: flex; align-items: flex-end;">
+        <div *ngIf="form.tipoMotivo==='A'" style="flex: 1; max-width: 350px; margin-right: 24px;">
           <label style="font-weight: 500;">Observações da Solicitação</label>
           <textarea [(ngModel)]="form.observacoesSolicitacao" name="observacoesSolicitacao" rows="2" placeholder="Digite observações relevantes..." style="width: 100%; resize: vertical;"></textarea>
         </div>
-        <div style="display: flex; gap: 12px; align-items: flex-end;">
+        <div style="margin-left: auto; display: flex; gap: 12px; align-items: flex-end;">
           <button type="submit" class="btn-primary" [disabled]="loading">
             <span *ngIf="!loading">💾 Salvar Beneficiário</span>
             <span *ngIf="loading">⏳ Salvando...</span>

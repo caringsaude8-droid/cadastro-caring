@@ -340,21 +340,19 @@ export class AprovacaoCadastroComponent {
     this.benefDetalhes = null;
   }
 
-  observacaoAprovacao: string = '';
-
   confirmarAprovacao() {
     if (!this.approvalSolicitacao) return;
+    
     // Criar objeto com dados adicionais para aprovação
     const dadosAprovacao: any = {};
+    
     if (this.dadosAprovacao.benCodCartao) {
       dadosAprovacao.benCodCartao = this.dadosAprovacao.benCodCartao;
     }
     if (this.dadosAprovacao.benCodUnimedSeg) {
       dadosAprovacao.benCodUnimedSeg = this.dadosAprovacao.benCodUnimedSeg;
     }
-    if (this.observacaoAprovacao) {
-      dadosAprovacao.observacoesAprovacao = this.observacaoAprovacao;
-    }
+    
     // Processar aprovação com dados adicionais
     this.processarAprovacao(this.approvalSolicitacao.id, dadosAprovacao);
     // Fechar modal

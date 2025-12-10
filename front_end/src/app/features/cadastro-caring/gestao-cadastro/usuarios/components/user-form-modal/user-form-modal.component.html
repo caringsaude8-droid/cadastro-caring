@@ -42,7 +42,7 @@
             <div class="form-error" *ngIf="senhaInput.invalid && senhaInput.touched">Senha é obrigatória</div>
           </div>
         </div>
-        <div class="form-row" *ngIf="formData.perfil === 'user'">
+        <div class="form-row" *ngIf="formData.perfil === 'user' || formData.perfil === 'gestor'">
           <div class="form-group">
             <label for="empresaId" class="form-label">Empresa *</label>
             <select id="empresaId" name="empresaId" [(ngModel)]="formData.empresaId" class="form-select" required>

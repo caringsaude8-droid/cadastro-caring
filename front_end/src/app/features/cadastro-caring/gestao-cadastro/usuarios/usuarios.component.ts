@@ -93,6 +93,8 @@ export class UsuariosComponent implements OnInit {
   getPerfilLabel(perfil: string): string {
     const labels: { [key: string]: string } = {
       'admin': 'Administrador',
+      'user': 'Usuario',
+      'gestor': 'Gestor',
       'terapeuta': 'Admin TEA'
     };
     return labels[perfil] || perfil;

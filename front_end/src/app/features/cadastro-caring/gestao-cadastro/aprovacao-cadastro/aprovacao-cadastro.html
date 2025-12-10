@@ -106,8 +106,7 @@
       </div>
     </div>
 
-    <div class="section-subtitle" *ngIf="d.status === 'pendente'">Observação da aprovação</div>
-    <textarea *ngIf="d.status === 'pendente'" class="input" rows="2" [(ngModel)]="observacaoAprovacao" placeholder="Observação para aprovação"></textarea>
+    <div class="section-subtitle" *ngIf="d.status === 'pendente'">Ação</div>
     <div class="action-grid" *ngIf="d.status === 'pendente'">
       <button class="btn btn-primary btn-sm" (click)="aceitarSelecionado()"><i class="icon-check-circle"></i> Aceitar</button>
       <button class="btn btn-secondary btn-sm" (click)="negarSelecionado()"><i class="icon-refresh"></i> Negar</button>

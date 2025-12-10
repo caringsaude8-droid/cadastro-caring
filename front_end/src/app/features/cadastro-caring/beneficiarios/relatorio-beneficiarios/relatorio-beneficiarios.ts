@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
 import { BeneficiariosService, Beneficiario } from '../beneficiarios.service';
+import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
+import { Empresa } from '../../empresa/empresa.service';
 
 @Component({
   selector: 'app-relatorio-beneficiarios',
@@ -17,10 +19,12 @@ export class RelatorioBeneficiariosComponent implements OnInit {
   termo = '';
   data: Beneficiario[] = [];
   filtered: Beneficiario[] = [];
+  empresaSelecionada: Empresa | null = null;
 
-  constructor(private beneficiarios: BeneficiariosService) {}
+  constructor(private beneficiarios: BeneficiariosService, private empresaContextService: EmpresaContextService) {}
 
   ngOnInit(): void {
+    this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
     this.loading = true;
     this.beneficiarios.list().subscribe({
       next: (rows) => { this.data = rows; this.filtered = rows; this.loading = false; },

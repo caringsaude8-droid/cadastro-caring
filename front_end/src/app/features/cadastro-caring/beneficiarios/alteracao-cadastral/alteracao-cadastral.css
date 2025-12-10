@@ -7,7 +7,7 @@
     background: #e6ffed;
     color: #2e7d32;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     padding: 16px 28px;
     display: flex;
     align-items: center;
@@ -17,31 +17,55 @@
     border: 1px solid #b2dfdb;
     animation: fadeIn 0.3s;
 }
+
 .notification-icon {
     font-size: 1.5rem;
     margin-right: 8px;
 }
+
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-/* Barra de empresa selecionada */
-.empresa-info-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: linear-gradient(90deg, #0ea5e9 60%, #06b6d4 100%);
-    color: #fff;
-    font-weight: 600;
-    padding: 0.7rem 1.2rem;
-    border-radius: 10px;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.10);
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.empresa-info-bar b {
-    font-size: 1.08em;
-    letter-spacing: 0.5px;
+/* Barra de empresa selecionada */
+/* Informações da Empresa (padronizado com Inclusão) */
+.empresa-info {
+  margin-bottom: 1.5rem;
+}
+
+.empresa-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.empresa-icon {
+  font-size: 2rem;
+}
+
+.empresa-details h3 {
+  margin: 0 0 0.25rem 0;
+  color: #ffffff;
+}
+
+.empresa-details p {
+  margin: 0 0 0.25rem 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.empresa-codigo {
+  font-size: 0.875rem;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .btn-trocar-empresa {
@@ -56,10 +80,12 @@
     margin-left: 1.2rem;
     transition: background 0.2s, color 0.2s;
 }
+
 .btn-trocar-empresa:hover {
     background: #0ea5e9;
     color: #fff;
 }
+
 .form-card {
     background: #ffffff;
     border: none;

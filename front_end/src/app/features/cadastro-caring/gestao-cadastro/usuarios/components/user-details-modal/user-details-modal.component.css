@@ -145,10 +145,9 @@
     color: #7c3aed;
 }
 
-.perfil-terapeuta {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
+.perfil-terapeuta { background: #dbeafe; color: #1d4ed8; }
+.perfil-user { background: #e0f2fe; color: #0369a1; }
+.perfil-gestor { background: #fef3c7; color: #b45309; }
 
 .status-ativo {
     background: #d1fae5;

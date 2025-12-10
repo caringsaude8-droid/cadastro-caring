@@ -27,6 +27,8 @@ export class InputComponent implements ControlValueAccessor {
   @Input() name: string = '';
   @Input() step: string = '';
   @Input() min: string = '';
+  @Input() maxlength: number | null = null;
+  @Input() onlyDigits: boolean = false;
 
   @Output() valueChange = new EventEmitter<string>();
 
@@ -42,9 +44,47 @@ export class InputComponent implements ControlValueAccessor {
 
   onInput(event: Event): void {
     const target = event.target as HTMLInputElement;
-    this.value = target.value;
+    let incoming = target.value || '';
+    if (this.onlyDigits) {
+      incoming = incoming.replace(/\D/g, '');
+      if (typeof this.maxlength === 'number' && this.maxlength > 0) {
+        incoming = incoming.slice(0, this.maxlength);
+      }
+    }
+    // Reflect sanitized value immediately in the DOM to block non-digit visuals
+    target.value = incoming;
+    this.value = incoming;
     this.onChange(this.value);
     this.valueChange.emit(this.value);
+  }
+
+  onKeyDown(event: KeyboardEvent): void {
+    if (!this.onlyDigits) return;
+
+    const key = event.key;
+    const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter'];
+    if (allowed.includes(key)) return;
+
+    if ((event.ctrlKey || event.metaKey) && (key === 'a' || key === 'c' || key === 'v' || key === 'x')) {
+      return;
+    }
+
+    const isDigit = /^[0-9]$/.test(key);
+    if (!isDigit) {
+      event.preventDefault();
+      return;
+    }
+
+    if (typeof this.maxlength === 'number' && this.maxlength > 0) {
+      const input = event.target as HTMLInputElement;
+      const selStart = input.selectionStart ?? 0;
+      const selEnd = input.selectionEnd ?? 0;
+      const selectionLength = selEnd - selStart;
+      const currentLength = (input.value || '').length;
+      if (selectionLength === 0 && currentLength >= this.maxlength) {
+        event.preventDefault();
+      }
+    }
   }
 
   onBlur(): void {

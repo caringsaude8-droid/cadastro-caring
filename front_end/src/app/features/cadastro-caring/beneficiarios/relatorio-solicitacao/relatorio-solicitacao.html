@@ -1,5 +1,16 @@
 <app-page-header [title]="'Cadastro Caring — Relatório de Solicitações'" [subtitle]="'Movimentações cadastrais com exportação'" [icon]="'file-text'"></app-page-header>
 
+<div class="empresa-info" *ngIf="empresaSelecionada">
+  <div class="empresa-card">
+    <div class="empresa-icon">🏢</div>
+    <div class="empresa-details">
+      <h3>{{ empresaSelecionada.nome }}</h3>
+      <p>CNPJ: {{empresaSelecionada.cnpj}}</p>
+      <span class="empresa-codigo">Código: {{empresaSelecionada.codigoEmpresa}}</span>
+    </div>
+  </div>
+</div>
+
 <div class="relatorio-container">
   <div class="toolbar caring-card">
     <input class="input" [(ngModel)]="termo" placeholder="Filtrar por nº, nome, CPF, tipo ou status" (input)="filtrar()">

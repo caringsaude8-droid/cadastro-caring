@@ -245,9 +245,6 @@ export class AlteracaoCadastralComponent implements OnInit {
       this.form.cpf = this.formatarCpf(this.form.cpf);
       this.form.celular = this.formatarCelular(this.form.celular);
 
-      // Converte o nome do plano para o código antes de montar o objeto
-      const planoProdCodigo = this.mapearPlanoProduto(this.form.planoProd);
-
       // Monta dadosPropostos (apenas dados do DTO)
       const dadosPropostos = {
         benTipoMotivo: this.form.tipoMotivo,
@@ -273,7 +270,7 @@ export class AlteracaoCadastralComponent implements OnInit {
         benDataCasamento: this.form.dataCasamento,
         benDtaInclusao: this.form.dataInclusao,
         benDtaExclusao: this.form.dataExclusao,
-        benPlanoProd: planoProdCodigo,
+        benPlanoProd: this.form.planoProd,
         benAdmissao: this.form.admissao,
         benMatricula: this.form.matricula,
         benCodUnimedSeg: this.form.benCodUnimedSeg || null,

@@ -1,5 +1,16 @@
 <app-page-header [title]="'Cadastro Caring — Relatório de Beneficiários'" [subtitle]="'Lista completa do contrato com exportação'" [icon]="'users'"></app-page-header>
 
+<div class="empresa-info" *ngIf="empresaSelecionada">
+  <div class="empresa-card">
+    <div class="empresa-icon">🏢</div>
+    <div class="empresa-details">
+      <h3>{{ empresaSelecionada.nome }}</h3>
+      <p>CNPJ: {{empresaSelecionada.cnpj}}</p>
+      <span class="empresa-codigo">Código: {{empresaSelecionada.codigoEmpresa}}</span>
+    </div>
+  </div>
+</div>
+
 <div class="relatorio-container">
   <div class="toolbar caring-card">
     <input class="input" [(ngModel)]="termo" placeholder="Filtrar por nome, CPF ou matrícula" (input)="filtrar()">
@@ -43,4 +54,3 @@
     </table>
   </div>
 </div>
-

@@ -6,3 +6,19 @@
 .empty { text-align: center; color: #64748b; }
 .loading-row { text-align: center; color: #0b5fa4; }
 
+/* Card da Empresa (padronizado) */
+.empresa-info { margin: 0 1.5rem 1rem 1.5rem; }
+.empresa-card {
+  background: linear-gradient(135deg, #0b5fa4 0%, #0891b2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(11, 95, 164, 0.25);
+}
+.empresa-icon { font-size: 2rem; opacity: 0.9; }
+.empresa-details h3 { margin: 0 0 0.25rem 0; color: #ffffff; font-size: 1.1rem; font-weight: 700; }
+.empresa-details p { margin: 0 0 0.25rem 0; color: rgba(255, 255, 255, 0.9); }
+.empresa-codigo { font-size: 0.85rem; color: #ffffff; font-weight: 600; background: rgba(255, 255, 255, 0.2); padding: 0.25rem 0.5rem; border-radius: 6px; }

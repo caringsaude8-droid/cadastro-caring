@@ -1,5 +1,14 @@
-<div class="empresa-info-bar" *ngIf="empresaSelecionada">
-  <span>Empresa selecionada: <b>{{ empresaSelecionada.nome || empresaSelecionada.razaoSocial || empresaSelecionada.fantasia }}</b></span>
+<!-- Informações da Empresa (padronizado) -->
+<div class="empresa-info" *ngIf="empresaSelecionada">
+  <div class="empresa-card">
+    <div class="empresa-icon">🏢</div>
+    <div class="empresa-details">
+      <h3>{{ empresaSelecionada.nome || empresaSelecionada.razaoSocial || empresaSelecionada.fantasia }}</h3>
+      <p>CNPJ: {{empresaSelecionada.cnpj}}</p>
+      <span class="empresa-codigo">Código: {{empresaSelecionada.codigoEmpresa}}</span>
+    </div>
+  </div>
+  
 </div>
 
 <app-page-header 

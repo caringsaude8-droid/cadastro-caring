@@ -15,7 +15,7 @@ export class UserFormModalComponent implements OnInit, OnChanges {
   @Input() show: boolean = false;
   @Input() user: User | null = null;
   @Input() mode: 'create' | 'edit' = 'create';
-  
+
   @Output() close = new EventEmitter<void>();
   @Output() save = new EventEmitter<User>();
 
@@ -34,7 +34,8 @@ export class UserFormModalComponent implements OnInit, OnChanges {
 
   readonly perfilOptions = [
     { value: 'admin', label: 'Administrador' },
-    { value: 'user', label: 'Usuario' }
+    { value: 'user', label: 'Usuario' },
+    { value: 'gestor', label: 'Gestor' }
   ];
 
   readonly statusOptions = [
@@ -45,7 +46,7 @@ export class UserFormModalComponent implements OnInit, OnChanges {
   get modalTitle(): string { return this.mode === 'create' ? 'Novo Usuário' : 'Editar Usuário'; }
   get submitButtonText(): string { return this.mode === 'create' ? 'Criar Usuário' : 'Salvar Alterações'; }
 
-  constructor(private empresaService: EmpresaService) {}
+  constructor(private empresaService: EmpresaService) { }
 
   ngOnInit(): void {
     this.resetForm();
@@ -106,14 +107,14 @@ export class UserFormModalComponent implements OnInit, OnChanges {
   }
 
   isFormValid(): boolean {
-    const isUserPerfil = this.formData.perfil === 'user';
+    const requiresEmpresa = this.formData.perfil === 'user' || this.formData.perfil === 'gestor';
     return !!(
       this.formData.nome?.trim() &&
       this.formData.email?.trim() &&
       this.formData.senha?.trim() &&
       this.formData.perfil &&
       this.formData.cpf?.trim() &&
-      (!isUserPerfil || this.formData.empresaId)
+      (!requiresEmpresa || this.formData.empresaId)
     );
   }
 }

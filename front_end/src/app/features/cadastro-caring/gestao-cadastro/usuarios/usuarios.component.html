@@ -51,6 +51,8 @@
       <select class="filter-select" [(ngModel)]="selectedPerfil" (change)="onPerfilChange()">
         <option value="">Todos os Perfis</option>
         <option value="admin">Administrador</option>
+        <option value="user">Usuario</option>
+        <option value="gestor">Gestor</option>
         <option value="terapeuta">Admin TEA</option>
       </select>
       <select class="filter-select" [(ngModel)]="selectedStatus" (change)="onStatusChange()">

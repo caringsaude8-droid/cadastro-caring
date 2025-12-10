@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header';
 import { SolicitacaoBeneficiarioService, SolicitacaoBeneficiario } from '../../gestao-cadastro/solicitacao-beneficiario.service';
 import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
+import { Empresa } from '../../empresa/empresa.service';
 
 type Row = {
   id: number;
@@ -31,12 +32,14 @@ export class RelatorioSolicitacaoComponent implements OnInit {
   termo = '';
   data: Row[] = [];
   filtered: Row[] = [];
+  empresaSelecionada: Empresa | null = null;
 
   constructor(private service: SolicitacaoBeneficiarioService, private empresaContext: EmpresaContextService) {}
 
   ngOnInit(): void {
     this.loading = true;
     const empresa = this.empresaContext.getEmpresaSelecionada();
+    this.empresaSelecionada = empresa || null;
     const obs = empresa?.id ? this.service.listarTodasPorEmpresa(empresa.id) : this.service.listarTodas();
     obs.subscribe({
       next: (rows) => { this.data = rows.map(this.mapRow); this.filtered = this.data; this.loading = false; },

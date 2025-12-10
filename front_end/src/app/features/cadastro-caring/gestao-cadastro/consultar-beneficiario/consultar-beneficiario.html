@@ -45,7 +45,7 @@
       <div class="form-row">
         <div class="form-group third">
           <label>CPF</label>
-          <ui-input [(ngModel)]="cpf" name="cpf" placeholder="000.000.000-00"></ui-input>
+          <ui-input [(ngModel)]="cpf" name="cpf" placeholder="000.000.000-00" [onlyDigits]="true" [maxlength]="11"></ui-input>
         </div>
         <div class="form-group third">
           <label>Nome</label>
@@ -79,4 +79,3 @@
     </div>
   </div>
 </div>
-

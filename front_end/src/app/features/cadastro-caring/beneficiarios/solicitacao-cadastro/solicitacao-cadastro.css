@@ -4,6 +4,23 @@
     margin: 0 auto;
 }
 
+/* Informações da Empresa (padronizado com Inclusão) */
+.empresa-info { margin: 0 1.5rem 1rem 1.5rem; }
+.empresa-card {
+  background: linear-gradient(135deg, #0b5fa4 0%, #0891b2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(11, 95, 164, 0.25);
+}
+.empresa-icon { font-size: 2rem; opacity: 0.9; }
+.empresa-details h3 { margin: 0 0 0.25rem 0; font-size: 1.1rem; font-weight: 600; }
+.empresa-details p { margin: 0 0 0.25rem 0; font-size: 0.9rem; opacity: 0.9; }
+.empresa-codigo { font-size: 0.85rem; background: rgba(255, 255, 255, 0.2); padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 500; }
+
 .modal-card {
   max-height: 88vh;
   overflow: hidden;
@@ -216,17 +233,17 @@
 
 .empresa-details h3 {
   margin: 0 0 0.25rem 0;
-  color: #1e293b;
+  color: #ffffff;
 }
 
 .empresa-details p {
   margin: 0 0 0.25rem 0;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .empresa-codigo {
   font-size: 0.875rem;
-  color: #0b5fa4;
+  color: #ffffff;
   font-weight: 600;
 }
 

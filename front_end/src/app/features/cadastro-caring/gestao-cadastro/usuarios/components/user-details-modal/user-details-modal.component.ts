@@ -36,7 +36,7 @@ export class UserDetailsModalComponent {
   onEditUser(): void { if (this.user) { this.editUser.emit(this.user); this.close.emit(); } }
   onOverlayClick(event: Event): void { if (event.target === event.currentTarget) { this.onCloseModal(); } }
 
-  getPerfilLabel(perfil: string): string { const labels: { [key: string]: string } = { 'admin': 'Administrador', 'terapeuta': 'Admin TEA' }; return labels[perfil] || perfil; }
+  getPerfilLabel(perfil: string): string { const labels: { [key: string]: string } = { 'admin': 'Administrador', 'user': 'Usuario', 'gestor': 'Gestor', 'terapeuta': 'Admin TEA' }; return labels[perfil] || perfil; }
   getStatusLabel(status: string): string { const labels: { [key: string]: string } = { 'ativo': 'Ativo', 'inativo': 'Inativo' }; return labels[status] || status; }
   getStatusClass(status: string): string { return `status-${status}`; }
   getPerfilClass(perfil: string): string { return `perfil-${perfil}`; }

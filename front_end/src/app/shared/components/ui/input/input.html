@@ -9,7 +9,9 @@
   [name]="name"
   [step]="step"
   [min]="min"
+  [attr.maxlength]="maxlength ?? null"
   [value]="value"
   (input)="onInput($event)"
+  (keydown)="onKeyDown($event)"
   (blur)="onBlur()"
 />

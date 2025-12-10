@@ -67,8 +67,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
     }
   empresaSelecionada: any = null;
   nome = '';
-  matricula = '';
-  matriculaTitular = '';
+  cpf = '';
 
   page = 1;
   pageSize = 10;
@@ -80,10 +79,10 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   
 
   get filtered(): BeneficiarioRow[] {
+    const cpfDigits = (this.cpf || '').replace(/\D/g, '');
     return this.data.filter(r =>
-      (!this.nome || r.nome.toLowerCase().includes(this.nome.toLowerCase())) &&
-      (!this.matricula || r.matricula_beneficiario.includes(this.matricula)) &&
-      (!this.matriculaTitular || r.matricula_titular.includes(this.matriculaTitular))
+      (!this.nome || (r.nome || '').toLowerCase().includes(this.nome.toLowerCase())) &&
+      (!cpfDigits || ((r.cpf || '').replace(/\D/g, '').includes(cpfDigits)))
     );
   }
 
@@ -110,6 +109,11 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   dateError = '';
   showBenefDetails = false;
   benefDetalhes: any = null;
+  showSolicConfirm = false;
+  confirmTitle = '';
+  confirmMessage = '';
+  confirmNumber: string | null = null;
+  confirmCardCode: string | null = null;
 
   showCarterinha = false;
   cardNome = '';
@@ -197,6 +201,22 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   closeBenefDetails() {
     this.showBenefDetails = false;
     this.benefDetalhes = null;
+  }
+
+  openSolicConfirm(title: string, message: string, numero?: string, cardCode?: string) {
+    this.confirmTitle = title;
+    this.confirmMessage = message;
+    this.confirmNumber = numero || null;
+    this.confirmCardCode = (cardCode || null);
+    this.showSolicConfirm = true;
+  }
+
+  closeSolicConfirm() {
+    this.showSolicConfirm = false;
+    this.confirmTitle = '';
+    this.confirmMessage = '';
+    this.confirmNumber = null;
+    this.confirmCardCode = null;
   }
 
   formatDateBR(d: Date | null): string {
@@ -304,8 +324,13 @@ export class PesquisarBeneficiariosComponent implements OnInit {
             console.log('✅ Beneficiário marcado como pendente');
             this.carregarBeneficiarios();
             
-            // Mostrar feedback de sucesso
-            alert(`Solicitação de exclusão ${response.numeroSolicitacao || 'criada'} com sucesso!\n\nO beneficiário foi marcado como pendente e aguarda aprovação.`);
+            const cardCode = (this.selectedRow?.codigo_carterinha || ((this.selectedRow?.benCodUnimedSeg || '') + (this.selectedRow?.benCodCartao || '')) || '');
+            this.openSolicConfirm(
+              'Solicitação criada',
+              'Solicitação de exclusão criada com sucesso! O beneficiário foi marcado como pendente e aguarda aprovação.',
+              response.numeroSolicitacao,
+              cardCode
+            );
           },
           error: (error: any) => console.error('❌ Erro ao marcar como pendente:', error)
         });
@@ -347,8 +372,13 @@ export class PesquisarBeneficiariosComponent implements OnInit {
         };
 
         this.aprovacaoService.add(solicitacao);
-        
-        alert('Solicitação de exclusão criada com sucesso!\n\nAguardando aprovação.');
+        const cardCode = (this.selectedRow?.codigo_carterinha || ((this.selectedRow?.benCodUnimedSeg || '') + (this.selectedRow?.benCodCartao || '')) || '');
+        this.openSolicConfirm(
+          'Solicitação criada',
+          'Solicitação de exclusão criada com sucesso! Aguardando aprovação.',
+          undefined,
+          cardCode
+        );
         
         this.exMotivo = '';
         this.exData = '';
@@ -428,7 +458,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   }
 
   pesquisar(): void {
-    if (!this.nome && !this.matricula && !this.matriculaTitular) {
+    if (!this.nome && !this.cpf) {
       // Se não há filtros, recarregar todos
       this.carregarBeneficiarios();
       return;
@@ -439,8 +469,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
 
     const filtros = {
       nome: this.nome || undefined,
-      matricula: this.matricula || undefined,
-      matriculaTitular: this.matriculaTitular || undefined
+      cpf: (this.cpf || '').replace(/\D/g, '') || undefined
     };
 
     this.service.buscarPorFiltros(filtros).subscribe({
@@ -565,8 +594,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
 
   limparFiltros(): void {
     this.nome = '';
-    this.matricula = '';
-    this.matriculaTitular = '';
+    this.cpf = '';
     this.carregarBeneficiarios();
   }
 

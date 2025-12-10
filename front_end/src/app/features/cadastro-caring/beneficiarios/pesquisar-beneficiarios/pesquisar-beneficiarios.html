@@ -1,12 +1,21 @@
-<div class="empresa-info-bar" *ngIf="empresaSelecionada">
-  <span>Empresa selecionada: <b>{{ empresaSelecionada.nome || empresaSelecionada.razaoSocial || empresaSelecionada.fantasia }}</b></span>
-</div>
-
 <app-page-header 
   [title]="'Cadastro Caring — Alteração Cadastral'" 
   [subtitle]="'Filtre o beneficiário e abra detalhes para alterar'" 
   [icon]="'users'">
 </app-page-header>
+
+<!-- Informações da Empresa -->
+<div class="empresa-info" *ngIf="empresaSelecionada">
+  <div class="empresa-card">
+    <div class="empresa-icon">🏢</div>
+    <div class="empresa-details">
+      <h3>{{ empresaSelecionada.nome || empresaSelecionada.razaoSocial || empresaSelecionada.fantasia }}</h3>
+      <p>CNPJ: {{empresaSelecionada.cnpj}}</p>
+      <span class="empresa-codigo">Código: {{empresaSelecionada.codigoEmpresa}}</span>
+    </div>
+  </div>
+  
+</div>
 
 <div class="search-container">
   <div class="search-bar">
@@ -14,10 +23,8 @@
     <div class="filters">
       <label>Nome:</label>
       <ui-input [(ngModel)]="nome" name="nome" placeholder=""></ui-input>
-      <label>Matrícula:</label>
-      <ui-input [(ngModel)]="matricula" name="matricula" placeholder=""></ui-input>
-      <label>Matrícula titular:</label>
-      <ui-input [(ngModel)]="matriculaTitular" name="matriculaTitular" placeholder=""></ui-input>
+      <label>CPF:</label>
+      <ui-input [(ngModel)]="cpf" name="cpf" placeholder="000.000.000-00" [onlyDigits]="true" [maxlength]="11"></ui-input>
       <button class="btn-primary" (click)="pesquisar()" [disabled]="loading">Pesquisar</button>
       <button class="btn-secondary" (click)="limparFiltros()" [disabled]="loading">Limpar</button>
     </div>
@@ -69,8 +76,8 @@
         </tr>
         <tr *ngIf="paged.length === 0 && !loading">
           <td colspan="10" class="empty">
-            <span *ngIf="!nome && !matricula && !matriculaTitular">Nenhum beneficiário cadastrado.</span>
-            <span *ngIf="nome || matricula || matriculaTitular">Nenhum beneficiário encontrado com os filtros aplicados.</span>
+            <span *ngIf="!nome && !cpf">Nenhum beneficiário cadastrado.</span>
+            <span *ngIf="nome || cpf">Nenhum beneficiário encontrado com os filtros aplicados.</span>
           </td>
         </tr>
         <tr *ngIf="loading">
@@ -118,6 +125,7 @@
       <div class="item"><span class="label">Tipo Dependência:</span><span class="value">{{r.tipo_dependencia}}</span></div>
       <div class="item"><span class="label">Acomodação:</span><span class="value">{{r.acomodacao}}</span></div>
       <div class="item"><span class="label">Matrícula:</span><span class="value">{{r.matricula_beneficiario}}</span></div>
+      <div class="item"><span class="label">Cód. Carterinha:</span><span class="value">{{ (r.codigo_carterinha || ((r.benCodUnimedSeg || '') + (r.benCodCartao || ''))) || '—' }}</span></div>
       <div class="item"><span class="label">Matrícula Titular:</span><span class="value">{{r.matricula_titular}}</span></div>
       <div class="item"><span class="label">Status:</span><span class="value">{{statusOf(r)}}</span></div>
     </div>
@@ -165,6 +173,9 @@
   </div>
   <div class="modal-body">
     <div class="exclusion-grid">
+      <div class="detail-grid" *ngIf="selectedRow">
+        <div class="item"><span class="label">Cód. Carterinha:</span><span class="value">{{ selectedRow?.codigo_carterinha || ((selectedRow?.benCodUnimedSeg || '') + (selectedRow?.benCodCartao || '')) || '—' }}</span></div>
+      </div>
       <div class="field">
         <label>Motivo</label>
         <select [(ngModel)]="exMotivo" name="ex_motivo" class="select-md">
@@ -245,5 +256,23 @@
   <div class="modal-footer">
     <button class="btn-secondary" (click)="closeCarterinha()">Cancelar</button>
     <button class="btn-primary" (click)="abrirCartaoVirtual()">Abrir Cartão Virtual</button>
+  </div>
+</div>
+
+<div *ngIf="showSolicConfirm" class="modal-backdrop" (click)="closeSolicConfirm()"></div>
+<div *ngIf="showSolicConfirm" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>{{ confirmTitle || 'Solicitação criada' }}</h3>
+    <button class="modal-close" (click)="closeSolicConfirm()">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-grid">
+      <div class="item wide"><span class="label">Mensagem:</span><span class="value">{{ confirmMessage }}</span></div>
+      <div class="item" *ngIf="confirmNumber"><span class="label">Número:</span><span class="value">{{ confirmNumber }}</span></div>
+      <div class="item" *ngIf="confirmCardCode"><span class="label">Cód. Carterinha:</span><span class="value">{{ confirmCardCode }}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeSolicConfirm()">OK</button>
   </div>
 </div>
