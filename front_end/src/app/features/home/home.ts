@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService, AuthUser } from '../../core/services/auth.service';
 
 interface QuickAction {
   title: string;
@@ -51,18 +52,22 @@ export class HomeComponent implements OnInit {
     }
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   ngOnInit() {
     this.loadUserProfile();
   }
 
   private loadUserProfile() {
-    // Mock data - substituir por serviço real de autenticação
-    this.userProfile = {
-      nome: 'Dr. João Silva',
-      perfil: 'Administrador'
-    };
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.userProfile = { nome: user.nome, perfil: user.perfil };
+    }
+    this.authService.currentUser$.subscribe((u: AuthUser | null) => {
+      if (u) {
+        this.userProfile = { nome: u.nome, perfil: u.perfil };
+      }
+    });
   }
 
   navigateTo(route: string) {

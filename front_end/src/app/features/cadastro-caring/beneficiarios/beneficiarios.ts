@@ -33,7 +33,7 @@ export class CadastroBeneficiariosComponent implements OnInit {
   ngOnInit() {
     this.loading = false;
     this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
-    console.log('🏠 Beneficiarios: Empresa carregada =', this.empresaSelecionada);
+    
   }
 
   trocarEmpresa() {

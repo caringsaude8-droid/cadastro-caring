@@ -100,8 +100,8 @@ export class SolicitacaoBeneficiarioService {
             solicitante: s.usuarioSolicitanteNome,
             codigoEmpresa: s['empresaId'] || '',
             data: s.dataSolicitacao?.toString() || new Date().toISOString(),
-            status: this.convertStatusParaAntigo(s.status || 'PENDENTE'),
-            observacao: s.observacoesSolicitacao,
+          status: this.convertStatusParaAntigo(s.status || 'PENDENTE'),
+            observacao: '',
             historico: []
           }))
         )
@@ -161,9 +161,7 @@ export class SolicitacaoBeneficiarioService {
   }
 
   listarHistorico(id: number): Observable<any[]> {
-    console.log('[API] Histórico URL:', `${this.baseUrl}/${id}/historico`, 'ID:', id);
     return this.http.get<any[]>(`${this.baseUrl}/${id}/historico`).pipe(
-      tap(resp => console.log('[API] Histórico resposta:', resp)),
       catchError(error => {
         console.error('❌ Erro ao buscar histórico:', error);
         return of([]);

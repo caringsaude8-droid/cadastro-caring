@@ -61,9 +61,7 @@ export class SolicitacaoCadastroComponent implements OnInit {
     this.loading = true;
     this.solicitacaoBeneficiarioService.listarTodasPorEmpresa(this.empresaSelecionada.id)
       .subscribe((solicitacoes: any[]) => {
-        console.log('[API] solicitações recebidas (todas):', solicitacoes);
         if (solicitacoes && solicitacoes.length > 0) {
-          console.log('[API] Exemplo de solicitação recebida:', JSON.stringify(solicitacoes[0], null, 2));
         }
         // Mapeia os campos para o front
           const mapeadas = solicitacoes.map(s => ({
@@ -75,7 +73,22 @@ export class SolicitacaoCadastroComponent implements OnInit {
             data: s.dataSolicitacao || s.data || '',
             historico: s.historico || []
           }));
-        this.solicitacoes = mapeadas;
+
+          // Ordenar solicitações por data (nova para velha)
+        const toTime = (d: any): number => {
+          try {
+            if (!d) return 0;
+            if (d instanceof Date) return d.getTime();
+            if (typeof d === 'string') {
+              const dt = new Date(d);
+              return isNaN(dt.getTime()) ? 0 : dt.getTime();
+            }
+            if (typeof d === 'number') return d;
+            const dt = new Date(d);
+            return isNaN(dt.getTime()) ? 0 : dt.getTime();
+          } catch { return 0; }
+        };
+        this.solicitacoes = mapeadas.sort((a, b) => toTime(b.data) - toTime(a.data));
         // Função utilitária para mapear status do backend para o front
         function mapStatus(status: string): string {
           const map: Record<string, string> = {
@@ -136,11 +149,11 @@ export class SolicitacaoCadastroComponent implements OnInit {
     this.showDetails = true;
     const idNum = parseInt(s.id);
     if (!isNaN(idNum)) {
-      console.log('[UI] Abrindo detalhes (solicitante), ID:', idNum);
+      
       this.solicitacaoBeneficiarioService.listarHistorico(idNum).subscribe({
         next: (lista: any[]) => {
           try {
-            console.log('[UI] Histórico recebido (solicitante):', lista);
+            
             const toIso = (d: any): string => {
               if (!d) return new Date().toISOString();
               if (d instanceof Date) return d.toISOString();
@@ -153,16 +166,16 @@ export class SolicitacaoCadastroComponent implements OnInit {
               dataOperacao: toIso(e?.dataOperacao)
             });
             const mapped = Array.isArray(lista) ? lista.map(m) : [];
-            this.historicoCompleto = mapped.sort((a, b) => new Date(a.dataOperacao).getTime() - new Date(b.dataOperacao).getTime());
-            console.log('[UI] Histórico mapeado (solicitante):', this.historicoCompleto);
+            this.historicoCompleto = mapped.sort((a, b) => new Date(b.dataOperacao).getTime() - new Date(a.dataOperacao).getTime());
+            
           } catch {}
         },
-        error: (err) => { console.log('Erro ao buscar histórico:', err); }
+        error: () => {}
       });
 
       this.solicitacaoBeneficiarioService.buscarPorId(idNum).subscribe({
         next: () => {},
-        error: (err) => { console.log('Erro ao buscar detalhe da solicitação:', err); }
+        error: () => {}
       });
     }
 
@@ -182,7 +195,7 @@ export class SolicitacaoCadastroComponent implements OnInit {
   }
 
   salvarAjustes(s: Solicitacao) {
-      console.log('DEBUG - salvarAjustes chamado para:', s);
+      
     const state = this.ensureAjusteState(s.id);
     const texto = state.mensagem || '';
     const user = this.auth.getCurrentUser();
@@ -200,7 +213,7 @@ export class SolicitacaoCadastroComponent implements OnInit {
     }
     // Garante que o objeto passado é { dadosPropostos: { ... } }
     const payload = { dadosPropostos };
-    console.log('DEBUG - Enviando para updateStatus:', JSON.stringify(payload));
+    
     this.aprovacao.updateStatus(s.id, 'pendente', obs, payload);
     localStorage.setItem(this.keyFor(s.id), JSON.stringify(state));
   }
@@ -246,27 +259,29 @@ export class SolicitacaoCadastroComponent implements OnInit {
   openBenefDetails() {
     const cpf = (this.selected?.identificador || '').replace(/\D/g, '');
     if (!cpf) return;
-    this.beneficiariosService.list().subscribe({
-      next: (lista) => {
-        const b = lista.find(x => (x.cpf || '').replace(/\D/g, '') === cpf);
+    this.beneficiariosService.listRaw().subscribe({
+      next: (lista: any[]) => {
+        const b = lista.find(x => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpf);
         if (b) {
+          const codUnimed = b.benCodUnimedSeg || b.cod_unimed_seg || '';
+          const codCartao = b.benCodCartao || b.cod_cartao || '';
           this.benefDetalhes = {
-            nome: b.nome,
-            cpf: b.cpf,
-            nascimento: b.nascimento,
-            benStatus: b.benStatus,
-            matricula: b.matricula_beneficiario,
-            endereco: (b as any).endereco || '',
-            numero: (b as any).numero || '',
-            complemento: (b as any).complemento || '',
-            bairro: (b as any).bairro || '',
-            cep: (b as any).cep || '',
-            celular: b.celular,
-            email: b.email,
-            planoProd: (b as any).plano_prod || '',
-            admissao: (b as any).admissao || '',
-            benCodUnimedSeg: (b as any).benCodUnimedSeg || '',
-            benCodCartao: (b as any).benCodCartao || ''
+            nome: b.benNomeSegurado || b.nome || '',
+            cpf: b.benCpf || b.cpf || '',
+            nascimento: b.benDtaNasc || b.nascimento || '',
+            benStatus: b.benStatus || 'Ativo',
+            matricula: b.benMatricula || b.matricula_beneficiario || '',
+            endereco: b.benEndereco || b.endereco || '',
+            numero: b.benNumero || b.numero || '',
+            complemento: b.benComplemento || b.complemento || '',
+            bairro: b.benBairro || b.bairro || '',
+            cep: b.benCep || b.cep || '',
+            celular: b.benDddCel || b.celular || '',
+            email: b.benEmail || b.email || '',
+            planoProd: b.benPlanoProd || b.plano_prod || '',
+            admissao: b.benAdmissao || b.admissao || '',
+            benCodUnimedSeg: codUnimed,
+            benCodCartao: codCartao
           };
           this.showBenefDetails = true;
         }

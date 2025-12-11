@@ -113,7 +113,8 @@ export class AlteracaoCadastralComponent implements OnInit {
   ];
   ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
   planos = [
-    { value: 'unimed_adm_dinamico', label: 'UNIMED ADM. DINAMICO' }
+    { value: 'unimed_adm_dinamico', label: 'UNIMED ADM. DINAMICO' },
+    { value: 'unimed_adm_basico', label: 'UNIMED ADMINISTRADO BÁSICO TAXA CP' }
   ];
   generos = [
     { value: 'cisgenerio', label: 'Cisgênero' },
@@ -122,10 +123,21 @@ export class AlteracaoCadastralComponent implements OnInit {
     { value: 'outro', label: 'Outro' }
   ];
 
+  ocultarPlanosPorEmpresa: Record<number, string[]> = {
+    1: ['unimed_adm_basico'],
+    2: ['unimed_adm_dinamico']
+  };
+
   // Campos para anexos
   anexos: { tipo: string; nome: string; size: number; dataUrl: string }[] = [];
   docTipo = '';
   docTipos = ['RG', 'CPF', 'Comprovante de residência', 'Declaração', 'Contrato', 'Outros'];
+
+  saving = false;
+  showNotification = false;
+  notificationType: 'success' | 'error' | 'loading' = 'loading';
+  notificationMessage = '';
+  private notificationTimeout?: any;
 
   constructor(
     private route: ActivatedRoute,
@@ -140,6 +152,8 @@ export class AlteracaoCadastralComponent implements OnInit {
   ngOnInit(): void {
     // Obter contexto da empresa
     this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
+    //chama olcultação de plano prod
+    this.ajustarPlanoSelecionado();
     
     // Auto-preencher formulário com dados da URL e buscar dados completos da API
     this.route.queryParamMap.subscribe(async params => {
@@ -210,7 +224,7 @@ export class AlteracaoCadastralComponent implements OnInit {
           const beneficiarioCompleto = beneficiariosRaw?.find(b => (b.cpf || b.benCpf) === cpfNumeros);
           
           if (beneficiarioCompleto) {
-            console.log('📋 Beneficiário encontrado com dados brutos:', beneficiarioCompleto);
+            
             this.preencherFormularioCompleto(beneficiarioCompleto);
           }
         } catch (error) {
@@ -225,7 +239,7 @@ export class AlteracaoCadastralComponent implements OnInit {
 
 
   async salvar() {
-    console.log('💾 Salvando alteração com tipoMotivo:', this.form.tipoMotivo);
+    
 
     // Validação dos campos obrigatórios
     if (!this.form.nomeSegurado?.trim() || !this.form.cpf?.trim() || !this.form.tipoMotivo) {
@@ -237,7 +251,7 @@ export class AlteracaoCadastralComponent implements OnInit {
       const empresa = this.empresaContextService.getEmpresaSelecionada();
       const usuario = this.authService.getCurrentUser();
       if (!empresa || !usuario) {
-        alert('Erro: Contexto de empresa ou usuário não encontrado.');
+        this.showCard('error', 'Erro: Contexto de empresa ou usuário não encontrado.');
         return;
       }
 
@@ -253,7 +267,7 @@ export class AlteracaoCadastralComponent implements OnInit {
         benDtaNasc: this.form.dataNascimento,
         benRelacaoDep: this.mapDependencia(this.form.dependencia),
         benSexo: this.form.sexo,
-        benEstCivil: this.form.estadoCivil,
+        benEstCivil: this.form.estadoCivil ? this.converterEstadoCivil(this.form.estadoCivil) : undefined,
         benDddCel: (this.form.celular || '').replace(/\D/g, ''),
         benEmail: this.form.email,
         benEndereco: this.form.endereco,
@@ -270,7 +284,7 @@ export class AlteracaoCadastralComponent implements OnInit {
         benDataCasamento: this.form.dataCasamento,
         benDtaInclusao: this.form.dataInclusao,
         benDtaExclusao: this.form.dataExclusao,
-        benPlanoProd: this.form.planoProd,
+        benPlanoProd: this.form.planoProd ? this.converterPlanoProduto(this.form.planoProd) : undefined,
         benAdmissao: this.form.admissao,
         benMatricula: this.form.matricula,
         benCodUnimedSeg: this.form.benCodUnimedSeg || null,
@@ -303,7 +317,9 @@ export class AlteracaoCadastralComponent implements OnInit {
         empresaId: empresa.id
       };
 
-      console.log('🚀 Disparando solicitação de alteração cadastral:', solicitacao);
+      this.saving = true;
+      this.showCard('loading', 'Salvando solicitação de alteração...');
+      
 
       this.aprovacaoService.criarSolicitacaoAlteracao(
         beneficiario,
@@ -312,19 +328,22 @@ export class AlteracaoCadastralComponent implements OnInit {
         empresa.id
       ).subscribe({
         next: (response: any) => {
-          console.log('✅ Solicitação criada (resposta do POST /solicitacoes):', response);
-          console.log('🔎 JSON da solicitação de alteração:', JSON.stringify(solicitacao, null, 2));
-          alert('✔ Solicitação de alteração criada com sucesso!');
+          
+          this.saving = false;
+          this.showCard('success', 'Solicitação de alteração criada com sucesso!');
           setTimeout(() => {
-            this.router.navigate(['/cadastro-caring/beneficiarios/pesquisar-beneficiarios']);
+            this.router.navigate(['/cadastro-caring/beneficiarios']);
           }, 1000);
         },
         error: (error: any) => {
           console.error('❌ Erro na chamada POST /solicitacoes:', error);
+          this.saving = false;
+          this.showCard('error', 'Erro ao salvar a solicitação. Tente novamente.');
         }
       });
     } catch (error) {
-      alert('Erro ao salvar alteração. Tente novamente.');
+      this.saving = false;
+      this.showCard('error', 'Erro ao salvar alteração. Tente novamente.');
     }
   }
 
@@ -344,7 +363,7 @@ export class AlteracaoCadastralComponent implements OnInit {
   }
 
   cancelar() {
-    console.log('🚫 Cancelando alteração cadastral');
+    
     this.router.navigate(['/cadastro-caring/beneficiarios']);
   }
 
@@ -377,7 +396,8 @@ export class AlteracaoCadastralComponent implements OnInit {
     if (beneficiario.benCodCartao) this.form.benCodCartao = beneficiario.benCodCartao;
     if (beneficiario.benTitularId) this.form.benTitularId = String(beneficiario.benTitularId);
     if (beneficiario.benMotivoExclusao) this.form.benMotivoExclusao = beneficiario.benMotivoExclusao;
-    console.log('✅ Auto-preenchimento concluído');
+    
+    this.ajustarPlanoSelecionado();
   }
 
   private mapearEstadoCivil(codigo: string): string {
@@ -392,9 +412,46 @@ export class AlteracaoCadastralComponent implements OnInit {
 
   private mapearPlanoProduto(codigo: string): string {
     const mapeamento: { [key: string]: string } = {
-      'ADMDTXCP': 'unimed_adm_dinamico'
+      'ADMDTXCP': 'unimed_adm_dinamico',
+      'ADMBTXCP': 'unimed_adm_basico'
     };
     return mapeamento[codigo] || codigo;
+  }
+
+  private converterEstadoCivil(valor: string): string {
+    const map: { [key: string]: string } = {
+      'solteiro': 'S',
+      'casado': 'M',
+      'divorciado': 'D',
+      'viuvo': 'W'
+    };
+    const v = (valor || '').trim().toLowerCase();
+    return map[v] || valor;
+  }
+
+  private converterPlanoProduto(valor: string): string {
+    const map: { [key: string]: string } = {
+      'unimed_adm_dinamico': 'ADMDTXCP',
+      'unimed_adm_basico': 'ADMBTXCP'
+    };
+    return map[valor] || valor;
+  }
+  // Ocultação de plano prod.
+  public isPlanoVisivel(valor: string): boolean {
+    const id = this.empresaSelecionada?.id || null;
+    if (!id) return true;
+    const ocultos = this.ocultarPlanosPorEmpresa[id] || [];
+    return !ocultos.includes(valor);
+  }
+
+  private ajustarPlanoSelecionado(): void {
+    const id = this.empresaSelecionada?.id || null;
+    if (!id) return;
+    const ocultos = new Set(this.ocultarPlanosPorEmpresa[id] || []);
+    if (ocultos.has(this.form.planoProd)) {
+      const primeiroVisivel = (this.planos || []).find(p => !ocultos.has(p.value));
+      this.form.planoProd = primeiroVisivel?.value || '';
+    }
   }
 
   private formatarDataBR(data: string): string {
@@ -469,5 +526,20 @@ export class AlteracaoCadastralComponent implements OnInit {
     link.href = a.dataUrl;
     link.download = a.nome;
     link.click();
+  }
+
+  private showCard(type: 'success' | 'error' | 'loading', message: string) {
+    this.notificationType = type;
+    this.notificationMessage = message;
+    this.showNotification = true;
+    if (this.notificationTimeout) {
+      clearTimeout(this.notificationTimeout);
+      this.notificationTimeout = undefined;
+    }
+    if (type !== 'loading') {
+      this.notificationTimeout = setTimeout(() => {
+        this.showNotification = false;
+      }, 2500);
+    }
   }
 }

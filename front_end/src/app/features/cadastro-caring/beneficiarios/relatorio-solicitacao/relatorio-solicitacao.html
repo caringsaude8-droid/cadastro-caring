@@ -12,9 +12,49 @@
 </div>
 
 <div class="relatorio-container">
-  <div class="toolbar caring-card">
-    <input class="input" [(ngModel)]="termo" placeholder="Filtrar por nº, nome, CPF, tipo ou status" (input)="filtrar()">
-    <button class="btn btn-primary" (click)="exportarCsv()" [disabled]="filtered.length===0">Exportar Excel</button>
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card caring-card stat-total">
+        <div class="stat-icon"><i class="icon-users"></i></div>
+        <div class="stat-content">
+          <h3 class="stat-title">Total de Solicitações</h3>
+          <p class="stat-value">{{stats.total}}</p>
+        </div>
+      </div>
+      <div class="stat-card caring-card stat-active">
+        <div class="stat-icon"><i class="icon-check-circle"></i></div>
+        <div class="stat-content">
+          <h3 class="stat-title">Pendentes</h3>
+          <p class="stat-value">{{stats.pendentes}}</p>
+        </div>
+      </div>
+      <div class="stat-card caring-card stat-inactive">
+        <div class="stat-icon"><i class="icon-x-circle"></i></div>
+        <div class="stat-content">
+          <h3 class="stat-title">Rejeitadas/Canceladas</h3>
+          <p class="stat-value">{{stats.rejeitadas}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-section">
+    <div class="filters-container caring-card">
+      <div class="search-group">
+        <i class="icon-search"></i>
+        <input type="text" class="input" [(ngModel)]="termo" (input)="filtrar()" placeholder="Filtrar por nº, nome ou CPF" />
+      </div>
+      <select class="filter-select" [(ngModel)]="selectedTipo" (change)="filtrar()">
+        <option value="">Todos os Tipos</option>
+        <option *ngFor="let t of tiposDisponiveis" [value]="t">{{t}}</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="selectedStatus" (change)="filtrar()">
+        <option value="">Todos os Status</option>
+        <option *ngFor="let s of statusDisponiveis" [value]="s">{{s}}</option>
+      </select>
+      <button class="btn btn-secondary" (click)="clearFilters()">Limpar Filtros</button>
+      <button class="btn btn-primary" (click)="exportarCsv()" [disabled]="filtered.length===0">Exportar Excel</button>
+    </div>
   </div>
 
   <div class="caring-card">

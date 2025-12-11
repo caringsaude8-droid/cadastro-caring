@@ -174,7 +174,7 @@
   <div class="modal-body">
     <div class="exclusion-grid">
       <div class="detail-grid" *ngIf="selectedRow">
-        <div class="item"><span class="label">Cód. Carterinha:</span><span class="value">{{ selectedRow?.codigo_carterinha || ((selectedRow?.benCodUnimedSeg || '') + (selectedRow?.benCodCartao || '')) || '—' }}</span></div>
+        <div class="item"><span class="label">Cód. Carterinha:</span><span class="value">{{ selectedRow.codigo_carterinha || ((selectedRow.benCodUnimedSeg || '') + (selectedRow.benCodCartao || '')) || '—' }}</span></div>
       </div>
       <div class="field">
         <label>Motivo</label>

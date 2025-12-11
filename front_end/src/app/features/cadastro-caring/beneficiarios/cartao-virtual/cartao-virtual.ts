@@ -35,6 +35,14 @@ export class CartaoVirtualComponent implements OnInit {
 
   constructor(private route: ActivatedRoute, private empresaContextService: EmpresaContextService) {}
 
+  private mapearPlanoLabel(codigo: string): string {
+    const m: { [key: string]: string } = {
+      'ADMDTXCP': 'UNIMED ADM. DINAMICO',
+      'ADMBTXCP': 'UNIMED ADMINISTRADO BÁSICO TAXA CP'
+    };
+    return m[(codigo || '').toUpperCase()] || '';
+  }
+
   ngOnInit(): void {
     if (this.embedded) return;
     this.route.queryParamMap.subscribe(params => {
@@ -43,6 +51,7 @@ export class CartaoVirtualComponent implements OnInit {
       this.matricula = params.get('matricula_beneficiario') || params.get('matricula') || '';
       this.acomodacao = params.get('acomodacao') || '';
       this.plano = params.get('plano') || '';
+      this.plano = this.mapearPlanoLabel(this.plano) || this.plano;
       // Buscar nome da empresa vinculada ao beneficiário
       const empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
       this.empresa = empresaSelecionada?.nome || params.get('empresa') || '';

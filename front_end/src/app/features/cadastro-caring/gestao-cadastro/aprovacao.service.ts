@@ -133,7 +133,7 @@ export class AprovacaoService {
           request.dadosAprovacao = dadosAprovacao;
         }
       }
-      console.log('DEBUG - Payload final enviado para processarSolicitacao:', JSON.stringify(request));
+      
       this.solicitacaoService.processarSolicitacao(idNumerico, request).subscribe({
         next: (response) => {
           // Lista será atualizada manualmente ou via timer
@@ -194,8 +194,7 @@ export class AprovacaoService {
       tipo: 'EXCLUSAO',
       motivoExclusao: typeof motivo === 'string' ? motivo : '',
       observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : '',
-      observacoes: typeof observacoes === 'string' ? observacoes : '',
-      observacoesAprovacao: typeof observacoes === 'string' ? observacoes : '',
+      observacoesAprovacao: '',
       empresaId
     };
     return this.solicitacaoService.criarSolicitacao(request);
@@ -217,8 +216,7 @@ export class AprovacaoService {
       tipo: 'ALTERACAO',
       dadosPropostos: dadosPropostos,
       observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : '',
-      observacoes: typeof observacoes === 'string' ? observacoes : '',
-      observacoesAprovacao: typeof observacoes === 'string' ? observacoes : '',
+      observacoesAprovacao: '',
       empresaId
     };
     return this.solicitacaoService.criarSolicitacao(request);
@@ -242,9 +240,9 @@ export class AprovacaoService {
       beneficiarioNome: typeof dadosPropostos.benNomeSegurado === 'string' ? dadosPropostos.benNomeSegurado : '',
       beneficiarioCpf: typeof dadosPropostos.benCpf === 'string' ? dadosPropostos.benCpf : '',
       dadosPropostos: dadosPropostos,
-      observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : '',
-      observacoes: typeof observacoes === 'string' ? observacoes : '',
-      observacoesAprovacao: typeof observacoes === 'string' ? observacoes : ''
+      observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : ''
+      ,
+      observacoesAprovacao: ''
     };
     return this.solicitacaoService.criarSolicitacao(request);
   }

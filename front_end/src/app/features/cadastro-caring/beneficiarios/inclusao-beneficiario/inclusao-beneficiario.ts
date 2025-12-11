@@ -122,6 +122,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   planos = [
     // tipo de plano
     { value: 'unimed_adm_dinamico', label: 'UNIMED ADM. DINAMICO' },
+    { value: 'unimed_adm_basico', label: 'UNIMED ADMINISTRADO BÁSICO TAXA CP' },
     
     
     
@@ -137,6 +138,11 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   ];
 
   isModoCorrecao = false;
+
+  ocultarPlanosPorEmpresa: Record<number, string[]> = {
+    1: ['unimed_adm_basico'],
+    2: ['unimed_adm_dinamico']
+  };
 
   constructor(
     private service: BeneficiariosService, 
@@ -167,6 +173,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       this.form.numeroEmpresa = this.empresaSelecionada.numeroEmpresa;
     }
 
+    this.ajustarPlanoSelecionado();
+
     // Verifica se veio dados de correção de solicitação rejeitada
     const nav = window.history.state;
     if (nav && nav.modoCorrecao && nav.dados) {
@@ -182,9 +190,23 @@ export class InclusaoBeneficiarioComponent implements OnInit {
         };
         this.form.nomeSegurado = dadosParaPreencher.benNomeSegurado || '';
         this.form.cpf = dadosParaPreencher.benCpf || '';
-        this.form.relacaoDep = dadosParaPreencher.benRelacaoDep || '';
+        this.form.relacaoDep = dadosParaPreencher.relacaoDep || dadosParaPreencher.benRelacaoDepLabel || dadosParaPreencher.benRelacaoDep || '';
         this.form.dataNascimento = brToHtmlDate(dadosParaPreencher.benDtaNasc || '');
         this.form.sexo = dadosParaPreencher.benSexo || '';
+        // Ajuste robusto baseado em labels vindos da API
+        const normalize = (s: string) => s
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[\.,;:\-_/]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLowerCase();
+        const matchByLabel = (arr: Array<{value:string; label:string}>, label?: string): string | null => {
+          if (!label) return null;
+          const norm = normalize(String(label));
+          const found = arr.find(x => normalize(x.label) === norm || normalize(x.value) === norm);
+          return found ? found.value : null;
+        };
         // Conversão reversa para estado civil
         const estadoCivilReverso = (codigo: string) => {
           switch ((codigo || '').toUpperCase()) {
@@ -199,12 +221,41 @@ export class InclusaoBeneficiarioComponent implements OnInit {
         const planoProdReverso = (codigo: string) => {
           switch ((codigo || '').toUpperCase()) {
             case 'ADMDTXCP': return 'unimed_adm_dinamico';
+            case 'ADMBTXCP': return 'unimed_adm_basico';
             // Adicione outros casos conforme necessário
             default: return '';
           }
         };
-        this.form.estadoCivil = estadoCivilReverso(dadosParaPreencher.benEstCivil);
-        this.form.planoProd = planoProdReverso(dadosParaPreencher.benPlanoProd);
+        // Tentar casar por label diretamente; se não, usar reverso por código
+        // Estado civil: tentar casar pelo label/valor direto, senão converter código
+        const estMatch = matchByLabel(this.estadosCivis, dadosParaPreencher.estadoCivil || dadosParaPreencher.benEstCivil);
+        if (estMatch) {
+          this.form.estadoCivil = estMatch;
+        } else {
+          const estApi = String(dadosParaPreencher.benEstCivil || '').toLowerCase();
+          if (['solteiro','casado','divorciado','viuvo'].includes(estApi)) {
+            this.form.estadoCivil = estApi;
+          } else {
+            this.form.estadoCivil = estadoCivilReverso(dadosParaPreencher.benEstCivil) || '';
+          }
+        }
+
+        // Plano/Produto: casar por label/valor direto; fallback para código
+        const planoApi = dadosParaPreencher.planoProd || dadosParaPreencher.benPlanoProd;
+        const planoMatch = matchByLabel(this.planos as any, planoApi);
+        this.form.planoProd = planoMatch || (planoProdReverso(dadosParaPreencher.benPlanoProd || '') || '');
+
+        // Relação de dependência: casar por label/valor direto; fallback para código '00' => titular
+        const relApiLabel = dadosParaPreencher.relacaoDep || dadosParaPreencher.benRelacaoDepLabel;
+        const relMatch = matchByLabel(this.relacionamentos, relApiLabel);
+        if (relMatch) {
+          this.form.relacaoDep = relMatch;
+        } else {
+          const relCode = String(dadosParaPreencher.benRelacaoDep || '').trim();
+          if (relCode === '00') this.form.relacaoDep = 'titular';
+        }
+        try {
+        } catch {}
         this.form.cidade = dadosParaPreencher.benCidade || '';
         this.form.uf = dadosParaPreencher.benUf || '';
         this.form.admissao = brToHtmlDate(dadosParaPreencher.benAdmissao || '');
@@ -227,6 +278,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       } catch (e) {
         console.warn('Falha ao preencher dados de correção:', e);
       }
+      // chama acultação de planoProd
+      this.ajustarPlanoSelecionado();
     }
 
     // Carregar titulares via Observable
@@ -298,14 +351,15 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       return;
     }
 
-    // Bloquear CPF duplicado
-    const cpfNumerosValid = (this.form.cpf || '').replace(/\D/g, '');
-    if (cpfNumerosValid.length === 11) {
-      const jaExiste = await this.verificarCpfExistente(cpfNumerosValid);
-      if (jaExiste) {
-        this.cpfDuplicado = true;
-        this.showToast('Erro', 'CPF já cadastrado para esta empresa', 'error');
-        return;
+    if (!this.isModoCorrecao) {
+      const cpfNumerosValid = (this.form.cpf || '').replace(/\D/g, '');
+      if (cpfNumerosValid.length === 11) {
+        const jaExiste = await this.verificarCpfExistente(cpfNumerosValid);
+        if (jaExiste) {
+          this.cpfDuplicado = true;
+          this.showToast('Erro', 'CPF já cadastrado para esta empresa', 'error');
+          return;
+        }
       }
     }
 
@@ -380,6 +434,10 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   }
 
   async onCpfInput(value: string) {
+    if (this.isModoCorrecao) {
+      this.cpfDuplicado = false;
+      return;
+    }
     const numeros = (value || '').replace(/\D/g, '');
     if (numeros.length === 11) {
       const existe = await this.verificarCpfExistente(numeros);
@@ -524,6 +582,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       // Empresariais Básicos
       case 'unimed_adm_dinamico':
         return 'ADMDTXCP';
+      case 'unimed_adm_basico':
+        return 'ADMBTXCP';
       // Adicione outros casos conforme necessário
       default:
         return planoProduto ? planoProduto.toUpperCase() : '';
@@ -710,6 +770,23 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     };
     this.anexos = [];
   }
+    // Ocultar planoProd por id
+  public isPlanoVisivel(valor: string): boolean {
+    const id = this.empresaSelecionada?.id || null;
+    if (!id) return true;
+    const ocultos = this.ocultarPlanosPorEmpresa[id] || [];
+    return !ocultos.includes(valor);
+  }
+
+  private ajustarPlanoSelecionado(): void {
+    const id = this.empresaSelecionada?.id || null;
+    if (!id) return;
+    const ocultos = new Set(this.ocultarPlanosPorEmpresa[id] || []);
+    if (ocultos.has(this.form.planoProd)) {
+      const primeiroVisivel = (this.planos || []).find(p => !ocultos.has(p.value));
+      this.form.planoProd = primeiroVisivel?.value || '';
+    }
+  }
 
   voltarParaBeneficiarios() {
     this.router.navigate(['/cadastro-caring/beneficiarios']);
@@ -729,7 +806,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     
     try {
       const titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
-      console.log('DEBUG titular retornado:', titular);
+      
       if (titular && titular.benRelacaoDep === '00') {
         this.titularEncontrado = titular;
         this.showToast('Sucesso', `Titular encontrado: ${titular.nome}`, 'success');

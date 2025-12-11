@@ -177,7 +177,7 @@ export class UsuariosComponent implements OnInit {
     };
 
     if (this.formMode === 'create') {
-      console.log('JSON enviado para API:', userToSave);
+      
       this.usuariosService.criarUsuario(userToSave).subscribe({
         next: (createdUser) => {
           this.users.push(createdUser);

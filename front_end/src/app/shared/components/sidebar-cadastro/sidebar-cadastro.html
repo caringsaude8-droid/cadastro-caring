@@ -19,7 +19,7 @@
 
   <nav class="navigation">
     <!-- Só mostra menus restritos se perfil for 'user' OU empresaId presente -->
-        <ng-container *ngIf="['admin','gestor'].includes(profile?.perfil?.toLowerCase())">
+        <ng-container *ngIf="['admin'].includes(profile?.perfil?.toLowerCase())">
           <a *ngFor="let item of topMenuItems" [routerLink]="item.url" class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
             <i [class]="'icon-' + item.icon"></i>
             <span *ngIf="!collapsed">{{item.title}}</span>
@@ -29,7 +29,7 @@
           <i class="icon-building"></i>
           <span *ngIf="!collapsed">Cadastro Caring</span>
         </a>
-        <ng-container *ngIf="['admin','gestor'].includes(profile?.perfil?.toLowerCase())">
+        <ng-container *ngIf="['admin'].includes(profile?.perfil?.toLowerCase())">
           <a class="nav-item" [routerLink]="'/cadastro-caring/gestao-cadastro'" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
             <i class="icon-settings"></i>
             <span *ngIf="!collapsed">Gestão Cadastro</span>

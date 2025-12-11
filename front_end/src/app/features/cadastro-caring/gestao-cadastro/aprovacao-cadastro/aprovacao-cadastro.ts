@@ -21,7 +21,7 @@ export class AprovacaoCadastroComponent {
   termo = '';
   showDetails = false;
   selected: Solicitacao | null = null;
-  motivoNegacao: string = '';
+  observacaoAprovacao: string = '';
   anexosSelecionado: Anexo[] = [];
   carregando = false;
   dadosDetalhes: any = null;
@@ -45,12 +45,29 @@ export class AprovacaoCadastroComponent {
   }
 
   get lista(): Solicitacao[] {
-    return this.aprovacao.list().filter(s => {
+    const filtered = this.aprovacao.list().filter(s => {
       const mt = !this.filtroTipo || s.tipo === this.filtroTipo;
       const ms = !this.filtroStatus || s.status === this.filtroStatus as any;
       const tt = !this.termo || `${s.identificador} ${s.descricao} ${s.solicitante} ${s.codigoEmpresa || ''}`.toLowerCase().includes(this.termo.toLowerCase());
       return mt && ms && tt;
     });
+
+    
+    // Ordenar solicitações por data (nova para velha)
+    const toTime = (d: any): number => {
+      try {
+        if (!d) return 0;
+        if (d instanceof Date) return d.getTime();
+        if (typeof d === 'string') {
+          const dt = new Date(d);
+          return isNaN(dt.getTime()) ? 0 : dt.getTime();
+        }
+        if (typeof d === 'number') return d;
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? 0 : dt.getTime();
+      } catch { return 0; }
+    };
+    return filtered.sort((a, b) => toTime(b.data) - toTime(a.data));
   }
 
   aprovar(id: string) {
@@ -92,7 +109,7 @@ export class AprovacaoCadastroComponent {
     const s = this.aprovacao.list().find(x => x.id === id);
     
     // Passar dadosAdicionais para o método updateStatus
-    this.aprovacao.updateStatus(id, 'concluida', undefined, dadosAdicionais);
+    this.aprovacao.updateStatus(id, 'concluida', this.observacaoAprovacao || undefined, dadosAdicionais);
     if (!s) return;
     if (s.entidade === 'beneficiario' && s.identificador) {
       if (s.tipo === 'inclusao') {
@@ -111,7 +128,7 @@ export class AprovacaoCadastroComponent {
                 updatePayload.benCodUnimedSeg = dadosAdicionais.benCodUnimedSeg;
               }
               this.beneficiarios.alterarBeneficiario(beneficiario.id, updatePayload).subscribe({
-                next: () => console.log('✅ Beneficiário aprovado - Status alterado para Ativo:', s.identificador),
+              next: () => {},
                 error: (error) => console.error('❌ Erro ao ativar beneficiário:', error)
               });
             } else {
@@ -145,7 +162,7 @@ export class AprovacaoCadastroComponent {
                       // Persistir alterações de códigos
                       if (Object.keys(updatePayload).length > 0) {
                         this.beneficiarios.alterarBeneficiario(beneficiario.id, updatePayload).subscribe({
-                          next: () => console.log('✅ Beneficiário atualizado com códigos via ALTERACAO:', s.identificador),
+                          next: () => {},
                           error: (error) => console.error('❌ Erro ao atualizar códigos na alteração:', error)
                         });
                       }
@@ -172,14 +189,14 @@ export class AprovacaoCadastroComponent {
                 
                 // Excluir via API
                 this.beneficiarios.excluirBeneficiario(beneficiario.id, motivo).subscribe({
-                  next: () => console.log('✅ Beneficiário excluído:', s.identificador),
+                  next: () => {},
                   error: (error) => console.error('❌ Erro ao excluir beneficiário:', error)
                 });
               } catch (error) {
                 console.error('❌ Erro ao processar dados de exclusão:', error);
                 // Fallback: exclusão com motivo padrão
                 this.beneficiarios.excluirBeneficiario(beneficiario.id, 'RESCISAO').subscribe({
-                  next: () => console.log('✅ Beneficiário excluído (fallback):', s.identificador),
+                  next: () => {},
                   error: (error) => console.error('❌ Erro ao excluir beneficiário (fallback):', error)
                 });
               }
@@ -202,7 +219,7 @@ export class AprovacaoCadastroComponent {
           if (beneficiario) {
             // Atualizar status para 'Pendente' via API de alteração
             this.beneficiarios.alterarBeneficiario(beneficiario.id, { benStatus: 'Pendente' }).subscribe({
-              next: () => console.log('✅ Beneficiário marcado como pendente:', s.identificador),
+              next: () => {},
               error: (error) => console.error('❌ Erro ao marcar como pendente:', error)
             });
           }
@@ -214,7 +231,7 @@ export class AprovacaoCadastroComponent {
 
   openDetails(s: Solicitacao) {
     this.selected = s;
-    this.motivoNegacao = '';
+    this.observacaoAprovacao = '';
     this.dadosDetalhes = s?.dadosPropostos || null;
     this.showInclusaoDetails = false;
     this.historicoCompleto = [];
@@ -227,11 +244,11 @@ export class AprovacaoCadastroComponent {
     this.showDetails = true;
     const idNum = parseInt(s.id);
     if (!isNaN(idNum)) {
-      console.log('[UI] Abrindo detalhes, ID:', idNum);
+      
       this.solicitacoesService.listarHistorico(idNum).subscribe({
         next: (lista: any[]) => {
           try {
-            console.log('[UI] Histórico recebido (aprovacao):', lista);
+            
             const toIso = (d: any): string => {
               if (!d) return new Date().toISOString();
               if (d instanceof Date) return d.toISOString();
@@ -244,8 +261,8 @@ export class AprovacaoCadastroComponent {
               dataOperacao: toIso(e?.dataOperacao)
             });
             const mapped = Array.isArray(lista) ? lista.map(m) : [];
-            this.historicoCompleto = mapped.sort((a, b) => new Date(a.dataOperacao).getTime() - new Date(b.dataOperacao).getTime());
-            console.log('[UI] Histórico mapeado (aprovacao):', this.historicoCompleto);
+            this.historicoCompleto = mapped.sort((a, b) => new Date(b.dataOperacao).getTime() - new Date(a.dataOperacao).getTime());
+            
           } catch {}
         },
         error: () => {}
@@ -258,7 +275,7 @@ export class AprovacaoCadastroComponent {
             this.dadosDetalhes = propostos || this.dadosDetalhes;
             this.enriquecerTitularInfo();
 
-            console.log('[UI] Detalhe da solicitação carregado (aprovacao)');
+            
           } catch {}
         },
         error: () => {}
@@ -288,7 +305,7 @@ export class AprovacaoCadastroComponent {
   closeDetails() {
     this.showDetails = false;
     this.selected = null;
-    this.motivoNegacao = '';
+    this.observacaoAprovacao = '';
     this.showInclusaoDetails = false;
   }
 
@@ -305,28 +322,29 @@ export class AprovacaoCadastroComponent {
   openBenefDetails() {
     const cpf = (this.selected?.identificador || '').replace(/\D/g, '');
     if (!cpf) return;
-    this.beneficiarios.list().subscribe({
-      next: (lista) => {
-        const b = lista.find(x => (x.cpf || '').replace(/\D/g, '') === cpf);
+    this.beneficiarios.listRaw().subscribe({
+      next: (lista: any[]) => {
+        const b = lista.find(x => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpf);
         if (b) {
+          const codUnimed = b.benCodUnimedSeg || b.cod_unimed_seg || '';
+          const codCartao = b.benCodCartao || b.cod_cartao || '';
           this.benefDetalhes = {
-            nome: b.nome,
-            cpf: b.cpf,
-            nascimento: b.nascimento,
-            benStatus: b.benStatus,
-            matricula: b.matricula_beneficiario,
-            cidade: b.endereco ? undefined : b.endereco,
-            endereco: (b as any).endereco || '',
-            numero: (b as any).numero || '',
-            complemento: (b as any).complemento || '',
-            bairro: (b as any).bairro || '',
-            cep: (b as any).cep || '',
-            celular: b.celular,
-            email: b.email,
-            planoProd: (b as any).plano_prod || '',
-            admissao: (b as any).admissao || '',
-            benCodUnimedSeg: (b as any).benCodUnimedSeg || '',
-            benCodCartao: (b as any).benCodCartao || ''
+            nome: b.benNomeSegurado || b.nome || '',
+            cpf: b.benCpf || b.cpf || '',
+            nascimento: b.benDtaNasc || b.nascimento || '',
+            benStatus: b.benStatus || 'Ativo',
+            matricula: b.benMatricula || b.matricula_beneficiario || '',
+            endereco: b.benEndereco || b.endereco || '',
+            numero: b.benNumero || b.numero || '',
+            complemento: b.benComplemento || b.complemento || '',
+            bairro: b.benBairro || b.bairro || '',
+            cep: b.benCep || b.cep || '',
+            celular: b.benDddCel || b.celular || '',
+            email: b.benEmail || b.email || '',
+            planoProd: b.benPlanoProd || b.plano_prod || '',
+            admissao: b.benAdmissao || b.admissao || '',
+            benCodUnimedSeg: codUnimed,
+            benCodCartao: codCartao
           };
           this.showBenefDetails = true;
         }
@@ -358,6 +376,7 @@ export class AprovacaoCadastroComponent {
     // Fechar modal
     this.closeApprovalModal();
     this.atualizarLista();
+    this.observacaoAprovacao = '';
   }
 
   closeApprovalModal() {
@@ -374,22 +393,24 @@ export class AprovacaoCadastroComponent {
     this.aprovar(this.selected.id);
     this.closeDetails();
     this.atualizarLista();
+    this.observacaoAprovacao = '';
   }
 
   negarSelecionado() {
     if (!this.selected || this.selected.status === 'concluida') return;
-    this.aprovacao.updateStatus(this.selected.id, 'aguardando', this.motivoNegacao || '');
+    this.aprovacao.updateStatus(this.selected.id, 'aguardando', this.observacaoAprovacao || '');
     // Adiciona observação ao histórico local
     if (this.selected) {
       if (!this.selected.historico) this.selected.historico = [];
       this.selected.historico.push({
         data: new Date().toISOString(),
         status: 'aguardando',
-        observacao: this.motivoNegacao || 'Negação sem observação.'
+        observacao: this.observacaoAprovacao || 'Negação sem observação.'
       });
     }
     this.closeDetails();
     this.atualizarLista();
+    this.observacaoAprovacao = '';
   }
 
   baixarAnexo(idx: number) {

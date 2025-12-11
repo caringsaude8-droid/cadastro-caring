@@ -33,6 +33,11 @@ export class RelatorioSolicitacaoComponent implements OnInit {
   data: Row[] = [];
   filtered: Row[] = [];
   empresaSelecionada: Empresa | null = null;
+  stats = { total: 0, pendentes: 0, aprovadas: 0, rejeitadas: 0 };
+  selectedTipo = '';
+  selectedStatus = '';
+  tiposDisponiveis: string[] = [];
+  statusDisponiveis: string[] = [];
 
   constructor(private service: SolicitacaoBeneficiarioService, private empresaContext: EmpresaContextService) {}
 
@@ -42,7 +47,14 @@ export class RelatorioSolicitacaoComponent implements OnInit {
     this.empresaSelecionada = empresa || null;
     const obs = empresa?.id ? this.service.listarTodasPorEmpresa(empresa.id) : this.service.listarTodas();
     obs.subscribe({
-      next: (rows) => { this.data = rows.map(this.mapRow); this.filtered = this.data; this.loading = false; },
+      next: (rows) => {
+        this.data = rows.map(this.mapRow);
+        this.filtered = this.data;
+        this.tiposDisponiveis = Array.from(new Set(this.data.map(r => r.tipo).filter(Boolean)));
+        this.statusDisponiveis = Array.from(new Set(this.data.map(r => r.status).filter(Boolean)));
+        this.updateStats();
+        this.loading = false;
+      },
       error: () => { this.error = 'Erro ao carregar solicitações'; this.loading = false; }
     });
   }
@@ -66,10 +78,12 @@ export class RelatorioSolicitacaoComponent implements OnInit {
       const nome = (r.nome || '').toLowerCase().replace(/\s+/g, '');
       const cpf = (r.cpf || '').replace(/\D/g, '');
       const numero = (r.numero || '').toLowerCase();
-      const tipo = (r.tipo || '').toLowerCase();
-      const status = (r.status || '').toLowerCase();
-      return (!q) || nome.includes(q) || cpf.includes(q) || numero.includes(q) || tipo.includes(q) || status.includes(q);
+      const matchText = (!q) || nome.includes(q) || cpf.includes(q) || numero.includes(q);
+      const matchTipo = (!this.selectedTipo) || (r.tipo || '') === this.selectedTipo;
+      const matchStatus = (!this.selectedStatus) || (r.status || '') === this.selectedStatus;
+      return matchText && matchTipo && matchStatus;
     });
+    this.updateStats();
   }
 
   exportarCsv(): void {
@@ -92,5 +106,21 @@ export class RelatorioSolicitacaoComponent implements OnInit {
     a.download = 'relatorio-solicitacoes.csv';
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  clearFilters(): void {
+    this.termo = '';
+    this.selectedTipo = '';
+    this.selectedStatus = '';
+    this.filtered = this.data;
+    this.updateStats();
+  }
+
+  private updateStats(): void {
+    const total = this.filtered.length;
+    const pendentes = this.filtered.filter(r => (r.status || '').toUpperCase() === 'PENDENTE').length;
+    const aprovadas = this.filtered.filter(r => (r.status || '').toUpperCase() === 'APROVADA').length;
+    const rejeitadas = this.filtered.filter(r => ['REJEITADA','CANCELADA'].includes((r.status || '').toUpperCase())).length;
+    this.stats = { total, pendentes, aprovadas, rejeitadas };
   }
 }

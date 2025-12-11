@@ -116,7 +116,7 @@ export class ExclusaoCadastralComponent implements OnInit {
           const beneficiario = beneficiarios.find(b => b.cpf === this.beneficiario.cpf);
           if (beneficiario) {
             this.beneficiarios.alterarBeneficiario(beneficiario.id, { benStatus: 'Pendente' }).subscribe({
-              next: () => console.log('✅ Beneficiário marcado como pendente para exclusão'),
+              next: () => {},
               error: (error) => console.error('❌ Erro ao marcar status pendente:', error)
             });
           }
@@ -179,8 +179,6 @@ export class ExclusaoCadastralComponent implements OnInit {
         empresaSelecionada?.id
       ).subscribe({
         next: (response: any) => {
-          console.log('✅ Solicitação de exclusão criada:', response);
-          console.log('🔎 JSON da solicitação de exclusão:', JSON.stringify(solicitacao, null, 2));
         },
         error: (error: any) => {
           console.error('❌ Erro na chamada POST /solicitacoes:', error);

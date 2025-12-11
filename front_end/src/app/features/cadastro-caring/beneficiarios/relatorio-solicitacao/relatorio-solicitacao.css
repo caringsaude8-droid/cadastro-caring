@@ -1,10 +1,34 @@
 .relatorio-container { padding: 1.5rem; }
 .toolbar { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
+.input { padding: 0.5rem 0.6rem; border: 1px solid #d1d5db; border-radius: 10px; min-width: 280px; }
+.btn { border: none; border-radius: 10px; padding: 0.5rem 0.9rem; cursor: pointer; }
+.btn-primary { background: #0b5fa4; color: #fff; }
+.btn-secondary { background: #e2e8f0; color: #1f2937; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
 .table thead th { background: #f3f4f6; }
 .empty { text-align: center; color: #64748b; }
 .loading-row { text-align: center; color: #0b5fa4; }
+
+.stats-section { margin-bottom: 1rem; }
+.stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+.stat-card { padding: 1rem; display: flex; align-items: center; gap: 1rem; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0; }
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: #e0f2fe; color: #0ea5b7; }
+.icon-users::before { content: "👥"; }
+.icon-check-circle::before { content: "✅"; }
+.icon-x-circle::before { content: "❌"; }
+.stat-total .stat-icon { background: var(--caring-teal-light); color: var(--caring-teal); }
+.stat-active .stat-icon { background: var(--caring-teal-light); color: var(--caring-teal); }
+.stat-inactive .stat-icon { background: #fee2e2; color: var(--caring-red); }
+.stat-title { font-size: 0.875rem; color: #64748b; margin: 0 0 0.25rem 0; font-weight: 500; }
+.stat-value { font-size: 1.75rem; font-weight: 700; color: #1e293b; margin: 0; }
+
+.filters-section { margin-bottom: 0.75rem; }
+.filters-container { display: flex; gap: 0.75rem; align-items: center; background: white; padding: 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); flex-wrap: wrap; }
+.search-group { position: relative; flex: 1; min-width: 300px; }
+.search-group .icon-search::before { content: "🔍"; position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1rem; }
+.filters-container .input { padding-left: 2rem; }
+.filter-select { padding: 0.6rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; background: white; min-width: 150px; }
 
 /* Card da Empresa (padronizado) */
 .empresa-info { margin: 0 1.5rem 1rem 1.5rem; }

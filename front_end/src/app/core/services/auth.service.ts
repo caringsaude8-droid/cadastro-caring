@@ -178,47 +178,21 @@ export class AuthService {
   refreshToken(): Observable<LoginResponse> {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) {
-      console.log('❌ Refresh token não encontrado');
       this.signOut();
       return throwError(() => new Error('Refresh token não encontrado'));
     }
 
     const requestBody = { refreshToken };
-    console.log('🔄 Tentando renovar token...');
-    console.log('📤 Enviando refresh token no BODY da requisição:', requestBody);
     
     return this.http.post<LoginResponse>(`${this.apiUrl}/refresh`, requestBody)
       .pipe(
         tap(response => {
-          console.log('✅ Token renovado com sucesso');
-          console.log('💾 Salvando novos tokens...');
           this.saveAuthData(response);
           this.currentUserSubject.next(response.user);
-          console.log('🔍 Token salvo no localStorage:', this.getToken()?.substring(0, 50) + '...');
-          
-          // DEBUG: Comparar payloads dos tokens antigo e novo
-          try {
-            const newToken = this.getToken();
-            if (newToken) {
-              const newPayload = JSON.parse(atob(newToken.split('.')[1]));
-              console.log('🆕 PAYLOAD DO NOVO TOKEN:', {
-                nome: newPayload.nome,
-                email: newPayload.email,
-                empresaId: newPayload.empresaId,
-                exp: new Date(newPayload.exp * 1000),
-                iat: new Date(newPayload.iat * 1000)
-              });
-            }
-          } catch (e) {
-            console.log('❌ Erro ao decodificar novo token');
-          }
         }),
         catchError(error => {
-          console.log('❌ Erro ao renovar token:', error);
-          
           // Se refresh token expirou (403/401), apenas informa - NÃO faz logout automático
           if (error.status === 403 || error.status === 401) {
-            console.log('🔑 Refresh token expirado - usuário deve fazer logout manual');
             return throwError(() => new Error('Refresh token expirado. Faça login novamente.'));
           }
           
@@ -281,22 +255,6 @@ export class AuthService {
         localStorage.setItem('auth_token', response.token);
         localStorage.setItem('refresh_token', response.refreshToken);
         localStorage.setItem('current_user', JSON.stringify(response.user));
-        
-        // DEBUG: Verificar duração dos tokens
-        try {
-          const tokenPayload = JSON.parse(atob(response.token.split('.')[1]));
-          const refreshPayload = JSON.parse(atob(response.refreshToken.split('.')[1]));
-          const now = Math.floor(Date.now() / 1000);
-          
-          console.log('🔐 DURAÇÃO DOS TOKENS:', {
-            tokenExpiresIn: Math.floor((tokenPayload.exp - now) / 60) + ' minutos',
-            refreshExpiresIn: Math.floor((refreshPayload.exp - now) / 60) + ' minutos',
-            tokenExpireAt: new Date(tokenPayload.exp * 1000),
-            refreshExpireAt: new Date(refreshPayload.exp * 1000)
-          });
-        } catch (e) {
-          console.log('❌ Erro ao decodificar tokens para debug');
-        }
       }
     } catch (error) {
       // Erro silencioso

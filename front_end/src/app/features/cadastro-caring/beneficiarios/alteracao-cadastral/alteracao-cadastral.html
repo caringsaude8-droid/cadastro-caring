@@ -69,7 +69,9 @@
         <label>Plano/Prod</label>
         <select class="form-select" [(ngModel)]="form.planoProd" name="planoProd">
           <option value="">Selecione</option>
-          <option *ngFor="let p of planos" [value]="p.value">{{p.label}}</option>
+          <ng-container *ngFor="let p of planos">
+            <option *ngIf="isPlanoVisivel(p.value)" [value]="p.value">{{p.label}}</option>
+          </ng-container>
         </select>
       </div>
     </div>

@@ -35,13 +35,15 @@ export class SidebarCadastro implements OnInit, OnDestroy {
     { title: 'Visão Geral', url: '/cadastro-caring' }
   ];
 
-  beneficiariosSubItems: SubMenuItem[] = [
+  private allBeneficiariosSubItems: SubMenuItem[] = [
     { title: 'Inclusão', url: '/cadastro-caring/beneficiarios/inclusao' },
     { title: 'Alteração', url: '/cadastro-caring/beneficiarios' },
     { title: 'Solicitação de Cadastro', url: '/cadastro-caring/beneficiarios/solicitacao-cadastro' },
     { title: 'Relatório Beneficiários', url: '/cadastro-caring/beneficiarios/relatorio-beneficiarios' },
     { title: 'Relatório Solicitações', url: '/cadastro-caring/beneficiarios/relatorio-solicitacao' }
   ];
+
+  beneficiariosSubItems: SubMenuItem[] = [];
 
 
   constructor(
@@ -57,6 +59,7 @@ export class SidebarCadastro implements OnInit, OnDestroy {
       nome: currentUser?.nome || 'Usuário',
       perfil: currentUser?.perfil || 'usuario'
     };
+    this.applyProfileRestrictions();
     
     // Escutar mudanças no usuário logado
     this.authService.currentUser$.subscribe(user => {
@@ -65,6 +68,7 @@ export class SidebarCadastro implements OnInit, OnDestroy {
           nome: user.nome,
           perfil: user.perfil
         };
+        this.applyProfileRestrictions();
       }
     });
     
@@ -106,4 +110,15 @@ export class SidebarCadastro implements OnInit, OnDestroy {
     this.router.navigate(['/login']); 
   }
   navigateTo(url: string) { this.router.navigate([url]); }
+
+  private applyProfileRestrictions() {
+    const perfil = (this.profile?.perfil || '').toLowerCase();
+    if (perfil === 'user') {
+      this.beneficiariosSubItems = this.allBeneficiariosSubItems.filter(
+        (i: SubMenuItem) => !['Relatório Beneficiários', 'Relatório Solicitações'].includes(i.title)
+      );
+    } else {
+      this.beneficiariosSubItems = [...this.allBeneficiariosSubItems];
+    }
+  }
 }

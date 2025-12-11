@@ -177,3 +177,15 @@
         grid-template-columns: 1fr;
     }
 }
+
+.notification-card.info {
+    background: #e0f2fe;
+    color: #075985;
+    border-color: #93c5fd;
+}
+
+.notification-card.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}

@@ -1,9 +1,50 @@
 <app-page-header title="Relatórios de Cadastro" subtitle="Inclusões realizadas via formulário"></app-page-header>
 
 <div class="relatorios-container">
-  <div class="actions">
-    <input class="input" [(ngModel)]="filtroTermo" placeholder="Filtrar por nome, CPF, matrícula ou empresa" />
-    <button class="btn btn-primary" (click)="downloadExcel()"><i class="icon-download"></i> Exportar Excel</button>
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card caring-card stat-total">
+        <div class="stat-icon"><i class="icon-users"></i></div>
+        <div class="stat-content">
+          <h3 class="stat-title">Total de Registros</h3>
+          <p class="stat-value">{{stats.total}}</p>
+        </div>
+      </div>
+      <div class="stat-card caring-card stat-active">
+        <div class="stat-icon"><i class="icon-check-circle"></i></div>
+        <div class="stat-content">
+          <h3 class="stat-title">Com Inclusão</h3>
+          <p class="stat-value">{{stats.inclusoes}}</p>
+        </div>
+      </div>
+      <div class="stat-card caring-card stat-inactive">
+        <div class="stat-icon"><i class="icon-x-circle"></i></div>
+        <div class="stat-content">
+          <h3 class="stat-title">Com Exclusão</h3>
+          <p class="stat-value">{{stats.exclusoes}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-section">
+    <div class="filters-container caring-card">
+      <div class="search-group">
+        <i class="icon-search"></i>
+        <input type="text" class="input" [(ngModel)]="filtroTermo" (input)="onSearch()" placeholder="Filtrar por nome, CPF, matrícula ou empresa" />
+      </div>
+      <select class="filter-select" [(ngModel)]="selectedRelacaoDep" (change)="onRelacaoChange()">
+        <option value="">Todas as Relações</option>
+        <option value="titular">Titular</option>
+        <option value="dependente">Dependente</option>
+      </select>
+      <select class="filter-select" [(ngModel)]="selectedPlanoProd" (change)="onPlanoChange()">
+        <option value="">Todos os Planos</option>
+        <option *ngFor="let p of planosDisponiveis" [value]="p">{{p}}</option>
+      </select>
+      <button class="btn btn-secondary" (click)="clearFilters()"><i class="icon-refresh"></i> Limpar Filtros</button>
+      <button class="btn btn-primary" (click)="downloadExcel()"><i class="icon-download"></i> Exportar Excel</button>
+    </div>
   </div>
 
   <div class="table-wrapper">
@@ -14,7 +55,8 @@
           <th>CPF</th>
           <th>Relação Dep.</th>
           <th>Plano/Prod</th>
-          <th>Data Inclusão/Exclusão</th>
+          <th>Data Inclusão</th>
+          <th>Data Exclusão</th>
           <th>Código Empresa</th>
           <th>Número Empresa</th>
         </tr>
@@ -25,7 +67,8 @@
           <td>{{ r.cpf }}</td>
           <td>{{ r.relacaoDep }}</td>
           <td>{{ r.planoProd }}</td>
-          <td>{{ r.dataInclusaoExclusao }}</td>
+          <td>{{ r.dataInclusao }}</td>
+          <td>{{ r.dataExclusao }}</td>
           <td>{{ r.codigoEmpresa }}</td>
           <td>{{ r.numeroEmpresa }}</td>
         </tr>

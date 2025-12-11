@@ -314,14 +314,14 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       observacoes
     ).subscribe({
       next: (response: any) => {
-        console.log('✅ Solicitação de exclusão criada:', response.numeroSolicitacao);
+        
         
         // Marcar beneficiário como Pendente
         this.service.alterarBeneficiario(this.selectedRow!.id, { 
           benStatus: 'Pendente' 
         }).subscribe({
           next: () => {
-            console.log('✅ Beneficiário marcado como pendente');
+            
             this.carregarBeneficiarios();
             
             const cardCode = (this.selectedRow?.codigo_carterinha || ((this.selectedRow?.benCodUnimedSeg || '') + (this.selectedRow?.benCodCartao || '')) || '');
@@ -348,7 +348,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
         console.error('❌ Erro ao criar solicitação de exclusão:', error);
         
         // Fallback: usar método antigo se nova API falhar
-        console.log('🔄 Tentando método de fallback...');
+        
         
         const r = this.selectedRow;
         if (!r) return;
@@ -421,13 +421,18 @@ export class PesquisarBeneficiariosComponent implements OnInit {
     this.loading = true;
     this.error = null;
     
-    // Usar listRaw para pegar dados brutos da API com campos 'ben'
-    this.service.listRaw().subscribe({
+    this.service.listRaw(this.empresaSelecionada.id).subscribe({
       next: (beneficiariosRaw) => {
-        console.log('✅ Beneficiários carregados da API:', beneficiariosRaw.length);
-        
-        // Mapear dados brutos para o formato esperado pelo componente
-        this.data = beneficiariosRaw.map(raw => this.mapearDadosBrutos(raw));
+        const empresaId = this.empresaSelecionada.id;
+        const codigoEmpresaSelecionada = this.empresaSelecionada.codigoEmpresa;
+        const filtradosRaw = (beneficiariosRaw || []).filter((raw: any) => {
+          const empId = raw.benEmpId ?? raw.empId ?? raw.empresaId ?? raw.ben_emp_id ?? raw.emp_id;
+          const empCod = raw.codigoEmpresa ?? raw.empCodigo ?? raw.codigo_empresa;
+          if (empId != null) return Number(empId) === Number(empresaId);
+          if (empCod != null) return String(empCod) === String(codigoEmpresaSelecionada);
+          return true;
+        });
+        this.data = filtradosRaw.map(raw => this.mapearDadosBrutos(raw));
         this.loading = false;
       },
       error: (error) => {
@@ -435,7 +440,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
         
         // Não exibir mensagens de erro de autenticação - deixar interceptor lidar
         if (error.status === 401 || error.status === 403) {
-          console.log('🔐 Erro de autenticação - interceptor vai lidar com isso');
+          
           this.loading = false;
           return;
         }
@@ -476,7 +481,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       next: (beneficiarios) => {
         this.data = beneficiarios;
         this.loading = false;
-        console.log('✅ Pesquisa realizada:', beneficiarios.length, 'resultados');
+        
       },
       error: (error) => {
         console.error('❌ Erro na pesquisa:', error);
@@ -538,7 +543,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       
       this.service.excluirBeneficiario(row.id, 'RESCISAO').subscribe({
         next: () => {
-          console.log('✅ Beneficiário excluído com sucesso');
+          
           this.carregarBeneficiarios(); // Recarregar lista
         },
         error: (error) => {
@@ -552,7 +557,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
 
   gerarCarterinha() {
     if (!this.selectedRow) return;
-    console.log('🔵 gerarCarterinha chamado', this.selectedRow);
+    
     this.cardNome = this.selectedRow.nome || '';
     this.cardCpf = this.selectedRow.cpf || '';
     this.cardCodigo = (this.selectedRow.codigo_carterinha || '').trim() || this.selectedRow.matricula_beneficiario || '';
@@ -571,6 +576,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
     const nome = this.cardNome || r?.nome || '';
     const cpf = this.cardCpf || r?.cpf || '';
     const numeroProduto = this.cardCodigo || r?.matricula_beneficiario || '';
+    const plano = (r as any)?.plano_prod || '';
     const acomodacao = r?.acomodacao || '';
     const vigencia = r?.data_inclusao ? this.formatDateBR(r.data_inclusao) : '';
     const dataNasc = r?.nascimento || '';
@@ -578,6 +584,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       nome,
       cpf,
       numeroProduto,
+      plano,
       acomodacao,
       vigencia,
       dataNasc,

@@ -107,6 +107,7 @@
     </div>
 
     <div class="section-subtitle" *ngIf="d.status === 'pendente'">Ação</div>
+    <textarea *ngIf="d.status === 'pendente'" class="input" rows="3" [(ngModel)]="observacaoAprovacao" placeholder="Observação da aprovação (opcional)"></textarea>
     <div class="action-grid" *ngIf="d.status === 'pendente'">
       <button class="btn btn-primary btn-sm" (click)="aceitarSelecionado()"><i class="icon-check-circle"></i> Aceitar</button>
       <button class="btn btn-secondary btn-sm" (click)="negarSelecionado()"><i class="icon-refresh"></i> Negar</button>
@@ -115,8 +116,7 @@
     <div class="section-subtitle" *ngIf="d.status === 'concluida'">Situação</div>
     <div class="concluida-banner" *ngIf="d.status === 'concluida'">Solicitação concluída. Nenhuma ação adicional permitida.</div>
 
-    <div class="section-subtitle" *ngIf="d.status !== 'concluida'">Mensagem ao solicitante (em caso de negativa)</div>
-    <textarea *ngIf="d.status !== 'concluida'" class="input" rows="3" [(ngModel)]="motivoNegacao" placeholder="Explique o que falta para aceitação"></textarea>
+    
   </div>
   <div class="modal-footer">
     <button class="btn btn-secondary btn-sm" (click)="closeDetails()">Fechar</button>
@@ -183,6 +183,12 @@
         <div class="form-group half">
           <label>Código Unimed Seg</label>
           <input type="text" class="input" [(ngModel)]="dadosAprovacao.benCodUnimedSeg" placeholder="Digite o código Unimed">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Observação da Aprovação</label>
+          <textarea class="input" rows="3" [(ngModel)]="observacaoAprovacao" placeholder="Mensagem ao solicitante (opcional)"></textarea>
         </div>
       </div>
     </div>

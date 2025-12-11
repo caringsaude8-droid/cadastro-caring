@@ -250,17 +250,16 @@ export class BeneficiariosService {
   }
 
   // Método para buscar dados brutos da API sem mapeamento (para auto-preenchimento)
-  listRaw(): Observable<any[]> {
+  listRaw(empresaId?: number): Observable<any[]> {
     const empresa = this.empresaContextService.getEmpresaSelecionada();
-    if (!empresa?.id) {
+    const id = empresaId ?? empresa?.id;
+    if (!id) {
       console.error('❌ Empresa não selecionada para listar beneficiários');
       return of([]);
     }
 
-    const params = new HttpParams().set('empresaId', empresa.id.toString());
+    const params = new HttpParams().set('empresaId', id.toString());
     const url = `${this.apiUrl}/beneficiarios`;
-    
-    // Retorna dados brutos da API sem mapeamento
     return this.http.get<any[]>(url, { params });
   }
 
