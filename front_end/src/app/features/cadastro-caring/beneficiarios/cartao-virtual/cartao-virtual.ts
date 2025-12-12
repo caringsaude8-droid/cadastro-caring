@@ -38,7 +38,7 @@ export class CartaoVirtualComponent implements OnInit {
   private mapearPlanoLabel(codigo: string): string {
     const m: { [key: string]: string } = {
       'ADMDTXCP': 'UNIMED ADM. DINAMICO',
-      'ADMBTXCP': 'UNIMED ADMINISTRADO BÁSICO TAXA CP'
+      'ADMBTXCP': 'UNIMED ADM. BÁSICO'
     };
     return m[(codigo || '').toUpperCase()] || '';
   }
