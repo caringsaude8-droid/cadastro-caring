@@ -332,7 +332,7 @@ export class AlteracaoCadastralComponent implements OnInit {
           this.saving = false;
           this.showCard('success', 'Solicitação de alteração criada com sucesso!');
           setTimeout(() => {
-            this.router.navigate(['/cadastro-caring/beneficiarios']);
+            this.router.navigate(['/cadastro-caring/beneficiarios/solicitacao-cadastro']);
           }, 1000);
         },
         error: (error: any) => {

@@ -1,3 +1,21 @@
 <div class="app-container">
+  <div class="global-error" *ngIf="error as e">
+    <div class="global-error-content">
+      <div class="global-error-icon">✕</div>
+      <div class="global-error-text">
+        <h4 class="global-error-title">{{ e.title }}</h4>
+        <p class="global-error-message">{{ e.message }}</p>
+        <p class="global-error-support">Se o problema persistir, contate o suporte.</p>
+      </div>
+      <button class="global-error-close" (click)="error = null">×</button>
+    </div>
+  </div>
   <router-outlet></router-outlet>
+  <div class="global-error-bottom-space" *ngIf="error"></div>
+  <div class="global-info" *ngIf="info as inf">
+    <div class="global-info-content">
+      <span class="global-info-dot"></span>
+      <span class="global-info-text">Sessão renovada</span>
+    </div>
+  </div>
 </div>

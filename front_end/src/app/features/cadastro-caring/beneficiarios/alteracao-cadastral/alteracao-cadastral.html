@@ -36,21 +36,42 @@
 
     <div class="form-row">
       <div class="form-group third">
-        <label>Nome Segurado</label>
-        <ui-input [(ngModel)]="form.nomeSegurado" name="nomeSegurado"></ui-input>
+        <label>Matrícula</label>
+        <ui-input [(ngModel)]="form.matricula" name="matricula"></ui-input>
       </div>
+      <div class="form-group third">
+        <label>Código Unimed Seg</label>
+        <ui-input [(ngModel)]="form.benCodUnimedSeg" name="benCodUnimedSeg"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Código do Cartão</label>
+        <ui-input [(ngModel)]="form.benCodCartao" name="benCodCartao"></ui-input>
+      </div>
+    </div>
+    <div class="form-row">
       <div class="form-group third">
         <label>CPF</label>
         <ui-input [(ngModel)]="form.cpf" name="cpf" placeholder="000.000.000-00"></ui-input>
       </div>
       <div class="form-group third">
+        
+        <label>Nome Segurado</label>
+        <ui-input [(ngModel)]="form.nomeSegurado" name="nomeSegurado"></ui-input>
+      </div>
+      
+      <div class="form-group third">
+        <label>Nome da Mãe</label>
+        <ui-input [(ngModel)]="form.nomeMae" name="nomeMae"></ui-input>
+      </div>
+      
+    </div>
+
+    <div class="form-row">
+      <div class="form-group third">
         <label>Data Nascimento</label>
         <ui-input [(ngModel)]="form.dataNascimento" (valueChange)="onNascimentoChange($event)" name="dataNascimento" placeholder="dd/mm/aaaa"></ui-input>
         <div class="input-hint" *ngIf="form.dataNascimento && !isDateValid(form.dataNascimento)">Formato inválido. Use dd/mm/aaaa</div>
       </div>
-    </div>
-
-    <div class="form-row">
       <div class="form-group third">
         <label>Sexo</label>
         <select class="form-select" [(ngModel)]="form.sexo" name="sexo">
@@ -66,6 +87,19 @@
         </select>
       </div>
       <div class="form-group third">
+        <label>Data Inclusão</label>
+        <ui-input [(ngModel)]="form.dataInclusao" (valueChange)="onDataInclusaoChange($event)" name="dataInclusao" placeholder="dd/mm/aaaa"></ui-input>
+        <div class="input-hint" *ngIf="form.dataInclusao && !isDateValid(form.dataInclusao)">Formato inválido. Use dd/mm/aaaa</div>
+      </div>
+
+      <div class="form-group third">
+        <label>Admissão</label>
+        <ui-input [(ngModel)]="form.admissao" (valueChange)="onAdmissaoChange($event)" name="admissao" placeholder="dd/mm/aaaa"></ui-input>
+        <div class="input-hint" *ngIf="form.admissao && !isDateValid(form.admissao)">Formato inválido. Use dd/mm/aaaa</div>
+      </div>
+
+
+      <div class="form-group third"> 
         <label>Plano/Prod</label>
         <select class="form-select" [(ngModel)]="form.planoProd" name="planoProd">
           <option value="">Selecione</option>
@@ -73,15 +107,14 @@
             <option *ngIf="isPlanoVisivel(p.value)" [value]="p.value">{{p.label}}</option>
           </ng-container>
         </select>
+
+        
       </div>
     </div>
 
     <div class="form-row">
-      <div class="form-group third">
-        <label>Data Inclusão</label>
-        <ui-input [(ngModel)]="form.dataInclusao" (valueChange)="onDataInclusaoChange($event)" name="dataInclusao" placeholder="dd/mm/aaaa"></ui-input>
-        <div class="input-hint" *ngIf="form.dataInclusao && !isDateValid(form.dataInclusao)">Formato inválido. Use dd/mm/aaaa</div>
-      </div>
+      
+      
       <div class="form-group third">
         <label>Data Exclusão</label>
         <ui-input [(ngModel)]="form.dataExclusao" (valueChange)="onDataExclusaoChange($event)" name="dataExclusao" placeholder="dd/mm/aaaa"></ui-input>
@@ -91,13 +124,28 @@
         <label>Dependência</label>
         <ui-input [(ngModel)]="form.dependencia" name="dependencia"></ui-input>
       </div>
+      <div class="form-group third">
+        <label>ID Titular</label>
+        <ui-input [(ngModel)]="form.benTitularId" name="benTitularId" [readonly]="true"></ui-input>
+      </div>
     </div>
 
+    <div class="form-row">
+      <div class="form-group third"></div>
+
+
+
+      <div class="form-group third"></div>
+    </div>
     <div class="section-title-bar">Endereço</div>
     <div class="form-row">
       <div class="form-group third">
-        <label>Cidade</label>
-        <ui-input [(ngModel)]="form.cidade" name="cidade"></ui-input>
+        <label>CEP</label>
+        <ui-input [(ngModel)]="form.cep" name="cep" placeholder="00000-000"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Endereço</label>
+        <ui-input [(ngModel)]="form.endereco" name="endereco"></ui-input>
       </div>
       <div class="form-group third">
         <label>UF</label>
@@ -106,42 +154,24 @@
           <option *ngFor="let u of ufs" [value]="u">{{u}}</option>
         </select>
       </div>
-      <div class="form-group third">
-        <label>Admissão</label>
-        <ui-input [(ngModel)]="form.admissao" (valueChange)="onAdmissaoChange($event)" name="admissao" placeholder="dd/mm/aaaa"></ui-input>
-        <div class="input-hint" *ngIf="form.admissao && !isDateValid(form.admissao)">Formato inválido. Use dd/mm/aaaa</div>
-      </div>
     </div>
 
     <div class="form-row">
-      <div class="form-group third">
-        <label>Nome da Mãe</label>
-        <ui-input [(ngModel)]="form.nomeMae" name="nomeMae"></ui-input>
-      </div>
-      <div class="form-group third">
-        <label>Endereço</label>
-        <ui-input [(ngModel)]="form.endereco" name="endereco"></ui-input>
-      </div>
-      <div class="form-group third">
-        <label>Número</label>
-        <ui-input [(ngModel)]="form.numero" name="numero"></ui-input>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group third">
-        <label>Complemento</label>
-        <ui-input [(ngModel)]="form.complemento" name="complemento"></ui-input>
-      </div>
       <div class="form-group third">
         <label>Bairro</label>
         <ui-input [(ngModel)]="form.bairro" name="bairro"></ui-input>
       </div>
       <div class="form-group third">
-        <label>CEP</label>
-        <ui-input [(ngModel)]="form.cep" name="cep" placeholder="00000-000"></ui-input>
+        <label>Número</label>
+        <ui-input [(ngModel)]="form.numero" name="numero"></ui-input>
+      </div>
+      <div class="form-group third">
+        <label>Complemento</label>
+        <ui-input [(ngModel)]="form.complemento" name="complemento"></ui-input>
       </div>
     </div>
+
+    
 
     <div class="section-title-bar">Contato</div>
     <div class="form-row">
@@ -164,10 +194,7 @@
           <option value="sim">Sim</option>
         </select>
       </div>
-      <div class="form-group third">
-        <label>Matrícula</label>
-        <ui-input [(ngModel)]="form.matricula" name="matricula"></ui-input>
-      </div>
+      <div class="form-group third"></div>
       <div class="form-group third"></div>
     </div>
 
@@ -191,28 +218,9 @@
     </div>
     <div class="form-row">
       <div class="form-group third">
-        <label>Código Unimed Seg</label>
-        <ui-input [(ngModel)]="form.benCodUnimedSeg" name="benCodUnimedSeg"></ui-input>
-      </div>
-      <div class="form-group third">
-        <label>Código do Cartão</label>
-        <ui-input [(ngModel)]="form.benCodCartao" name="benCodCartao"></ui-input>
-      </div>
-      <div class="form-group third">
         <label>Motivo Exclusão</label>
         <ui-input [(ngModel)]="form.benMotivoExclusao" name="benMotivoExclusao"></ui-input>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group third">
-        <label>ID Titular</label>
-        <ui-input [(ngModel)]="form.benTitularId" name="benTitularId" [readonly]="true"></ui-input>
-      </div>
-      <div class="form-group third"></div>
-      <div class="form-group third"></div>
-    </div>
-
-    <div class="form-row">
       <div class="form-group third">
         <label>Identidade de Gênero</label>
         <select class="form-select" [(ngModel)]="form.identidadeGenero" name="identidadeGenero">
@@ -220,6 +228,17 @@
           <option *ngFor="let g of generos" [value]="g.value">{{g.label}}</option>
         </select>
       </div>
+      <div class="form-group third"></div>
+      <div class="form-group third"></div>
+    </div>
+    <div class="form-row">
+      
+      <div class="form-group third"></div>
+      <div class="form-group third"></div>
+    </div>
+
+    <div class="form-row">
+      
       <div class="form-group third"></div>
       <div class="form-group third"></div>
     </div>

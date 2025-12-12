@@ -42,6 +42,14 @@ export class CartaoVirtualComponent implements OnInit {
     };
     return m[(codigo || '').toUpperCase()] || '';
   }
+  private mapearRedeAtendimento(planoLabel: string): string {
+    const normalize = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const p = normalize(planoLabel);
+    if (!p) return '';
+    if (p.includes('adm') && p.includes('dinamico')) return 'NA07 Especial';
+    if ((p.includes('administrado') || p.includes('administrativo')) && p.includes('basico')) return 'NA06 Básico';
+    return '';
+  }
 
   ngOnInit(): void {
     if (this.embedded) return;
@@ -57,12 +65,20 @@ export class CartaoVirtualComponent implements OnInit {
       this.empresa = empresaSelecionada?.nome || params.get('empresa') || '';
       this.codigoEmpresa = params.get('codigoEmpresa') || '';
       this.numeroProduto = params.get('numeroProduto') || '';
-      this.vigencia = params.get('vigencia') || '';
+      this.vigencia = params.get('vigencia') 
+        || params.get('benDtaInclusao') 
+        || params.get('dataInclusao') 
+        || '';
       this.abrangencia = params.get('abrangencia') || '';
       this.cpt = params.get('cpt') || '';
-      this.redeAtendimento = params.get('rede') || '';
+      const redeMapeada = this.mapearRedeAtendimento(this.plano);
+      this.redeAtendimento = redeMapeada || (params.get('rede') || '');
       this.segmentacao = params.get('segmentacao') || '';
-      this.atend = params.get('atend') || '';
+      this.atend = params.get('atend') 
+        || params.get('benCodUnimedSeg') 
+        || params.get('codUnimedSeg') 
+        || params.get('cod_unimed_seg') 
+        || '';
       this.via = params.get('via') || '';
       this.dataNasc = params.get('dataNasc') || '';
       this.codProdutoAns = params.get('codProdutoAns') || '494413235';

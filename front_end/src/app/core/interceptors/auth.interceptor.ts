@@ -1,6 +1,7 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
+import { ErrorService } from '../../shared/services/error.service';
 import { catchError, switchMap, throwError, Subject, of } from 'rxjs';
 
 let isRefreshing = false;
@@ -8,6 +9,7 @@ let refreshSubject: Subject<string | null> | null = null;
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const errorService = inject(ErrorService) as ErrorService;
   const token = authService.getToken();
 
   // Se não há token ou é a requisição de login/refresh, não adiciona o token
@@ -51,6 +53,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
               isRefreshing = false;
               try { refreshSubject?.error(refreshError); } catch (_) {}
               refreshSubject = null;
+              errorService.notifyHttp(refreshError);
               authService.forceReauth();
               return throwError(() => error);
             })

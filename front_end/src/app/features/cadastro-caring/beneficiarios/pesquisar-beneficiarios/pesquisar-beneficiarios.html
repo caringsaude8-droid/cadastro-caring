@@ -17,19 +17,17 @@
   
 </div>
 
-<div class="search-container">
-  <div class="search-bar">
-    <span class="title">Pesquisa de beneficiários:</span>
-    <div class="filters">
-      <label>Nome:</label>
-      <ui-input [(ngModel)]="nome" name="nome" placeholder=""></ui-input>
-      <label>CPF:</label>
-      <ui-input [(ngModel)]="cpf" name="cpf" placeholder="000.000.000-00" [onlyDigits]="true" [maxlength]="11"></ui-input>
-      <button class="btn-primary" (click)="pesquisar()" [disabled]="loading">Pesquisar</button>
-      <button class="btn-secondary" (click)="limparFiltros()" [disabled]="loading">Limpar</button>
+<div class="filters-section">
+  <div class="filters-container caring-card">
+    <div class="search-group">
+      <i class="icon-search"></i>
+      <input type="text" class="input" [(ngModel)]="nome" placeholder="Pesquisar por nome" />
     </div>
+    <ui-input [(ngModel)]="cpf" name="cpf" placeholder="000.000.000-00" [onlyDigits]="true" [maxlength]="11"></ui-input>
+    <button class="btn btn-primary" (click)="pesquisar()" [disabled]="loading">Pesquisar</button>
+    <button class="btn btn-secondary" (click)="limparFiltros()" [disabled]="loading">Limpar</button>
   </div>
-
+ 
   <!-- Indicadores de Loading e Erro -->
   <div class="status-container" *ngIf="loading || error">
     <div class="loading-indicator" *ngIf="loading">
@@ -43,8 +41,8 @@
     </div>
   </div>
 
-  <div class="table-wrapper">
-    <table class="result-table">
+  <div class="caring-card table-wrapper">
+    <table class="table">
       <thead>
         <tr>
           <th>Nome</th>
@@ -121,13 +119,15 @@
       <div class="item"><span class="label">CPF:</span><span class="value">{{r.cpf}}</span></div>
       <div class="item"><span class="label">Nascimento:</span><span class="value">{{r.nascimento}}</span></div>
       <div class="item"><span class="label">Inclusão:</span><span class="value">{{formatDateBR(r.data_inclusao)}}</span></div>
+      <div class="item"><span class="label">Nome da Mãe:</span><span class="value">{{r.nomeMae || '—'}}</span></div>
       <div class="item"><span class="label">Exclusão:</span><span class="value">{{r.data_exclusao ? formatDateBR(r.data_exclusao) : '—'}}</span></div>
-      <div class="item"><span class="label">Tipo Dependência:</span><span class="value">{{r.tipo_dependencia}}</span></div>
+      <div class="item"><span class="label">Tipo Dependência:</span><span class="value">{{labelRelacaoDep(r)}}</span></div>
       <div class="item"><span class="label">Acomodação:</span><span class="value">{{r.acomodacao}}</span></div>
       <div class="item"><span class="label">Matrícula:</span><span class="value">{{r.matricula_beneficiario}}</span></div>
       <div class="item"><span class="label">Cód. Carterinha:</span><span class="value">{{ (r.codigo_carterinha || ((r.benCodUnimedSeg || '') + (r.benCodCartao || ''))) || '—' }}</span></div>
-      <div class="item"><span class="label">Matrícula Titular:</span><span class="value">{{r.matricula_titular}}</span></div>
       <div class="item"><span class="label">Status:</span><span class="value">{{statusOf(r)}}</span></div>
+      <div class="item"><span class="label">Nome Titular:</span><span class="value">{{r.nomeTitular || '—'}}</span></div>
+      <div class="item"><span class="label">Admissão:</span><span class="value">{{r.admissao || '—'}}</span></div>
     </div>
 
     <div class="section-subtitle">Endereço</div>
@@ -147,8 +147,6 @@
 
     <div class="section-subtitle">Dados Complementares</div>
     <div class="detail-grid" *ngIf="selectedRow as r">
-      <div class="item"><span class="label">Admissão:</span><span class="value">{{r.admissao || '—'}}</span></div>
-      <div class="item"><span class="label">Nome da Mãe:</span><span class="value">{{r.nomeMae || '—'}}</span></div>
       <div class="item"><span class="label">Identidade de Gênero:</span><span class="value">{{r.identidadeGenero || '—'}}</span></div>
       <div class="item"><span class="label">Nome Social:</span><span class="value">{{r.nomeSocial || '—'}}</span></div>
       <div class="item"><span class="label">Indicador Pessoa Trans:</span><span class="value">{{r.indicadorPessoaTrans || r.indicador_pessoa_trans || '—'}}</span></div>

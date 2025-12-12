@@ -248,6 +248,14 @@
   text-decoration: none;
 }
 
+.submenu-item i {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  font-style: normal;
+  margin-right: 0.5rem;
+}
+
 .submenu-item.block {
   background-color: #f3f4f6;
   color: #374151;
@@ -371,6 +379,10 @@
 .icon-menu:before { content: "›"; }
 .icon-chevron-left:before { content: "‹"; }
 .icon-chevron-down:before { content: "⌄"; }
+.icon-add:before { content: "➕"; }
+.icon-edit:before { content: "✏️"; }
+.icon-request:before { content: "📨"; }
+.icon-report:before { content: "📄"; }
 .submenu-item.block.active {
   background-color: #c2111a !important;
   color: #fff !important;

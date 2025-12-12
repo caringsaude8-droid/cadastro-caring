@@ -113,27 +113,47 @@ export class AprovacaoCadastroComponent {
     if (!s) return;
     if (s.entidade === 'beneficiario' && s.identificador) {
       if (s.tipo === 'inclusao') {
-        // Para inclusão aprovada, buscar beneficiário (status 'Pendente') e ativar
+        // Para inclusão aprovada, buscar beneficiário (inclui pendentes/raw) e ativar
+        const cpfId = (s.identificador || '').replace(/\D/g, '');
+        const aplicarAtualizacao = (id: number) => {
+          const updatePayload: any = { benStatus: 'ATIVO' };
+          if (dadosAdicionais?.benCodCartao) updatePayload.benCodCartao = dadosAdicionais.benCodCartao;
+          if (dadosAdicionais?.benCodUnimedSeg) updatePayload.benCodUnimedSeg = dadosAdicionais.benCodUnimedSeg;
+          this.beneficiarios.alterarBeneficiario(id, updatePayload).subscribe({
+            next: () => {},
+            error: (error) => console.error('❌ Erro ao ativar beneficiário:', error)
+          });
+        };
+        // Primeiro tenta via list() (mapeado)
         this.beneficiarios.buscarPorFiltros({ cpf: s.identificador }).subscribe({
           next: (beneficiarios) => {
-            const cpfId = (s.identificador || '').replace(/\D/g, '');
-            const beneficiario = beneficiarios.find(b => (b.cpf || '').replace(/\D/g, '') === cpfId && (b.benStatus === 'Pendente' || !b.benStatus));
-            if (beneficiario) {
-              // Atualizar status e persistir códigos informados na aprovação
-              const updatePayload: any = { benStatus: 'ATIVO' };
-              if (dadosAdicionais?.benCodCartao) {
-                updatePayload.benCodCartao = dadosAdicionais.benCodCartao;
-              }
-              if (dadosAdicionais?.benCodUnimedSeg) {
-                updatePayload.benCodUnimedSeg = dadosAdicionais.benCodUnimedSeg;
-              }
-              this.beneficiarios.alterarBeneficiario(beneficiario.id, updatePayload).subscribe({
-              next: () => {},
-                error: (error) => console.error('❌ Erro ao ativar beneficiário:', error)
-              });
-            } else {
-              console.warn('⚠️ Beneficiário não encontrado ou já ativo:', s.identificador);
+            const m = beneficiarios.find(b => (b.cpf || '').replace(/\D/g, '') === cpfId);
+            if (m?.id) {
+              aplicarAtualizacao(m.id);
+              return;
             }
+            // Fallback: usa listRaw para garantir que encontre o registro recém-criado
+            this.beneficiarios.listRaw().subscribe({
+              next: (lista: any[]) => {
+                const raw = lista.find(x => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpfId);
+                if (raw?.id) {
+                  aplicarAtualizacao(raw.id);
+                } else {
+                  // Tenta novamente após pequeno delay (processamento de back-end)
+                  setTimeout(() => {
+                    this.beneficiarios.listRaw().subscribe({
+                      next: (lista2: any[]) => {
+                        const raw2 = lista2.find(x => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpfId);
+                        if (raw2?.id) aplicarAtualizacao(raw2.id);
+                        else console.warn('⚠️ Beneficiário não encontrado após aprovação:', s.identificador);
+                      },
+                      error: (e) => console.error('❌ Erro no fallback listRaw:', e)
+                    });
+                  }, 800);
+                }
+              },
+              error: (error) => console.error('❌ Erro ao buscar beneficiário (raw) para aprovação:', error)
+            });
           },
           error: (error) => console.error('❌ Erro ao buscar beneficiário para aprovação:', error)
         });
@@ -375,7 +395,9 @@ export class AprovacaoCadastroComponent {
     this.processarAprovacao(this.approvalSolicitacao.id, dadosAprovacao);
     // Fechar modal
     this.closeApprovalModal();
+    this.closeDetails();
     this.atualizarLista();
+    this.refreshAfterAction();
     this.observacaoAprovacao = '';
   }
 
@@ -391,9 +413,6 @@ export class AprovacaoCadastroComponent {
   aceitarSelecionado() {
     if (!this.selected || this.selected.status === 'concluida') return;
     this.aprovar(this.selected.id);
-    this.closeDetails();
-    this.atualizarLista();
-    this.observacaoAprovacao = '';
   }
 
   negarSelecionado() {
@@ -433,5 +452,10 @@ export class AprovacaoCadastroComponent {
     setTimeout(() => {
       this.carregando = false;
     }, 1000);
+  }
+
+  private refreshAfterAction() {
+    setTimeout(() => this.atualizarLista(), 800);
+    setTimeout(() => this.atualizarLista(), 2000);
   }
 }

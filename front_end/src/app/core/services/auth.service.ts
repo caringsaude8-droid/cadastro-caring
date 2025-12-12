@@ -4,6 +4,7 @@ import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { EmpresaContextService } from '../../shared/services/empresa-context.service';
 import { EmpresaService } from '../../features/cadastro-caring/empresa/empresa.service';
+import { ErrorService } from '../../shared/services/error.service';
 
 export interface AuthUser {
   id: number;
@@ -36,7 +37,8 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private empresaContextService: EmpresaContextService,
-    private empresaService: EmpresaService
+    private empresaService: EmpresaService,
+    private errorService: ErrorService
   ) {
     // Carrega usuário do localStorage na inicialização
     const user = this.loadUserFromStorage();
@@ -60,10 +62,9 @@ export class AuthService {
   }
 
   private checkAuthOnFocus(): void {
-    // Se não está autenticado mas há dados no localStorage, limpa tudo
-    if (!this.isAuthenticated() && this.loadUserFromStorage()) {
-      this.signOut();
-    }
+    // Não limpar tokens automaticamente aqui.
+    // Mantém refresh_token para que guards/interceptors tentem renovar na próxima requisição.
+    // Se quiser tentativa proativa, isso pode ser feito via guard na navegação.
   }
 
   // Faz login na API
@@ -74,14 +75,15 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials)
       .pipe(
         tap(response => {
-          // Salva tokens e dados do usuário
-          this.saveAuthData(response);
-          this.currentUserSubject.next(response.user);
-          
-          // Se usuário tem empresaId vinculado, carregar automaticamente após reset
-          if (response.user.empresaId) {
-            this.carregarEmpresaDoUsuario(response.user.empresaId);
+          this.saveAuthData(response as any);
+          const norm = this.normalizeAuthResponse(response as any);
+          if (norm.user) {
+            this.currentUserSubject.next(norm.user);
+            if (norm.user.empresaId) {
+              this.carregarEmpresaDoUsuario(norm.user.empresaId);
+            }
           }
+          this.errorService.notifyInfo('Sessão renovada')
         })
       );
   }
@@ -187,8 +189,12 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/refresh`, requestBody)
       .pipe(
         tap(response => {
-          this.saveAuthData(response);
-          this.currentUserSubject.next(response.user);
+          this.saveAuthData(response as any);
+          const norm = this.normalizeAuthResponse(response as any);
+          if (norm.user) {
+            this.currentUserSubject.next(norm.user);
+          }
+          this.errorService.notifyInfo('Sessão renovada')
         }),
         catchError(error => {
           // Se refresh token expirou (403/401), apenas informa - NÃO faz logout automático
@@ -248,17 +254,28 @@ export class AuthService {
     // Se não há token, também não faz nada
   }
 
-  // Salva dados de autenticação no localStorage
-  private saveAuthData(response: LoginResponse): void {
+  private normalizeAuthResponse(resp: any): { token: string | null; refreshToken: string | null; user: AuthUser | null } {
+    const token = (resp && (resp.token || resp.accessToken || resp.access_token || resp.jwt || resp.id_token)) || null;
+    const refreshToken = (resp && (resp.refreshToken || resp.refresh_token)) || null;
+    const user = (resp && (resp.user || resp.usuario)) || null;
+    return { token, refreshToken, user };
+  }
+
+  private saveAuthData(response: any): void {
+    const norm = this.normalizeAuthResponse(response);
     try {
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('auth_token', response.token);
-        localStorage.setItem('refresh_token', response.refreshToken);
-        localStorage.setItem('current_user', JSON.stringify(response.user));
+        if (norm.token) {
+          localStorage.setItem('auth_token', norm.token);
+        }
+        if (norm.refreshToken) {
+          localStorage.setItem('refresh_token', norm.refreshToken);
+        }
+        if (norm.user) {
+          localStorage.setItem('current_user', JSON.stringify(norm.user));
+        }
       }
-    } catch (error) {
-      // Erro silencioso
-    }
+    } catch {}
   }
 
   // Carrega usuário do localStorage

@@ -161,6 +161,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   selectedTitularCpf: string = '';
   selectedTitular: any = null;
   cpfDuplicado = false;
+  dataInclusaoError = '';
 
   ngOnInit() {
     // Obter empresa selecionada (garantido pelo guard)
@@ -333,7 +334,9 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     const titular = this.titulares.find(t => t.cpf === cpf);
     this.selectedTitular = titular || null;
     if (this.selectedTitular) {
-      this.form.numeroEmpresa = this.selectedTitular.matricula_beneficiario || '';
+      if ((this.form.relacaoDep || '').toLowerCase() !== 'titular') {
+        this.form.matricula = this.selectedTitular.matricula_beneficiario || '';
+      }
     }
   }
 
@@ -363,6 +366,12 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       }
     }
 
+    this.validarDatas();
+    if (this.dataInclusaoError) {
+      this.showToast('Erro', this.dataInclusaoError, 'error');
+      return;
+    }
+
     // Validação específica para dependentes
     if (this.form.relacaoDep !== 'titular') {
       const cpfTitularNumeros = (this.cpfTitular || '').replace(/\D/g, '');
@@ -370,8 +379,14 @@ export class InclusaoBeneficiarioComponent implements OnInit {
         this.showToast('Erro', 'Digite o CPF do titular para dependentes', 'error');
         return;
       }
-      // Buscar titular pelo CPF antes de salvar
-      const titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
+      let titular = null;
+      try {
+        titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
+      } catch (e) {
+        this.showToast('Erro', 'Falha ao buscar titular. Faça login novamente.', 'error');
+        this.loading = false;
+        return;
+      }
       if (!titular) {
         this.showToast('Erro', 'Titular não encontrado para o CPF informado', 'error');
         return;
@@ -381,7 +396,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
 
     // Formatar visualmente CPF e celular no form
     this.form.cpf = this.formatarCpf(this.form.cpf);
-    this.form.celular = this.formatarCelular(this.form.celular);
+    // Mantém celular como dígitos; formatação visual não é necessária
 
     this.loading = true;
     this.errorMessage = '';
@@ -404,6 +419,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
         await this.service.atualizarSolicitacao(id, payload).toPromise();
         this.showToast('Sucesso', 'Solicitação corrigida e reenviada com sucesso', 'success');
         this.limparForm();
+        this.router.navigate(['/cadastro-caring/beneficiarios/solicitacao-cadastro']);
       } catch (e) {
         this.showToast('Erro', 'Falha ao corrigir solicitação', 'error');
       }
@@ -427,9 +443,15 @@ export class InclusaoBeneficiarioComponent implements OnInit {
         ...request
       }
     };
-    const solicitacaoCriada = await this.aprovacao.criarSolicitacaoInclusao(solicitacao).toPromise();
-    this.showToast('Sucesso', 'Solicitação de inclusão criada com sucesso', 'success');
-    this.limparForm();
+    try {
+      await this.aprovacao.criarSolicitacaoInclusao(solicitacao).toPromise();
+      this.showToast('Sucesso', 'Solicitação de inclusão criada com sucesso', 'success');
+      this.limparForm();
+      this.router.navigate(['/cadastro-caring/beneficiarios/solicitacao-cadastro']);
+    } catch (e) {
+      const msg = this.getErrorMessage(e);
+      this.showToast('Erro', msg, 'error');
+    }
     this.loading = false;
   }
 
@@ -448,6 +470,23 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     } else {
       this.cpfDuplicado = false;
     }
+  }
+
+  onCelularInput(value: string) {
+    const numeros = (value || '').replace(/\D/g, '').slice(0, 11);
+    this.form.celular = this.formatarCelular(numeros);
+  }
+  
+  private getErrorMessage(err: unknown): string {
+    if (err instanceof Error && err.message) return err.message;
+    if (typeof err === 'object' && err) {
+      const anyErr = err as any;
+      if (typeof anyErr.message === 'string' && anyErr.message) return anyErr.message;
+      if (typeof anyErr.statusText === 'string' && anyErr.statusText) return anyErr.statusText;
+      if (typeof anyErr.error === 'string' && anyErr.error) return anyErr.error;
+    }
+    if (typeof err === 'string') return err;
+    return 'Falha ao criar solicitação';
   }
 
   private async verificarCpfExistente(cpfNumeros: string): Promise<boolean> {
@@ -489,7 +528,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benIndicPesTrans: this.form.indicadorPessoaTrans || undefined,
       benNomeSocial: this.form.nomeSocial || undefined,
       benIdentGenero: this.form.identidadeGenero || undefined,
-      benDtaInclusao: this.formatarDataParaAPI(new Date().toISOString().split('T')[0]),
+      benDtaInclusao: this.form.dataInclusaoExclusao ? this.formatarDataParaAPI(this.form.dataInclusaoExclusao) : undefined,
       benTitularId: this.form.relacaoDep !== 'titular' ? this.titularEncontrado?.id : undefined,
       benTitularCpf: this.form.relacaoDep !== 'titular' ? (this.titularEncontrado?.cpf || undefined) : undefined,
       benTitularNome: this.form.relacaoDep !== 'titular' ? (this.titularEncontrado?.nome || undefined) : undefined,
@@ -512,15 +551,35 @@ export class InclusaoBeneficiarioComponent implements OnInit {
 
   // Formata o celular para o padrão (00) 00000-0000 ou (00) 0000-0000
   private formatarCelular(celular: string): string {
-    const numeros = (celular || '').replace(/\D/g, '');
-    if (numeros.length === 11) {
-      return `(${numeros.substring(0,2)}) ${numeros.substring(2,7)}-${numeros.substring(7,11)}`;
-    } else if (numeros.length === 10) {
-      return `(${numeros.substring(0,2)}) ${numeros.substring(2,6)}-${numeros.substring(6,10)}`;
+    const d = (celular || '').replace(/\D/g, '').slice(0, 11);
+    const len = d.length;
+    if (len === 0) return '';
+    if (len === 1) return `(${d}`;
+    if (len === 2) return `(${d})`;
+    if (len >= 3 && len <= 6) {
+      return `(${d.slice(0,2)})${d.slice(2)}`;
     }
-    return numeros;
+    if (len >= 7 && len <= 10) {
+      return `(${d.slice(0,2)})${d.slice(2,6)}-${d.slice(6)}`;
+    }
+    // 11 dígitos: formato sem espaço para manter 14 caracteres totais
+    return `(${d.slice(0,2)})${d.slice(2,7)}-${d.slice(7,11)}`;
   }
 
+  validarDatas() {
+    const adm = this.form.admissao;
+    const inc = this.form.dataInclusaoExclusao;
+    this.dataInclusaoError = '';
+    if (adm && inc && /^\d{4}-\d{2}-\d{2}$/.test(adm) && /^\d{4}-\d{2}-\d{2}$/.test(inc)) {
+      const [ay, am, ad] = adm.split('-').map(n => parseInt(n, 10));
+      const [iy, im, id] = inc.split('-').map(n => parseInt(n, 10));
+      const admDate = new Date(ay, am - 1, ad);
+      const incDate = new Date(iy, im - 1, id);
+      if (incDate < admDate) {
+        this.dataInclusaoError = 'Data de inclusão não pode ser anterior à admissão.';
+      }
+    }
+  }
   // Utilitários de conversão
   private formatarDataParaAPI(data: string): string {
     // Se já está no formato dd/MM/yyyy, retorna direto
@@ -810,6 +869,9 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       if (titular && titular.benRelacaoDep === '00') {
         this.titularEncontrado = titular;
         this.showToast('Sucesso', `Titular encontrado: ${titular.nome}`, 'success');
+        if ((this.form.relacaoDep || '').toLowerCase() !== 'titular') {
+          this.form.matricula = titular.matricula_beneficiario || '';
+        }
       } else {
         this.titularEncontrado = null;
         this.showToast('Erro', 'Titular não encontrado ou não é do tipo titular', 'error');

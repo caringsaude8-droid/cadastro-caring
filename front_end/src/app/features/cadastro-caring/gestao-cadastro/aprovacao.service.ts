@@ -129,7 +129,7 @@ export class AprovacaoService {
           acao,
           observacoesAprovacao: observacao
         };
-        if (dadosAprovacao && Object.keys(dadosAprovacao).length > 0) {
+        if (dadosAprovacao) {
           request.dadosAprovacao = dadosAprovacao;
         }
       }

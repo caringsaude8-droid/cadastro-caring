@@ -7,7 +7,7 @@ import { LogoService } from '../../services/logo.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 interface MenuItem { title: string; url: string; icon: string; }
-interface SubMenuItem { title: string; url: string; }
+interface SubMenuItem { title: string; url: string; icon?: string; }
 
 @Component({
   selector: 'app-sidebar-cadastro',
@@ -36,11 +36,11 @@ export class SidebarCadastro implements OnInit, OnDestroy {
   ];
 
   private allBeneficiariosSubItems: SubMenuItem[] = [
-    { title: 'Inclusão', url: '/cadastro-caring/beneficiarios/inclusao' },
-    { title: 'Alteração', url: '/cadastro-caring/beneficiarios' },
-    { title: 'Solicitação de Cadastro', url: '/cadastro-caring/beneficiarios/solicitacao-cadastro' },
-    { title: 'Relatório Beneficiários', url: '/cadastro-caring/beneficiarios/relatorio-beneficiarios' },
-    { title: 'Relatório Solicitações', url: '/cadastro-caring/beneficiarios/relatorio-solicitacao' }
+    { title: 'Inclusão', url: '/cadastro-caring/beneficiarios/inclusao', icon: 'add' },
+    { title: 'Alteração', url: '/cadastro-caring/beneficiarios', icon: 'edit' },
+    { title: 'Solicitação de Cadastro', url: '/cadastro-caring/beneficiarios/solicitacao-cadastro', icon: 'request' },
+    { title: 'Relatório Beneficiários', url: '/cadastro-caring/beneficiarios/relatorio-beneficiarios', icon: 'report' },
+    { title: 'Relatório Solicitações', url: '/cadastro-caring/beneficiarios/relatorio-solicitacao', icon: 'report' }
   ];
 
   beneficiariosSubItems: SubMenuItem[] = [];

@@ -61,7 +61,7 @@
   <div class="modal-header">
     <h3>Detalhes da Solicitação</h3>
     <div style="display:flex; gap:8px; align-items:center;">
-      <button class="btn btn-icon" title="Ver beneficiário" (click)="openBenefDetails()">🔎</button>
+      
       <button class="btn btn-icon" *ngIf="selected?.tipo === 'inclusao'" title="Ver dados da inclusão" (click)="openInclusaoDetails()">🔎</button>
       <button class="modal-close" (click)="closeDetails()">×</button>
     </div>
@@ -132,10 +132,11 @@
   </div>
   <div class="modal-body">
     <div class="detail-grid" *ngIf="dadosDetalhes">
-      <div class="item"><span class="label">Relação Dep.:</span><span class="value">{{ dadosDetalhes.benRelacaoDepLabel || (dadosDetalhes.benRelacaoDep === '00' ? 'Titular' : 'Dependente') }}</span></div>
-      <div class="item" *ngIf="dadosDetalhes.benRelacaoDep === '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benNomeSegurado }}</span></div>
-      <div class="item" *ngIf="dadosDetalhes.benRelacaoDep !== '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benTitularNome }} ({{ dadosDetalhes.benTitularCpf }})</span></div>
+      <div class="item"><span class="label">Relação Dep.:</span><span class="value">{{ dadosDetalhes.benRelacaoDep }}</span></div>
+      <div class="item" *ngIf="dadosDetalhes.benRelacaoDep === '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benCpf }}</span></div>
+      <div class="item" *ngIf="dadosDetalhes.benRelacaoDep !== '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benTitularCpf }}</span></div>
       <div class="item"><span class="label">Nome:</span><span class="value">{{ dadosDetalhes.benNomeSegurado }}</span></div>
+      <div class="item" *ngIf="dadosDetalhes.benTitularId"><span class="label">ID Titular:</span><span class="value">{{ dadosDetalhes.benTitularId }}</span></div>
       <div class="item"><span class="label">CPF:</span><span class="value">{{ dadosDetalhes.benCpf }}</span></div>
       <div class="item"><span class="label">Nascimento:</span><span class="value">{{ dadosDetalhes.benDtaNasc }}</span></div>
       <div class="item"><span class="label">Sexo:</span><span class="value">{{ dadosDetalhes.benSexo }}</span></div>

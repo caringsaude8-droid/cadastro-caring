@@ -4,11 +4,13 @@ import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { ErrorService } from '../../shared/services/error.service';
 
 
 export const authGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  const errorService = inject(ErrorService) as ErrorService;
 
   const requiredProfiles = (route.data?.['profiles'] as string[] | undefined) || [];
 
@@ -24,15 +26,15 @@ export const authGuard: CanActivateFn = (route, state) => {
   }
 
   if (!auth.getRefreshToken()) {
-    auth.signOut();
+    errorService.notify('Sessão não autenticada. Faça login para acessar esta área.', 'Autenticação necessária');
     router.navigate(['/login']);
     return false;
   }
 
   return auth.refreshToken().pipe(
     map(() => allowByProfile()),
-    catchError(() => {
-      auth.signOut();
+    catchError((err) => {
+      errorService.notifyHttp(err);
       router.navigate(['/login']);
       return of(false);
     })

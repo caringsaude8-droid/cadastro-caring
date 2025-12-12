@@ -1,7 +1,6 @@
 .solicitacao-container {
     padding: 1.5rem;
-    max-width: 1100px;
-    margin: 0 auto;
+    width: 100%;
 }
 
 /* Informações da Empresa (padronizado com Inclusão) */
@@ -22,7 +21,7 @@
 .empresa-codigo { font-size: 0.85rem; background: rgba(255, 255, 255, 0.2); padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 500; }
 
 .modal-card {
-  max-height: 88vh;
+  max-height: 94vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -30,7 +29,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(800px, 92vw);
+  width: min(1000px, 96vw);
 }
 
 .modal-body {
@@ -352,9 +351,9 @@
 .modal-card {
     position: fixed;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(800px, 92vw);
+  left: 50%;
+  transform: translate(-50%, -50%);
+    width: min(1000px, 96vw);
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);

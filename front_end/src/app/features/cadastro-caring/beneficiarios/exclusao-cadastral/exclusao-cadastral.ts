@@ -130,7 +130,7 @@ export class ExclusaoCadastralComponent implements OnInit {
     this.successMessage = 'Status atualizado com sucesso';
     setTimeout(() => {
       this.successMessage = '';
-      this.router.navigateByUrl('/cadastro-caring/beneficiarios');
+      this.router.navigateByUrl('/cadastro-caring/beneficiarios/solicitacao-cadastro');
     }, 1500);
   }
   onDateChange(val: string) {

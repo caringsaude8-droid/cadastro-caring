@@ -49,7 +49,10 @@
             <i *ngIf="!collapsed" class="icon-chevron-down submenu-icon" [class.rotated]="beneficiariosOpen"></i>
           </button>
           <div *ngIf="!collapsed && beneficiariosOpen" class="submenu">
-            <a *ngFor="let subItem of beneficiariosSubItems" [routerLink]="subItem.url" class="submenu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{subItem.title}}</a>
+            <a *ngFor="let subItem of beneficiariosSubItems" [routerLink]="subItem.url" class="submenu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+              <i *ngIf="subItem.icon" [class]="'icon-' + subItem.icon"></i>
+              <span>{{subItem.title}}</span>
+            </a>
           </div>
         </div>
 

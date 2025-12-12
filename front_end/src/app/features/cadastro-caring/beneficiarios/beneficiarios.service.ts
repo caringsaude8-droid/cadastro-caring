@@ -26,6 +26,7 @@ export interface Beneficiario {
   matricula_titular: string;
   celular: string;
   email: string;
+  benTitularId?: number;
   // Campos adicionais para auto-preenchimento
   nome_mae?: string;
   sexo?: string;
@@ -140,6 +141,7 @@ export class BeneficiariosService {
       matricula_titular: apiData.matricula_titular || '',
       celular: apiData.celular || apiData.benDddCel || '',
       email: apiData.email || apiData.benEmail || '',
+      benTitularId: apiData.benTitularId ?? apiData.titularId ?? undefined,
       // Campos adicionais para auto-preenchimento
       nome_mae: apiData.nome_mae || apiData.benNomeDaMae || '',
       sexo: apiData.sexo || apiData.benSexo || '',
@@ -219,7 +221,18 @@ export class BeneficiariosService {
   }
 
   alterarBeneficiario(id: number, dados: Partial<Beneficiario>): Observable<Beneficiario> {
-    return this.http.put<Beneficiario>(`${this.apiUrl}/beneficiarios/${id}/alteracao`, dados);
+    const payload: any = { ...dados };
+    const cartao = (payload.benCodCartao ?? '').toString().trim();
+    const unimed = (payload.benCodUnimedSeg ?? '').toString().trim();
+    if (cartao !== '') {
+      payload.benCodCartao = cartao;
+      payload.cod_cartao = cartao;
+    }
+    if (unimed !== '') {
+      payload.benCodUnimedSeg = unimed;
+      payload.cod_unimed_seg = unimed;
+    }
+    return this.http.put<Beneficiario>(`${this.apiUrl}/beneficiarios/${id}/alteracao`, payload);
   }
 
   marcarComoExcluido(id: number, motivoExclusao: string): Observable<void> {

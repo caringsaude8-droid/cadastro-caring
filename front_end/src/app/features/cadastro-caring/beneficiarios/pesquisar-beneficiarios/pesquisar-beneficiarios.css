@@ -35,7 +35,7 @@
 }
 
 /* Card da Empresa (padronizado) */
-.empresa-info { margin-bottom: 1rem; }
+.empresa-info { margin: 0 1.5rem 1rem 1.5rem; }
 .empresa-card {
   background: linear-gradient(135deg, #0b5fa4 0%, #0891b2 100%);
   color: white;
@@ -50,6 +50,12 @@
 .empresa-details h3 { margin: 0 0 0.25rem 0; font-size: 1.1rem; font-weight: 600; }
 .empresa-details p { margin: 0 0 0.25rem 0; font-size: 0.9rem; opacity: 0.9; }
 .empresa-codigo { font-size: 0.85rem; background: rgba(255, 255, 255, 0.2); padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 500; }
+
+.filters-section { margin-bottom: 0.75rem; }
+.filters-container { display: flex; gap: 0.75rem; align-items: center; background: white; padding: 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); flex-wrap: wrap; }
+.search-group { position: relative; flex: 1; min-width: 300px; }
+.search-group .icon-search::before { content: "🔍"; position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1rem; }
+.filters-container .input { padding-left: 2rem; }
 
 .search-container {
     background: #e6f0f3;
@@ -128,25 +134,9 @@
     padding: 0.75rem;
 }
 
-.result-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.result-table thead tr {
-    background: #a7cbdc;
-}
-
-.result-table th,
-.result-table td {
-    border: 1px solid #9ca3af;
-    padding: 0.4rem 0.5rem;
-    font-size: 0.9rem;
-}
-
-.result-table tbody tr:nth-child(even) {
-    background: #f7fafc;
-}
+.table { width: 100%; border-collapse: collapse; }
+.table thead th { background: #f3f4f6; }
+.table th, .table td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
 
 .empty {
     text-align: center;

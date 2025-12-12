@@ -31,6 +31,8 @@ export class SolicitacaoCadastroComponent implements OnInit {
   historicoCompleto: { valorNovo: string; usuarioNome: string; dataOperacao: string }[] = [];
   showBenefDetails = false;
   benefDetalhes: any = null;
+  showInclusaoDetails = false;
+  dadosDetalhes: any = null;
 
   constructor(
     private aprovacao: AprovacaoService, 
@@ -174,7 +176,14 @@ export class SolicitacaoCadastroComponent implements OnInit {
       });
 
       this.solicitacaoBeneficiarioService.buscarPorId(idNum).subscribe({
-        next: () => {},
+        next: (resp: any) => {
+          try {
+            const dadosObj = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
+            const propostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
+            this.dadosDetalhes = propostos || this.dadosDetalhes;
+            this.enriquecerTitularInfo();
+          } catch {}
+        },
         error: () => {}
       });
     }
@@ -293,6 +302,40 @@ export class SolicitacaoCadastroComponent implements OnInit {
   closeBenefDetails() {
     this.showBenefDetails = false;
     this.benefDetalhes = null;
+  }
+  openInclusaoDetails() {
+    if (this.selected?.tipo === 'inclusao') {
+      if (!this.dadosDetalhes) {
+        try {
+          const dadosObj = this.selected?.dadosJson ? JSON.parse(this.selected.dadosJson) : null;
+          const propostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
+          this.dadosDetalhes = propostos || null;
+        } catch {}
+      }
+      this.enriquecerTitularInfo();
+      this.showInclusaoDetails = true;
+    }
+  }
+  closeInclusaoDetails() {
+    this.showInclusaoDetails = false;
+  }
+  private async enriquecerTitularInfo() {
+    try {
+      const d: any = this.dadosDetalhes;
+      if (!d) return;
+      const isTitular = String(d.benRelacaoDep || '').trim() === '00';
+      if (isTitular) return;
+      const cpfTitular = (d.benTitularCpf || '').replace(/\D/g, '');
+      if (cpfTitular) {
+        const lista = await this.beneficiariosService.listRaw().toPromise();
+        const titular = lista?.find((x: any) => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpfTitular);
+        if (titular) {
+          d.benTitularNome = titular.nome || titular.benNomeSegurado || '';
+          d.benTitularCpf = titular.cpf || titular.benCpf || '';
+          this.dadosDetalhes = { ...d };
+        }
+      }
+    } catch {}
   }
 
   private ensureAjusteState(id: string) {

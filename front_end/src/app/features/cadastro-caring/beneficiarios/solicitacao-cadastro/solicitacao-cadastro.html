@@ -84,7 +84,8 @@
     <div class="modal-header">
       <h3>Detalhes da Solicitação</h3>
       <div style="display:flex; gap:8px; align-items:center;">
-        <button class="btn btn-icon" title="Ver beneficiário" (click)="openBenefDetails()">🔎</button>
+        
+        <button class="btn btn-icon" *ngIf="selected?.tipo === 'inclusao'" title="Ver dados da inclusão" (click)="openInclusaoDetails()">🔎</button>
         <button class="modal-close" (click)="closeDetails()">×</button>
       </div>
     </div>
@@ -206,4 +207,43 @@
     <button class="btn btn-secondary btn-sm" (click)="closeBenefDetails()">Fechar</button>
   </div>
   
+</div>
+
+<div *ngIf="showInclusaoDetails" class="modal-backdrop" (click)="closeInclusaoDetails()"></div>
+<div *ngIf="showInclusaoDetails" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Detalhes da Inclusão</h3>
+    <button class="modal-close" (click)="closeInclusaoDetails()">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="detail-grid" *ngIf="dadosDetalhes as d">
+      <div class="item"><span class="label">Relação Dep.:</span><span class="value">{{ d.benRelacaoDep }}</span></div>
+      <div class="item" *ngIf="d.benRelacaoDep === '00'"><span class="label">Titular:</span><span class="value">{{ d.benCpf }}</span></div>
+      <div class="item" *ngIf="d.benRelacaoDep !== '00'"><span class="label">Titular:</span><span class="value">{{ d.benTitularCpf }}</span></div>
+      <div class="item"><span class="label">Nome:</span><span class="value">{{ d.benNomeSegurado }}</span></div>
+      <div class="item" *ngIf="d.benTitularId"><span class="label">ID Titular:</span><span class="value">{{ d.benTitularId }}</span></div>
+      <div class="item"><span class="label">CPF:</span><span class="value">{{ d.benCpf }}</span></div>
+      <div class="item"><span class="label">Nascimento:</span><span class="value">{{ d.benDtaNasc }}</span></div>
+      <div class="item"><span class="label">Sexo:</span><span class="value">{{ d.benSexo }}</span></div>
+      <div class="item"><span class="label">Mãe:</span><span class="value">{{ d.benNomeDaMae }}</span></div>
+      <div class="item"><span class="label">Endereço:</span><span class="value">{{ d.benEndereco }}</span></div>
+      <div class="item"><span class="label">Número:</span><span class="value">{{ d.benNumero }}</span></div>
+      <div class="item"><span class="label">Bairro:</span><span class="value">{{ d.benBairro }}</span></div>
+      <div class="item"><span class="label">CEP:</span><span class="value">{{ d.benCep }}</span></div>
+      <div class="item"><span class="label">Cidade/UF:</span><span class="value">{{ d.benCidade }} / {{ d.benUf }}</span></div>
+      <div class="item"><span class="label">Matrícula:</span><span class="value">{{ d.benMatricula }}</span></div>
+      <div class="item"><span class="label">E-mail:</span><span class="value">{{ d.benEmail }}</span></div>
+      <div class="item"><span class="label">Celular:</span><span class="value">{{ d.benDddCel }}</span></div>
+      <div class="item"><span class="label">Plano:</span><span class="value">{{ d.benPlanoProd }}</span></div>
+      <div class="item"><span class="label">Admissão:</span><span class="value">{{ d.benAdmissao }}</span></div>
+      <div class="item"><span class="label">Data Inclusão:</span><span class="value">{{ d.benDtaInclusao }}</span></div>
+      <div class="item"><span class="label">Status:</span><span class="value">{{ d.benStatus }}</span></div>
+      <div class="item"><span class="label">Código do Cartão:</span><span class="value">{{ d.benCodCartao }}</span></div>
+      <div class="item"><span class="label">Código Unimed Seg:</span><span class="value">{{ d.benCodUnimedSeg }}</span></div>
+      <div class="item"><span class="label">Código da Carterinha:</span><span class="value">{{ (d.benCodUnimedSeg || '') + (d.benCodCartao || '') }}</span></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeInclusaoDetails()">Fechar</button>
+  </div>
 </div>

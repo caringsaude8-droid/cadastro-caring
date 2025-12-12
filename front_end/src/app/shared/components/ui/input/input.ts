@@ -29,6 +29,7 @@ export class InputComponent implements ControlValueAccessor {
   @Input() min: string = '';
   @Input() maxlength: number | null = null;
   @Input() onlyDigits: boolean = false;
+  @Input() allowPhoneChars: boolean = false;
 
   @Output() valueChange = new EventEmitter<string>();
 
@@ -50,6 +51,20 @@ export class InputComponent implements ControlValueAccessor {
       if (typeof this.maxlength === 'number' && this.maxlength > 0) {
         incoming = incoming.slice(0, this.maxlength);
       }
+    } else if (this.allowPhoneChars) {
+      let res = '';
+      let count = 0;
+      for (const ch of incoming) {
+        if (/\d/.test(ch)) {
+          if (count < 11) {
+            res += ch;
+            count++;
+          }
+        } else if (/[()\-\s]/.test(ch)) {
+          res += ch;
+        }
+      }
+      incoming = res;
     }
     // Reflect sanitized value immediately in the DOM to block non-digit visuals
     target.value = incoming;
@@ -59,19 +74,24 @@ export class InputComponent implements ControlValueAccessor {
   }
 
   onKeyDown(event: KeyboardEvent): void {
-    if (!this.onlyDigits) return;
-
     const key = event.key;
-    const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter'];
-    if (allowed.includes(key)) return;
+    const navKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter'];
+    if (navKeys.includes(key)) return;
+    if ((event.ctrlKey || event.metaKey) && (key === 'a' || key === 'c' || key === 'v' || key === 'x')) return;
 
-    if ((event.ctrlKey || event.metaKey) && (key === 'a' || key === 'c' || key === 'v' || key === 'x')) {
-      return;
-    }
-
-    const isDigit = /^[0-9]$/.test(key);
-    if (!isDigit) {
-      event.preventDefault();
+    if (this.onlyDigits) {
+      const isDigit = /^[0-9]$/.test(key);
+      if (!isDigit) {
+        event.preventDefault();
+        return;
+      }
+    } else if (this.allowPhoneChars) {
+      const isAllowedChar = /^[0-9\(\)\-\s]$/.test(key);
+      if (!isAllowedChar) {
+        event.preventDefault();
+        return;
+      }
+    } else {
       return;
     }
 

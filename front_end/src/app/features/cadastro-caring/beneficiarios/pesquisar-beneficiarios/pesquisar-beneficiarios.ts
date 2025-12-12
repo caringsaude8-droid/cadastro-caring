@@ -37,6 +37,9 @@ type BeneficiarioRow = Beneficiario & {
   benCodUnimedSeg?: string;
   benCodCartao?: string;
   codigo_carterinha?: string;
+  nomeTitular?: string;
+  benRelacaoDep?: string;
+  benTitularId?: number;
 };
 
 @Component({
@@ -89,6 +92,34 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   get paged(): BeneficiarioRow[] {
     const start = (this.page - 1) * this.pageSize;
     return this.filtered.slice(start, start + this.pageSize);
+  }
+
+  labelRelacaoDep(r: BeneficiarioRow): string {
+    const s = String((r as any).benRelacaoDep || '').trim();
+    if (!s) return r.tipo_dependencia || 'dependente';
+    const n = parseInt(s, 10);
+    if (isNaN(n)) return r.tipo_dependencia || 'dependente';
+    if (n === 0) return 'Titular';
+    if (n === 1) return 'Esposa';
+    if (n === 2) return 'Companheira(o)';
+    if (n === 9) return 'Marido';
+    if (n >= 5 && n <= 8) return 'Menor sob guarda ou tutela';
+    if (n >= 10 && n <= 20) return 'Filhos';
+    if (n >= 21 && n <= 25) return 'Filho maior';
+    if (n >= 30 && n <= 40) return 'Filhas';
+    if (n >= 41 && n <= 45) return 'Filha maior';
+    if (n === 50) return 'Pai';
+    if (n === 51) return 'Mãe';
+    if (n === 52) return 'Sogro';
+    if (n === 53) return 'Sogra';
+    if (n >= 60 && n <= 69) return 'Dependente legal (masculino)';
+    if (n >= 70 && n <= 74) return 'Filho adotivo';
+    if (n >= 75 && n <= 79) return 'Filha adotiva';
+    if (n >= 80 && n <= 84) return 'Irmão';
+    if (n >= 85 && n <= 89) return 'Irmã';
+    if (n >= 90 && n <= 94) return 'Outros dependentes (masculino)';
+    if (n >= 95 && n <= 99) return 'Outros dependentes (feminino)';
+    return r.tipo_dependencia || 'Dependente';
   }
 
   get totalPages(): number {
@@ -433,6 +464,7 @@ export class PesquisarBeneficiariosComponent implements OnInit {
           return true;
         });
         this.data = filtradosRaw.map(raw => this.mapearDadosBrutos(raw));
+        this.preencherNomeEMatriculaTitular(this.data);
         this.loading = false;
       },
       error: (error) => {
@@ -479,7 +511,8 @@ export class PesquisarBeneficiariosComponent implements OnInit {
 
     this.service.buscarPorFiltros(filtros).subscribe({
       next: (beneficiarios) => {
-        this.data = beneficiarios;
+        this.data = beneficiarios as any;
+        this.preencherNomeEMatriculaTitular(this.data);
         this.loading = false;
         
       },
@@ -630,6 +663,8 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       data_inclusao: raw.benDtaInclusao ? (this.parseApiDate(raw.benDtaInclusao) || new Date()) : (raw.data_inclusao ? (this.parseApiDate(raw.data_inclusao) || new Date()) : new Date()),
       data_exclusao: raw.benDtaExclusao ? (this.parseApiDate(raw.benDtaExclusao) || null) : (raw.data_exclusao ? (this.parseApiDate(raw.data_exclusao) || null) : null),
       tipo_dependencia: raw.benRelacaoDep === '00' ? 'titular' : 'dependente',
+      benRelacaoDep: raw.benRelacaoDep || '',
+      benTitularId: raw.benTitularId ?? raw.titularId ?? raw.ben_titular_id ?? undefined,
       acomodacao: this.mapearAcomodacao(raw.benPlanoProd),
       matricula_beneficiario: raw.benMatricula || raw.matricula_beneficiario || '',
       matricula_titular: raw.matricula_titular || '',
@@ -663,6 +698,26 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       indicador_pessoa_trans: raw.benIndicPesTrans || '',
       data_casamento: raw.benDataCasamento ? this.formatarDataISO(raw.benDataCasamento) : ''
     } as BeneficiarioRow;
+  }
+
+  private preencherNomeEMatriculaTitular(rows: BeneficiarioRow[]): void {
+    const titularesById = new Map<number, BeneficiarioRow>();
+    for (const r of rows) {
+      const isTitular = String((r as any).benRelacaoDep || '').trim() === '00' || (r.tipo_dependencia || '') === 'titular';
+      if (isTitular && typeof r.id === 'number') {
+        titularesById.set(r.id, r);
+        if (!r.nomeTitular) r.nomeTitular = r.nome;
+      }
+    }
+    for (const r of rows) {
+      const isDependente = String((r as any).benRelacaoDep || '').trim() !== '00' && (r.tipo_dependencia || '') !== 'titular';
+      if (!isDependente) continue;
+      const tid = r.benTitularId;
+      if (typeof tid === 'number' && !r.nomeTitular) {
+        const titular = titularesById.get(tid);
+        if (titular) r.nomeTitular = titular.nome || '';
+      }
+    }
   }
 
   private mapearAcomodacao(planoProd: string): string {
