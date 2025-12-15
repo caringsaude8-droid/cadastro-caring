@@ -1,8 +1,9 @@
 <app-page-header title="Aprovação de Cadastro" subtitle="Revisar solicitações de inclusão, alteração e exclusão"></app-page-header>
 
 <div class="aprovacao-container">
+  <div class="toast" *ngIf="showToastMessage">{{ toastMessage }}</div>
   <div class="filters caring-card">
-    <input class="input" [(ngModel)]="termo" placeholder="Pesquisar por identificador, descrição ou solicitante">
+    <input class="input" [(ngModel)]="termo" placeholder="Pesquisar por identificador, descrição, solicitante ou data">
     <select class="form-select" [(ngModel)]="filtroTipo">
       <option value="">Todos os tipos</option>
       <option value="inclusao">Inclusão</option>
@@ -68,6 +69,7 @@
   </div>
   <div class="modal-body" *ngIf="selected as d">
     <div class="detail-grid">
+      <!-- Data normalizada para ISO no serviço/componente para evitar NG02100 -->
       <div class="item"><span class="label">Data:</span><span class="value">{{ d.data | date:'dd/MM/yyyy HH:mm' }}</span></div>
       <div class="item"><span class="label">Tipo:</span><span class="value">{{ d.tipo }}</span></div>
       <div class="item"><span class="label">Entidade:</span><span class="value">{{ d.entidade }}</span></div>
@@ -81,6 +83,7 @@
     <div class="section-subtitle">Histórico</div>
     <div class="history-list">
       <div class="history-item" *ngFor="let h of historicoCompleto">
+        <!-- Histórico com dataOperacao normalizada (dd/MM → ISO) -->
         <span class="history-date">{{ h.dataOperacao | date:'dd/MM/yyyy HH:mm' }}</span>
         <span class="history-status">{{ h.usuarioNome }}</span>
         <span class="history-observacao">— {{ h.valorNovo }}</span>
@@ -109,7 +112,7 @@
     <div class="section-subtitle" *ngIf="d.status === 'pendente'">Ação</div>
     <textarea *ngIf="d.status === 'pendente'" class="input" rows="3" [(ngModel)]="observacaoAprovacao" placeholder="Observação da aprovação (opcional)"></textarea>
     <div class="action-grid" *ngIf="d.status === 'pendente'">
-      <button class="btn btn-primary btn-sm" (click)="aceitarSelecionado()"><i class="icon-check-circle"></i> Aceitar</button>
+      <button class="btn btn-primary btn-sm" (click)="aceitarSelecionado()" [disabled]="!podeAprovarSelecionado()"><i class="icon-check-circle"></i> Aceitar</button>
       <button class="btn btn-secondary btn-sm" (click)="negarSelecionado()"><i class="icon-refresh"></i> Negar</button>
     </div>
 
@@ -132,6 +135,7 @@
   </div>
   <div class="modal-body">
     <div class="detail-grid" *ngIf="dadosDetalhes">
+      <!-- Detalhes da inclusão; benRelacaoDep define titular ('00') ou dependente -->
       <div class="item"><span class="label">Relação Dep.:</span><span class="value">{{ dadosDetalhes.benRelacaoDep }}</span></div>
       <div class="item" *ngIf="dadosDetalhes.benRelacaoDep === '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benCpf }}</span></div>
       <div class="item" *ngIf="dadosDetalhes.benRelacaoDep !== '00'"><span class="label">Titular:</span><span class="value">{{ dadosDetalhes.benTitularCpf }}</span></div>
@@ -161,6 +165,8 @@
     </div>
   </div>
   <div class="modal-footer">
+    <!-- Botão de fallback para completar dependentes do lote (só aparece quando necessário) -->
+    <button class="btn btn-primary btn-sm" *ngIf="podeForcarCompletar()" (click)="forcarCompletar()">Completar dependentes (lote)</button>
     <button class="btn btn-secondary btn-sm" (click)="closeInclusaoDetails()">Fechar</button>
   </div>
 </div>
@@ -194,8 +200,30 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" (click)="confirmarAprovacao()">Aprovar</button>
+      <button class="btn btn-primary" (click)="confirmarAprovacao()" [disabled]="!podeAprovarConfirmacao()">Aprovar</button>
       <button class="btn btn-secondary" (click)="closeApprovalModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div class="modal" [class.show]="showRejectModal" *ngIf="showRejectModal">
+  <div class="modal-content modal-small">
+    <div class="modal-header">
+      <h3 class="modal-title">Confirmar Negação</h3>
+      <button class="modal-close" (click)="closeRejectModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Solicitação:</strong> {{ rejectSolicitacao?.descricao }}</p>
+      <p><strong>CPF:</strong> {{ rejectSolicitacao?.identificador }}</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Observação da Negação</label>
+          <textarea class="input" rows="3" [(ngModel)]="observacaoAprovacao" placeholder="Explique o motivo (opcional)"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeRejectModal()">Revisar</button>
+      <button class="btn btn-primary danger" (click)="confirmarNegacao()">Confirmar Negação</button>
     </div>
   </div>
 </div>

@@ -61,47 +61,67 @@ export class SolicitacaoCadastroComponent implements OnInit {
       return;
     }
     this.loading = true;
-    this.solicitacaoBeneficiarioService.listarTodasPorEmpresa(this.empresaSelecionada.id)
-      .subscribe((solicitacoes: any[]) => {
-        if (solicitacoes && solicitacoes.length > 0) {
+    const toIso = (d: any): string => {
+      try {
+        if (!d) return new Date().toISOString();
+        if (d instanceof Date) return d.toISOString();
+        if (typeof d === 'string') {
+          const m1 = d.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+          if (m1) {
+            const dia = parseInt(m1[1], 10);
+            const mes = parseInt(m1[2], 10) - 1;
+            const ano = parseInt(m1[3], 10);
+            const hora = m1[4] ? parseInt(m1[4], 10) : 0;
+            const min = m1[5] ? parseInt(m1[5], 10) : 0;
+            const seg = m1[6] ? parseInt(m1[6], 10) : 0;
+            return new Date(ano, mes, dia, hora, min, seg).toISOString();
+          }
+          const dt = new Date(d);
+          return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
         }
-        // Mapeia os campos para o front
-          const mapeadas = solicitacoes.map(s => ({
-            ...s,
-            tipo: (s.tipo || '').toLowerCase(),
-            status: mapStatus(s.status),
-            descricao: s.beneficiarioNome || s.descricao || '',
-            identificador: s.beneficiarioCpf || s.identificador || '',
-            data: s.dataSolicitacao || s.data || '',
-            historico: s.historico || []
-          }));
-
-          // Ordenar solicitações por data (nova para velha)
-        const toTime = (d: any): number => {
-          try {
-            if (!d) return 0;
-            if (d instanceof Date) return d.getTime();
-            if (typeof d === 'string') {
-              const dt = new Date(d);
-              return isNaN(dt.getTime()) ? 0 : dt.getTime();
-            }
-            if (typeof d === 'number') return d;
-            const dt = new Date(d);
-            return isNaN(dt.getTime()) ? 0 : dt.getTime();
-          } catch { return 0; }
-        };
-        this.solicitacoes = mapeadas.sort((a, b) => toTime(b.data) - toTime(a.data));
-        // Função utilitária para mapear status do backend para o front
-        function mapStatus(status: string): string {
-          const map: Record<string, string> = {
-            'PENDENTE': 'pendente',
-            'APROVADA': 'concluida',
-            'REJEITADA': 'aguardando',
-            'CANCELADA': 'aguardando'
-          };
-          return map[status?.toUpperCase?.()] || 'pendente';
+        if (typeof d === 'number') return new Date(d).toISOString();
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+      } catch { return new Date().toISOString(); }
+    };
+    const toTime = (d: any): number => {
+      try {
+        if (!d) return 0;
+        if (d instanceof Date) return d.getTime();
+        if (typeof d === 'string') {
+          const dt = new Date(d);
+          return isNaN(dt.getTime()) ? 0 : dt.getTime();
         }
-        // Inicializar ajustes para minhas solicitações
+        if (typeof d === 'number') return d;
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? 0 : dt.getTime();
+      } catch { return 0; }
+    };
+    const mapStatus = (status: string): string => {
+      const map: Record<string, string> = {
+        'PENDENTE': 'pendente',
+        'APROVADA': 'concluida',
+        'REJEITADA': 'aguardando',
+        'CANCELADA': 'aguardando'
+      };
+      return map[status?.toUpperCase?.()] || 'pendente';
+    };
+    const mapear = (solicitacoes: any[]) => solicitacoes.map(s => ({
+      ...s,
+      tipo: (s.tipo || '').toLowerCase(),
+      status: mapStatus(s.status),
+      descricao: s.beneficiarioNome || s.descricao || '',
+      identificador: s.beneficiarioCpf || s.identificador || '',
+      data: toIso(s.dataSolicitacao || s.data || ''),
+      historico: s.historico || []
+    })).sort((a, b) => toTime(b.data) - toTime(a.data));
+    const cached = this.solicitacaoBeneficiarioService.getCached();
+    if (Array.isArray(cached) && cached.length > 0) {
+      this.solicitacoes = mapear(cached);
+    }
+    this.solicitacaoBeneficiarioService.refresh(this.empresaSelecionada.id).subscribe({
+      next: (lista) => {
+        this.solicitacoes = mapear(lista);
         for (const s of this.minhasSolicitacoes) {
           const saved = localStorage.getItem(this.keyFor(s.id));
           if (saved) {
@@ -115,11 +135,15 @@ export class SolicitacaoCadastroComponent implements OnInit {
           }
         }
         this.loading = false;
-      }, (err) => {
+      },
+      error: (err) => {
         console.error('[API] erro ao buscar solicitações:', err);
-        this.solicitacoes = [];
+        if (!Array.isArray(cached) || cached.length === 0) {
+          this.solicitacoes = [];
+        }
         this.loading = false;
-      });
+      }
+    });
   }
 
   get minhasSolicitacoes(): Solicitacao[] {
@@ -157,10 +181,37 @@ export class SolicitacaoCadastroComponent implements OnInit {
           try {
             
             const toIso = (d: any): string => {
-              if (!d) return new Date().toISOString();
-              if (d instanceof Date) return d.toISOString();
-              if (typeof d === 'string') return d;
-              try { return new Date(d).toISOString(); } catch { return new Date().toISOString(); }
+              try {
+                if (!d) return new Date().toISOString();
+                if (d instanceof Date) return d.toISOString();
+                if (typeof d === 'string') {
+                  const m1 = d.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+                  if (m1) {
+                    const dia = parseInt(m1[1], 10);
+                    const mes = parseInt(m1[2], 10) - 1;
+                    const ano = parseInt(m1[3], 10);
+                    const hora = m1[4] ? parseInt(m1[4], 10) : 0;
+                    const min = m1[5] ? parseInt(m1[5], 10) : 0;
+                    const seg = m1[6] ? parseInt(m1[6], 10) : 0;
+                    return new Date(ano, mes, dia, hora, min, seg).toISOString();
+                  }
+                  const m2 = d.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{3}))?)?$/);
+                  if (m2) {
+                    const ano = parseInt(m2[1], 10);
+                    const mes = parseInt(m2[2], 10) - 1;
+                    const dia = parseInt(m2[3], 10);
+                    const hora = parseInt(m2[4], 10);
+                    const min = parseInt(m2[5], 10);
+                    const seg = m2[6] ? parseInt(m2[6], 10) : 0;
+                    return new Date(ano, mes, dia, hora, min, seg).toISOString();
+                  }
+                  const dt = new Date(d);
+                  return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+                }
+                if (typeof d === 'number') return new Date(d).toISOString();
+                const dt = new Date(d);
+                return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+              } catch { return new Date().toISOString(); }
             };
             const m = (e: any) => ({
               valorNovo: String(e?.valorNovo ?? ''),

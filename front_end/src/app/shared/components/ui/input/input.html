@@ -9,7 +9,7 @@
   [name]="name"
   [step]="step"
   [min]="min"
-  [attr.maxlength]="maxlength ?? null"
+  [attr.maxlength]="onlyDigits ? null : (maxlength ?? null)"
   [value]="value"
   (input)="onInput($event)"
   (keydown)="onKeyDown($event)"

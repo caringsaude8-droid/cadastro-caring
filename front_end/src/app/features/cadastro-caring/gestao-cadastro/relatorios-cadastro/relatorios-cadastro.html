@@ -65,7 +65,7 @@
         <tr *ngFor="let r of filtered">
           <td>{{ r.nomeSegurado }}</td>
           <td>{{ r.cpf }}</td>
-          <td>{{ r.relacaoDep }}</td>
+          <td>{{ r.relacaoDepLabel || r.relacaoDep }}</td>
           <td>{{ r.planoProd }}</td>
           <td>{{ r.dataInclusao }}</td>
           <td>{{ r.dataExclusao }}</td>

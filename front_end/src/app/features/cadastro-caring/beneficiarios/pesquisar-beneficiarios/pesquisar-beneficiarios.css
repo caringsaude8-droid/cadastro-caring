@@ -415,14 +415,16 @@
 
 /* Estados desabilitados para botões */
 .btn-primary:disabled,
-.btn-secondary:disabled {
+.btn-secondary:disabled,
+.btn-info:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none !important;
 }
 
 .btn-primary:disabled:hover,
-.btn-secondary:disabled:hover {
+.btn-secondary:disabled:hover,
+.btn-info:disabled:hover {
     background: #c2111a;
     transform: none;
 }

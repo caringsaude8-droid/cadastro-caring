@@ -30,6 +30,8 @@ export class AprovacaoCadastroComponent {
 
   showBenefDetails = false;
   benefDetalhes: any = null;
+  showToastMessage = false;
+  toastMessage = '';
 
   // Modal de aprovação para inclusão
   showApprovalModal = false;
@@ -38,17 +40,51 @@ export class AprovacaoCadastroComponent {
     benCodCartao: '',
     benCodUnimedSeg: ''
   };
+  showRejectModal = false;
+  rejectSolicitacao: Solicitacao | null = null;
 
   constructor(private aprovacao: AprovacaoService, private beneficiarios: BeneficiariosService, private solicitacoesService: SolicitacaoBeneficiarioService) {
     // Carregar todas as solicitações ao inicializar
     this.aprovacao.atualizarSolicitacoes();
+    this.aprovacao.completar$.subscribe(ev => {
+      if (!ev) return;
+      this.toastMessage = `${ev.count} dependente completado (lote ${ev.grupoId})`;
+      this.showToastMessage = true;
+      setTimeout(() => { this.showToastMessage = false; }, 2000);
+      const evIdAny: any = ev.solicitacaoId;
+      const evIdNum = typeof evIdAny === 'number' ? evIdAny : parseInt(String(evIdAny || '0'), 10);
+      if (this.selected && !isNaN(evIdNum)) {
+        const selIdNum = parseInt(String(this.selected.id || '0'), 10);
+        if (!isNaN(selIdNum) && selIdNum === evIdNum) {
+          this.solicitacoesService.buscarPorId(evIdNum).subscribe({
+            next: (det: any) => {
+              try {
+                const raw = det?.dadosJson ? JSON.parse(det.dadosJson) : null;
+                const dp = raw?.dadosPropostos ?? raw ?? {};
+                this.dadosDetalhes = dp;
+                const newSelected: any = { ...this.selected };
+                newSelected.dadosJson = det?.dadosJson;
+                this.selected = newSelected;
+              } catch {}
+            },
+            error: () => {}
+          });
+        }
+      }
+    });
   }
 
   get lista(): Solicitacao[] {
     const filtered = this.aprovacao.list().filter(s => {
       const mt = !this.filtroTipo || s.tipo === this.filtroTipo;
       const ms = !this.filtroStatus || s.status === this.filtroStatus as any;
-      const tt = !this.termo || `${s.identificador} ${s.descricao} ${s.solicitante} ${s.codigoEmpresa || ''}`.toLowerCase().includes(this.termo.toLowerCase());
+      const needle = (this.termo || '').trim().toLowerCase();
+      const ndigits = needle.replace(/\D/g, '');
+      const base = `${s.identificador} ${s.descricao} ${s.solicitante} ${s.codigoEmpresa || ''}`.toLowerCase();
+      const idNorm = String(s.identificador || '').replace(/\D/g, '');
+      const dRaw = String(s.data || '').toLowerCase();
+      const dt = (() => { try { const d = new Date(s.data as any); if (isNaN(d.getTime())) return ''; const p = (n: number) => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`.toLowerCase(); } catch { return ''; } })();
+      const tt = !needle || base.includes(needle) || (!!ndigits && idNorm.includes(ndigits)) || dRaw.includes(needle) || (!!dt && dt.includes(needle));
       return mt && ms && tt;
     });
 
@@ -70,6 +106,7 @@ export class AprovacaoCadastroComponent {
     return filtered.sort((a, b) => toTime(b.data) - toTime(a.data));
   }
 
+  // Ao aprovar inclusão, abre modal para permitir preencher códigos adicionais (cartão, unimed)
   aprovar(id: string) {
     const s = this.aprovacao.list().find(x => x.id === id);
     if (!s) return;
@@ -105,6 +142,7 @@ export class AprovacaoCadastroComponent {
     this.processarAprovacao(id);
   }
 
+  // Processa aprovação chamando o serviço e, para inclusão, ativa o beneficiário e dispara completar dependentes do lote
   processarAprovacao(id: string, dadosAdicionais?: any) {
     const s = this.aprovacao.list().find(x => x.id === id);
     
@@ -130,6 +168,8 @@ export class AprovacaoCadastroComponent {
             const m = beneficiarios.find(b => (b.cpf || '').replace(/\D/g, '') === cpfId);
             if (m?.id) {
               aplicarAtualizacao(m.id);
+              const obs = (s.observacoesSolicitacao || (s as any).observacao || '') as string;
+              void obs;
               return;
             }
             // Fallback: usa listRaw para garantir que encontre o registro recém-criado
@@ -138,13 +178,19 @@ export class AprovacaoCadastroComponent {
                 const raw = lista.find(x => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpfId);
                 if (raw?.id) {
                   aplicarAtualizacao(raw.id);
+                  const obs = (s.observacoesSolicitacao || (s as any).observacao || '') as string;
+                  void obs;
                 } else {
                   // Tenta novamente após pequeno delay (processamento de back-end)
                   setTimeout(() => {
                     this.beneficiarios.listRaw().subscribe({
                       next: (lista2: any[]) => {
                         const raw2 = lista2.find(x => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpfId);
-                        if (raw2?.id) aplicarAtualizacao(raw2.id);
+                        if (raw2?.id) {
+                          aplicarAtualizacao(raw2.id);
+                          const obs = (s.observacoesSolicitacao || (s as any).observacao || '') as string;
+                          void obs;
+                        }
                         else console.warn('⚠️ Beneficiário não encontrado após aprovação:', s.identificador);
                       },
                       error: (e) => console.error('❌ Erro no fallback listRaw:', e)
@@ -249,6 +295,7 @@ export class AprovacaoCadastroComponent {
     }
   }
 
+  // Abre modal de detalhes da solicitação; carrega histórico e normaliza datas para o DatePipe
   openDetails(s: Solicitacao) {
     this.selected = s;
     this.observacaoAprovacao = '';
@@ -256,6 +303,7 @@ export class AprovacaoCadastroComponent {
     this.showInclusaoDetails = false;
     this.historicoCompleto = [];
     this.enriquecerTitularInfo();
+    this.enriquecerStatusInclusao();
     try {
       const saved = localStorage.getItem(`solicitacaoAjustes:${s.id}`);
       const parsed = saved ? JSON.parse(saved) : null;
@@ -270,10 +318,27 @@ export class AprovacaoCadastroComponent {
           try {
             
             const toIso = (d: any): string => {
-              if (!d) return new Date().toISOString();
-              if (d instanceof Date) return d.toISOString();
-              if (typeof d === 'string') return d;
-              try { return new Date(d).toISOString(); } catch { return new Date().toISOString(); }
+              try {
+                if (!d) return new Date().toISOString();
+                if (d instanceof Date) return d.toISOString();
+                if (typeof d === 'string') {
+                  const m1 = d.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+                  if (m1) {
+                    const dia = parseInt(m1[1], 10);
+                    const mes = parseInt(m1[2], 10) - 1;
+                    const ano = parseInt(m1[3], 10);
+                    const hora = m1[4] ? parseInt(m1[4], 10) : 0;
+                    const min = m1[5] ? parseInt(m1[5], 10) : 0;
+                    const seg = m1[6] ? parseInt(m1[6], 10) : 0;
+                    return new Date(ano, mes, dia, hora, min, seg).toISOString();
+                  }
+                  const dt = new Date(d);
+                  return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+                }
+                if (typeof d === 'number') return new Date(d).toISOString();
+                const dt = new Date(d);
+                return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+              } catch { return new Date().toISOString(); }
             };
             const m = (e: any) => ({
               valorNovo: String(e?.valorNovo ?? ''),
@@ -299,10 +364,44 @@ export class AprovacaoCadastroComponent {
           } catch {}
         },
         error: () => {}
-      });
+    });
     }
   }
 
+  private enriquecerStatusInclusao() {
+    try {
+      const cpf = String(this.dadosDetalhes?.benCpf || this.selected?.identificador || '').replace(/\D/g, '');
+      if (!cpf) return;
+      this.beneficiarios.listRaw().subscribe({
+        next: (lista: any[]) => {
+          const b = lista.find(x => ((x.cpf || x.benCpf || '').replace(/\D/g, '')) === cpf);
+          if (b) {
+            const status = b.benStatus || 'ATIVO';
+            const matricula = b.benMatricula || b.matricula_beneficiario || '';
+            const d = this.dadosDetalhes || {};
+            const rel = String(d?.benRelacaoDep || '').trim();
+            const lbl = String(d?.benRelacaoDepLabel || '').toLowerCase();
+            const isDependente = rel !== '00' && lbl !== 'titular';
+            const mergeCodes = !isDependente || this.selected?.status === 'concluida';
+            const codUnimed = mergeCodes ? (b.benCodUnimedSeg || b.cod_unimed_seg || '') : (d.benCodUnimedSeg || '');
+            const codCartao = mergeCodes ? (b.benCodCartao || b.cod_cartao || '') : (d.benCodCartao || '');
+            this.dadosDetalhes = { 
+              ...d,
+              benStatus: status,
+              benMatricula: d.benMatricula || matricula,
+              benCodUnimedSeg: codUnimed,
+              benCodCartao: codCartao
+            };
+          } else if (this.selected?.status === 'concluida' && this.dadosDetalhes) {
+            this.dadosDetalhes = { ...this.dadosDetalhes, benStatus: 'ATIVO' };
+          }
+        },
+        error: () => {}
+      });
+    } catch {}
+  }
+
+  // Quando a inclusão é de dependente, enriquece dados do titular (nome/cpf) via listRaw pelo benTitularId
   private async enriquecerTitularInfo() {
     try {
       const d = this.dadosDetalhes as any;
@@ -380,6 +479,10 @@ export class AprovacaoCadastroComponent {
 
   confirmarAprovacao() {
     if (!this.approvalSolicitacao) return;
+    if (!this.podeAprovarConfirmacao()) {
+      alert('Relação de dependência ausente para dependente em modo lote. Aprove o titular primeiro.');
+      return;
+    }
     
     // Criar objeto com dados adicionais para aprovação
     const dadosAprovacao: any = {};
@@ -409,27 +512,84 @@ export class AprovacaoCadastroComponent {
       benCodUnimedSeg: ''
     };
   }
-
-  aceitarSelecionado() {
-    if (!this.selected || this.selected.status === 'concluida') return;
-    this.aprovar(this.selected.id);
+  closeRejectModal() {
+    this.showRejectModal = false;
+    this.rejectSolicitacao = null;
   }
-
-  negarSelecionado() {
-    if (!this.selected || this.selected.status === 'concluida') return;
-    this.aprovacao.updateStatus(this.selected.id, 'aguardando', this.observacaoAprovacao || '');
-    // Adiciona observação ao histórico local
-    if (this.selected) {
-      if (!this.selected.historico) this.selected.historico = [];
-      this.selected.historico.push({
-        data: new Date().toISOString(),
-        status: 'aguardando',
-        observacao: this.observacaoAprovacao || 'Negação sem observação.'
-      });
-    }
+  // Modal de confirmação para negar; atualiza status para 'aguardando' e registra histórico local
+  confirmarNegacao() {
+    if (!this.rejectSolicitacao) return;
+    this.aprovacao.updateStatus(this.rejectSolicitacao.id, 'aguardando', this.observacaoAprovacao || '');
+    if (!this.rejectSolicitacao.historico) this.rejectSolicitacao.historico = [];
+    this.rejectSolicitacao.historico.push({
+      data: new Date().toISOString(),
+      status: 'aguardando',
+      observacao: this.observacaoAprovacao || 'Negação sem observação.'
+    });
+    this.closeRejectModal();
     this.closeDetails();
     this.atualizarLista();
     this.observacaoAprovacao = '';
+  }
+
+  aceitarSelecionado() {
+    if (!this.selected || this.selected.status === 'concluida') return;
+    if (!this.podeAprovarSelecionado()) return;
+    this.aprovar(this.selected.id);
+  }
+
+  // Abre modal de confirmação de negação; evita cliques acidentais
+  negarSelecionado() {
+    if (!this.selected || this.selected.status === 'concluida') return;
+    this.rejectSolicitacao = this.selected;
+    this.showRejectModal = true;
+  }
+  // bloqueia o aceite de dependente sem relação dep.
+  // Obtém o código benRelacaoDep da inclusão selecionada a partir de dadosPropostos/dadosJson
+  private obterRelacaoDepDaSelecionada(): string {
+    try {
+      const rel = String(this.dadosDetalhes?.benRelacaoDep ?? '').trim();
+      if (rel) return rel;
+      const raw = this.selected?.dadosJson;
+      if (raw) {
+        const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const dp = obj?.dadosPropostos ?? obj;
+        return String(dp?.benRelacaoDep ?? '').trim();
+      }
+    } catch {}
+    return '';
+  }
+
+  // Em modo lote, bloqueia aprovação de dependente sem relação de dependência definida (não é titular e rel vazia)
+  private isRelacaoDepMissingFor(selected: Solicitacao | null): boolean {
+    if (!selected || selected.tipo !== 'inclusao') return false;
+    const rel = this.obterRelacaoDepDaSelecionada();
+    const label = (() => {
+      try {
+        const l1 = String(this.dadosDetalhes?.benRelacaoDepLabel ?? '').toLowerCase();
+        if (l1) return l1;
+        const raw = selected?.dadosJson;
+        if (raw) {
+          const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          const dp = obj?.dadosPropostos ?? obj;
+          return String(dp?.benRelacaoDepLabel ?? '').toLowerCase();
+        }
+      } catch {}
+      return '';
+    })();
+    if (rel === '00') return false;
+    if (label && label !== 'titular' && rel === '') return true;
+    return false;
+  }
+
+  podeAprovarSelecionado(): boolean {
+    if (!this.selected) return false;
+    if (this.selected.status !== 'pendente') return false;
+    return !this.isRelacaoDepMissingFor(this.selected);
+  }
+
+  podeAprovarConfirmacao(): boolean {
+    return !this.isRelacaoDepMissingFor(this.approvalSolicitacao);
   }
 
   baixarAnexo(idx: number) {
@@ -444,6 +604,7 @@ export class AprovacaoCadastroComponent {
   /**
    * Atualizar lista de solicitações manualmente
    */
+  // Atualiza lista manualmente e dá feedback de carregamento
   atualizarLista() {
     this.carregando = true;
     this.aprovacao.atualizarSolicitacoes();
@@ -454,8 +615,25 @@ export class AprovacaoCadastroComponent {
     }, 1000);
   }
 
+  // Após ações, força refresh da lista com leve atraso
   private refreshAfterAction() {
     setTimeout(() => this.atualizarLista(), 800);
     setTimeout(() => this.atualizarLista(), 2000);
+  }
+  // Exibe botão de completar dependentes (lote) apenas quando há lote, dependente sem relação e sem vinculoOk
+  podeForcarCompletar(): boolean {
+    if (!this.selected || this.selected.tipo !== 'inclusao') return false;
+    const rel = this.obterRelacaoDepDaSelecionada();
+    if (rel === '00') return false;
+    const obs = (this.selected.observacoesSolicitacao || (this.selected as any).observacao || '') as string;
+    const isLote = /\[Lote:/.test(obs);
+    const vinculoFeito = !!this.dadosDetalhes?.benTitularId && !!this.dadosDetalhes?.benMatricula && !!this.dadosDetalhes?.benRelacaoDep;
+    return isLote && !vinculoFeito && (rel === '' || rel === undefined);
+  }
+  // Aciona manualmente a rotina de completar dependentes do lote como fallback
+  forcarCompletar() {
+    if (!this.selected) return;
+    this.aprovacao.forcarCompletarDependentes(this.selected, this.dadosDetalhes);
+    this.refreshAfterAction();
   }
 }

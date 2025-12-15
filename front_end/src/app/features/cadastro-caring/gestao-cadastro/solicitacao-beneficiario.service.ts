@@ -52,6 +52,9 @@ export interface ProcessarSolicitacaoRequest {
   providedIn: 'root'
 })
 export class SolicitacaoBeneficiarioService {
+  private solicitacoesSubject = new BehaviorSubject<SolicitacaoBeneficiario[]>([]);
+  private cachedEmpresaId: number | null = null;
+  public solicitacoes$ = this.solicitacoesSubject.asObservable();
 
     /**
      * Listar todas as solicitações - GET /api/cadastro/v1/solicitacoes
@@ -88,10 +91,53 @@ export class SolicitacaoBeneficiarioService {
     /**
      * Listar solicitações compatíveis por empresa
      */
-    obterSolicitacoesCompatibilidadePorEmpresa(empresaId: number): Observable<any[]> {
-      return this.listarPendentesPorEmpresa(empresaId).pipe(
-        map((solicitacoes: SolicitacaoBeneficiario[]) => 
-          solicitacoes.map(s => ({
+  obterSolicitacoesCompatibilidadePorEmpresa(empresaId: number): Observable<any[]> {
+    return this.listarPendentesPorEmpresa(empresaId).pipe(
+      map((solicitacoes: SolicitacaoBeneficiario[]) => 
+          solicitacoes.map(s => {
+            // Converte datas de dd/MM/yyyy [HH:mm] para ISO, evitando erros do DatePipe
+            const toIso = (d: any): string => {
+              try {
+                if (!d) return new Date().toISOString();
+                if (d instanceof Date) return d.toISOString();
+                if (typeof d === 'string') {
+                  // dd/MM/yyyy HH:mm[:ss]
+                  const m1 = d.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+                  if (m1) {
+                    const dia = parseInt(m1[1], 10);
+                    const mes = parseInt(m1[2], 10) - 1;
+                    const ano = parseInt(m1[3], 10);
+                    const hora = m1[4] ? parseInt(m1[4], 10) : 0;
+                    const min = m1[5] ? parseInt(m1[5], 10) : 0;
+                    const seg = m1[6] ? parseInt(m1[6], 10) : 0;
+                    return new Date(ano, mes, dia, hora, min, seg).toISOString();
+                  }
+                  // yyyy-MM-dd HH:mm:ss[.SSS]
+                  const m2 = d.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{3}))?)?$/);
+                  if (m2) {
+                    const ano = parseInt(m2[1], 10);
+                    const mes = parseInt(m2[2], 10) - 1;
+                    const dia = parseInt(m2[3], 10);
+                    const hora = parseInt(m2[4], 10);
+                    const min = parseInt(m2[5], 10);
+                    const seg = m2[6] ? parseInt(m2[6], 10) : 0;
+                    // Ignora milissegundos para consistência
+                    return new Date(ano, mes, dia, hora, min, seg).toISOString();
+                  }
+                  const dt = new Date(d);
+                  return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+                }
+                if (typeof d === 'number') return new Date(d).toISOString();
+                const dt = new Date(d);
+                return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+              } catch { return new Date().toISOString(); }
+            };
+            let dadosPropostos: any = undefined;
+            try {
+              const dadosObj = s?.dadosJson ? JSON.parse(s.dadosJson) : null;
+              dadosPropostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
+            } catch { dadosPropostos = undefined; }
+            return {
             id: s.id?.toString() || '',
             tipo: s.tipo.toLowerCase() as any,
             entidade: 'Beneficiário',
@@ -99,11 +145,14 @@ export class SolicitacaoBeneficiarioService {
             descricao: `${s.beneficiarioNome} - ${this.getTipoTexto(s.tipo)}`,
             solicitante: s.usuarioSolicitanteNome,
             codigoEmpresa: s['empresaId'] || '',
-            data: s.dataSolicitacao?.toString() || new Date().toISOString(),
+            data: toIso(s.dataSolicitacao),
           status: this.convertStatusParaAntigo(s.status || 'PENDENTE'),
             observacao: '',
-            historico: []
-          }))
+            historico: [],
+            dadosJson: s.dadosJson,
+            dadosPropostos
+          };
+          })
         )
       );
     }
@@ -169,6 +218,44 @@ export class SolicitacaoBeneficiarioService {
     );
   }
 
+  getCached(): SolicitacaoBeneficiario[] {
+    return this.solicitacoesSubject.value;
+  }
+
+  refresh(empresaId?: number): Observable<SolicitacaoBeneficiario[]> {
+    const params = empresaId ? new HttpParams().set('empresaId', String(empresaId)) : undefined;
+    const obs = empresaId
+      ? this.http.get<SolicitacaoBeneficiario[]>(this.baseUrl, { params }).pipe(catchError(() => of([])))
+      : this.http.get<SolicitacaoBeneficiario[]>(this.baseUrl).pipe(catchError(() => of([])));
+    return obs.pipe(
+      map(lista => {
+        this.cachedEmpresaId = empresaId ?? null;
+        const arr = Array.isArray(lista) ? lista : [];
+        this.solicitacoesSubject.next(arr);
+        return arr;
+      })
+    );
+  }
+
+  /**
+   * Atualizar dados propostos de uma solicitação
+   * PUT /api/cadastro/v1/solicitacoes/{id}/dados-propostos
+   * O corpo da requisição deve ser o novo JSON para o campo dadosJson
+   */
+  atualizarDadosPropostos(id: number, dadosJson: string): Observable<SolicitacaoBeneficiario> {
+    // PUT parcial para atualizar apenas os dadosPropostos (sem alterar status)
+    const url = `${this.baseUrl}/${id}/dados-propostos`;
+    return this.http.put<SolicitacaoBeneficiario>(url, dadosJson, {
+      headers: { 'Content-Type': 'application/json' }
+    }).pipe(
+      tap(() => {}),
+      catchError(error => {
+        console.error('❌ Erro ao atualizar dados propostos:', error);
+        throw error;
+      })
+    );
+  }
+
   /**
    * Método para compatibility com AprovacaoService existente
    * Converte SolicitacaoBeneficiario para Solicitacao (formato antigo)
@@ -176,25 +263,71 @@ export class SolicitacaoBeneficiarioService {
   obterSolicitacoesCompatibilidade(): Observable<any[]> {
     return this.listarTodas().pipe(
       map((solicitacoes: SolicitacaoBeneficiario[]) => 
-        solicitacoes.map(s => ({
+        solicitacoes.map(s => {
+          // Normaliza datas no fluxo de compatibilidade também
+          const toIso = (d: any): string => {
+            try {
+              if (!d) return new Date().toISOString();
+              if (d instanceof Date) return d.toISOString();
+              if (typeof d === 'string') {
+                // dd/MM/yyyy HH:mm[:ss]
+                const m1 = d.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+                if (m1) {
+                  const dia = parseInt(m1[1], 10);
+                  const mes = parseInt(m1[2], 10) - 1;
+                  const ano = parseInt(m1[3], 10);
+                  const hora = m1[4] ? parseInt(m1[4], 10) : 0;
+                  const min = m1[5] ? parseInt(m1[5], 10) : 0;
+                  const seg = m1[6] ? parseInt(m1[6], 10) : 0;
+                  return new Date(ano, mes, dia, hora, min, seg).toISOString();
+                }
+                // yyyy-MM-dd HH:mm:ss[.SSS]
+                const m2 = d.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{3}))?)?$/);
+                if (m2) {
+                  const ano = parseInt(m2[1], 10);
+                  const mes = parseInt(m2[2], 10) - 1;
+                  const dia = parseInt(m2[3], 10);
+                  const hora = parseInt(m2[4], 10);
+                  const min = parseInt(m2[5], 10);
+                  const seg = m2[6] ? parseInt(m2[6], 10) : 0;
+                  return new Date(ano, mes, dia, hora, min, seg).toISOString();
+                }
+                const dt = new Date(d);
+                return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+              }
+              if (typeof d === 'number') return new Date(d).toISOString();
+              const dt = new Date(d);
+              return isNaN(dt.getTime()) ? new Date().toISOString() : dt.toISOString();
+            } catch { return new Date().toISOString(); }
+          };
+          let dadosPropostos: any = undefined;
+          try {
+            const dadosObj = s?.dadosJson ? JSON.parse(s.dadosJson) : null;
+            dadosPropostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
+          } catch { dadosPropostos = undefined; }
+          return {
           id: s.id?.toString() || '',
           tipo: s.tipo.toLowerCase() as any,
           entidade: 'Beneficiário',
           identificador: s.beneficiarioCpf,
           descricao: `${s.beneficiarioNome} - ${this.getTipoTexto(s.tipo)}`,
           solicitante: s.usuarioSolicitanteNome,
-          codigoEmpresa: '', // TODO: Adicionar empresa_id na API
-          data: s.dataSolicitacao?.toString() || new Date().toISOString(),
+          codigoEmpresa: '', // TODO: Adicionar empresa_id na API quando disponível
+          data: toIso(s.dataSolicitacao),
           status: this.convertStatusParaAntigo(s.status || 'PENDENTE'),
           observacoesSolicitacao: s.observacoesSolicitacao,
           observacoesAprovacao: s.observacoesAprovacao,
-          historico: []
-        }))
+          historico: [],
+          dadosJson: s.dadosJson,
+          dadosPropostos
+        };
+        })
       )
     );
   }
 
   private getTipoTexto(tipo: string): string {
+    // Mapeia tipos da API para labels amigáveis
     const tipos = {
       'INCLUSAO': 'Inclusão',
       'ALTERACAO': 'Alteração', 
@@ -204,6 +337,7 @@ export class SolicitacaoBeneficiarioService {
   }
 
   private convertStatusParaAntigo(status: string): string {
+    // Converte status novos da API para os usados na UI antiga
     const statusMap = {
       'PENDENTE': 'pendente',
       'APROVADA': 'concluida',

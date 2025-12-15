@@ -54,7 +54,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
               try { refreshSubject?.error(refreshError); } catch (_) {}
               refreshSubject = null;
               errorService.notifyHttp(refreshError);
-              authService.forceReauth();
               return throwError(() => error);
             })
           );

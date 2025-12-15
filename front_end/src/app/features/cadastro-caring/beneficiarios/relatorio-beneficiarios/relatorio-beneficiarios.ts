@@ -31,10 +31,40 @@ export class RelatorioBeneficiariosComponent implements OnInit {
     this.empresaSelecionada = this.empresaContextService.getEmpresaSelecionada();
     this.loading = true;
     const empresaId = this.empresaSelecionada?.id || null;
-    this.beneficiarios.listRaw(empresaId || undefined).subscribe({
+    const empId = this.empresaSelecionada?.id || null;
+    const empCodSel = this.empresaSelecionada?.codigoEmpresa || '';
+    const cached = this.beneficiarios.getRawCached();
+    if (Array.isArray(cached) && cached.length > 0) {
+      const filtradosCached = (cached || []).filter((raw: any) => {
+        const rEmpId = raw.benEmpId ?? raw.empId ?? raw.empresaId ?? raw.ben_emp_id ?? raw.emp_id;
+        const rEmpCod = raw.codigoEmpresa ?? raw.empCodigo ?? raw.codigo_empresa;
+        if (empId != null && rEmpId != null) return Number(rEmpId) === Number(empId);
+        if (empCodSel && rEmpCod != null) return String(rEmpCod) === String(empCodSel);
+        return true;
+      });
+      const mappedCached: Beneficiario[] = filtradosCached.map((raw: any) => ({
+        id: raw.id,
+        nome: raw.nome || raw.benNomeSegurado || '',
+        cpf: raw.cpf || raw.benCpf || '',
+        nascimento: raw.nascimento || (raw.benDtaNasc || ''),
+        data_inclusao: this.parseApiDate(raw.data_inclusao || raw.benDtaInclusao) || new Date(),
+        data_exclusao: this.parseApiDate(raw.data_exclusao || raw.benDtaExclusao),
+        tipo_dependencia: raw.tipo_dependencia || (raw.benRelacaoDep === '00' ? 'titular' : 'dependente'),
+        acomodacao: raw.acomodacao || this.mapearAcomodacao(raw.benPlanoProd),
+        matricula_beneficiario: raw.matricula_beneficiario || raw.benMatricula || '',
+        matricula_titular: raw.matricula_titular || '',
+        celular: raw.celular || raw.benDddCel || '',
+        email: raw.email || raw.benEmail || '',
+        benStatus: raw.benStatus || 'Ativo'
+      }));
+      this.data = mappedCached;
+      this.filtered = mappedCached;
+      this.statusDisponiveis = Array.from(new Set(mappedCached.map(r => r.benStatus).filter(Boolean)));
+      this.updateStats();
+      // Mantém loading enquanto atualiza com a API
+    }
+    this.beneficiarios.refreshRaw(empresaId || undefined).subscribe({
       next: (rawRows: any[]) => {
-        const empId = this.empresaSelecionada?.id || null;
-        const empCodSel = this.empresaSelecionada?.codigoEmpresa || '';
         const filtrados = (rawRows || []).filter((raw: any) => {
           const rEmpId = raw.benEmpId ?? raw.empId ?? raw.empresaId ?? raw.ben_emp_id ?? raw.emp_id;
           const rEmpCod = raw.codigoEmpresa ?? raw.empCodigo ?? raw.codigo_empresa;
@@ -63,7 +93,10 @@ export class RelatorioBeneficiariosComponent implements OnInit {
         this.updateStats();
         this.loading = false;
       },
-      error: () => { this.error = 'Erro ao carregar beneficiários'; this.loading = false; }
+      error: () => { 
+        this.error = 'Erro ao carregar beneficiários'; 
+        this.loading = false; 
+      }
     });
   }
 
@@ -82,24 +115,77 @@ export class RelatorioBeneficiariosComponent implements OnInit {
   }
 
   exportarCsv(): void {
-    const header = ['Nome','CPF','Nascimento','Data Inclusão','Data Exclusão','Tipo Dependência','Acomodação','Matrícula','Status'];
-    const linhas = this.filtered.map(r => [
-      r.nome || '',
-      r.cpf || '',
-      r.nascimento || '',
-      r.data_inclusao ? new Date(r.data_inclusao).toISOString().split('T')[0] : '',
-      r.data_exclusao ? new Date(r.data_exclusao).toISOString().split('T')[0] : '',
-      r.tipo_dependencia || '',
-      r.acomodacao || '',
-      r.matricula_beneficiario || '',
-      r.benStatus || ''
-    ]);
-    const csv = [header.join(','), ...linhas.map(l => l.map(v => `"${(v || '').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
-    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+    const estilo = `
+      <style>
+        table { border-collapse: collapse; width: 100%; font-family: Calibri, Arial, sans-serif; table-layout: fixed; }
+        th, td { border: 1px solid #cfd8dc; padding: 8px 10px; font-size: 11.5pt; color: #263238; }
+        th { 
+          background: #0b5fa4;
+          color: #ffffff; 
+          font-weight: 700; 
+          text-align: center; 
+          letter-spacing: 0.2px;
+          border-bottom: 2px solid #063a6b;
+        }
+        .cell-left { text-align: left; }
+        .cell-right { text-align: right; }
+        .cell-center { text-align: center; }
+        .mso-text { mso-number-format:'@'; }
+        .row-alt { background: #fafafa; }
+        .col-nome { width: 360px; }
+        .col-cpf { width: 160px; }
+        .col-nasc { width: 120px; }
+        .col-data { width: 120px; }
+        .col-tipo { width: 140px; }
+        .col-acom { width: 140px; }
+        .col-mat { width: 140px; }
+        .col-status { width: 120px; }
+        .clip { display: block; white-space: nowrap; overflow: hidden; }
+      </style>
+    `;
+    const thStyle = `style="background:#0b5fa4;color:#ffffff;font-weight:700;text-align:center;border-bottom:2px solid #063a6b;padding:8px 10px"`;
+    const header = `
+      <tr>
+        <th ${thStyle} class="col-nome" bgcolor="#0b5fa4">Nome</th>
+        <th ${thStyle} class="col-cpf" bgcolor="#0b5fa4">CPF</th>
+        <th ${thStyle} class="col-nasc" bgcolor="#0b5fa4">Nascimento</th>
+        <th ${thStyle} class="col-data" bgcolor="#0b5fa4">Data Inclusão</th>
+        <th ${thStyle} class="col-data" bgcolor="#0b5fa4">Data Exclusão</th>
+        <th ${thStyle} class="col-tipo" bgcolor="#0b5fa4">Tipo Dependência</th>
+        <th ${thStyle} class="col-acom" bgcolor="#0b5fa4">Acomodação</th>
+        <th ${thStyle} class="col-mat" bgcolor="#0b5fa4">Matrícula</th>
+        <th ${thStyle} class="col-status" bgcolor="#0b5fa4">Status</th>
+      </tr>
+    `;
+    const linhas = this.filtered.map((r, i) => `
+      <tr class="${i % 2 === 1 ? 'row-alt' : ''}">
+        <td class="cell-left"><div class="clip" style="width:100%">${(r.nome || '').toString()}</div></td>
+        <td class="cell-right mso-text" style="mso-number-format:'@'">${(r.cpf || '').toString()}</td>
+        <td class="cell-center">${(r.nascimento || '').toString()}</td>
+        <td class="cell-center">${this.formatDateBR(r.data_inclusao)}</td>
+        <td class="cell-center">${this.formatDateBR(r.data_exclusao)}</td>
+        <td class="cell-center">${(r.tipo_dependencia || '').toString()}</td>
+        <td class="cell-left">${(r.acomodacao || '').toString()}</td>
+        <td class="cell-right mso-text" style="mso-number-format:'@'">${(r.matricula_beneficiario || '').toString()}</td>
+        <td class="cell-center">${(r.benStatus || '').toString()}</td>
+      </tr>
+    `).join('');
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="UTF-8">${estilo}</head>
+        <body>
+          <table>
+            ${header}
+            ${linhas}
+          </table>
+        </body>
+      </html>
+    `;
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=UTF-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'relatorio-beneficiarios.csv';
+    a.download = 'relatorio-beneficiarios.xls';
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -111,12 +197,20 @@ export class RelatorioBeneficiariosComponent implements OnInit {
     this.filtered = this.data;
     this.updateStats();
   }
+  exportarExcel(): void { this.exportarCsv(); }
 
   private updateStats(): void {
     const total = this.filtered.length;
     const ativos = this.filtered.filter(r => (r.benStatus || '').toLowerCase() === 'ativo').length;
     const inativos = this.filtered.filter(r => (r.benStatus || '').toLowerCase() !== 'ativo').length;
     this.stats = { total, ativos, inativos };
+  }
+  private formatDateBR(d: Date | null): string {
+    if (!d) return '';
+    const dd = ('0' + d.getDate()).slice(-2);
+    const mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
   }
 
   private parseApiDate(value: any): Date | null {

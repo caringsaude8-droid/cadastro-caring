@@ -30,8 +30,8 @@
     <p>Envie novas solicitações nas telas de Inclusão, Alteração ou Exclusão de Beneficiários.</p>
   </div>
 
-  <!-- Tabela de Solicitações -->
-  <div class="table-wrapper caring-card" *ngIf="!loading && minhasSolicitacoes.length > 0">
+  <!-- Tabela de Solicitações (exibir mesmo durante loading se há dados em cache) -->
+  <div class="table-wrapper caring-card" *ngIf="minhasSolicitacoes.length > 0">
     <div class="table-header">
       <h3>Suas Solicitações ({{minhasSolicitacoes.length}})</h3>
       <button class="btn btn-secondary btn-sm" (click)="carregarSolicitacoes()">

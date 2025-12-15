@@ -54,7 +54,7 @@
         <option *ngFor="let s of statusDisponiveis" [value]="s">{{s}}</option>
       </select>
       <button class="btn btn-secondary" (click)="clearFilters()">Limpar Filtros</button>
-      <button class="btn btn-primary" (click)="exportarCsv()" [disabled]="filtered.length===0">Exportar Excel</button>
+      <button class="btn btn-primary" (click)="exportarExcel()" [disabled]="filtered.length===0">Exportar Excel</button>
     </div>
   </div>
 

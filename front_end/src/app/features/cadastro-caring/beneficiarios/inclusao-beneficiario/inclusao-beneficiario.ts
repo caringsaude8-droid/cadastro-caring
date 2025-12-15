@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,7 +18,7 @@ import { ViaCepService, ViaCepResponse } from '../../../../shared/services/via-c
   templateUrl: './inclusao-beneficiario.html',
   styleUrl: './inclusao-beneficiario.css'
 })
-export class InclusaoBeneficiarioComponent implements OnInit {
+export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
   form = {
     relacaoDep: '',
     dataNascimento: '',
@@ -138,6 +138,10 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   ];
 
   isModoCorrecao = false;
+  // Modo lote
+  modoLote = false;
+  grupoLoteId: string | null = null;
+  loteMensagem = '';
 
   ocultarPlanosPorEmpresa: Record<number, string[]> = {
     1: ['unimed_adm_basico'],
@@ -297,6 +301,12 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    try {
+      localStorage.removeItem('loteAtivo');
+    } catch {}
+  }
+
   onRelacaoChanged() {
     // Limpar dados de titular/dependente
     this.cpfTitular = '';
@@ -331,6 +341,7 @@ export class InclusaoBeneficiarioComponent implements OnInit {
   // consulta CEP removida
 
   vincularTitular(cpf: string) {
+    // Vincula titular selecionado e, para dependente, pré-preenche matrícula do titular
     const titular = this.titulares.find(t => t.cpf === cpf);
     this.selectedTitular = titular || null;
     if (this.selectedTitular) {
@@ -379,19 +390,23 @@ export class InclusaoBeneficiarioComponent implements OnInit {
         this.showToast('Erro', 'Digite o CPF do titular para dependentes', 'error');
         return;
       }
-      let titular = null;
-      try {
-        titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
-      } catch (e) {
-        this.showToast('Erro', 'Falha ao buscar titular. Faça login novamente.', 'error');
-        this.loading = false;
-        return;
+      if (!this.modoLote) {
+        let titular = null;
+        try {
+          titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
+        } catch (e) {
+          this.showToast('Erro', 'Falha ao buscar titular. Faça login novamente.', 'error');
+          this.loading = false;
+          return;
+        }
+        if (!titular) {
+          this.showToast('Erro', 'Titular não encontrado para o CPF informado', 'error');
+          return;
+        }
+        this.titularEncontrado = titular;
+      } else {
+        this.titularEncontrado = null;
       }
-      if (!titular) {
-        this.showToast('Erro', 'Titular não encontrado para o CPF informado', 'error');
-        return;
-      }
-      this.titularEncontrado = titular;
     }
 
     // Formatar visualmente CPF e celular no form
@@ -401,22 +416,18 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    // Converter formulário para formato da API
+    // Converter formulário para formato da API (respeitando placeholders em modo lote)
     const request = await this.converterFormParaAPI();
     request.benStatus = 'Pendente';
 
     // Verifica se está em modo de correção de solicitação rejeitada
     const nav = window.history.state;
     if (nav && nav.modoCorrecao && nav.solicitacaoId) {
-      // PUT para correção
+      // PUT parcial para correção (não altera status)
       try {
         const id = nav.solicitacaoId;
-        const payload = {
-          observacoesSolicitacao: this.form.observacoesSolicitacao || '',
-          dadosPropostos: request
-        };
-        // Chama o endpoint PUT
-        await this.service.atualizarSolicitacao(id, payload).toPromise();
+        // Enviar somente o objeto de dadosPropostos (sem wrapper)
+        await this.aprovacao.atualizarDadosPropostosDependente(String(id), request).toPromise();
         this.showToast('Sucesso', 'Solicitação corrigida e reenviada com sucesso', 'success');
         this.limparForm();
         this.router.navigate(['/cadastro-caring/beneficiarios/solicitacao-cadastro']);
@@ -427,14 +438,25 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       return;
     }
 
-    // Fluxo normal de inclusão
+    // Fluxo normal de inclusão: adiciona marcador [Lote:<UUID>] e [CompletarDependentes] para titulares em modo lote
     const currentUser = this.authService.getCurrentUser();
     const solicitacao = {
       tipo: 'INCLUSAO',
       empresaId: this.empresaSelecionada?.id,
       beneficiarioId: null,
       motivoExclusao: null,
-      observacoesSolicitacao: this.form.observacoesSolicitacao || '',
+      // Observações com marcador de lote quando aplicável
+      observacoesSolicitacao: (() => {
+        const base = this.form.observacoesSolicitacao || '';
+        if (this.modoLote) {
+          const gid = this.grupoLoteId || this.aprovacao.gerarGrupoLoteId();
+          this.grupoLoteId = gid;
+          const tag = `[Lote:${gid}]`;
+          const completar = (this.form.relacaoDep === 'titular') ? ' [CompletarDependentes]' : '';
+          return `${base} ${tag}${completar}`.trim();
+        }
+        return base;
+      })(),
       beneficiarioNome: this.form.nomeSegurado || '',
       beneficiarioCpf: (this.form.cpf || '').replace(/\D/g, ''),
       observacoes: '',
@@ -444,7 +466,31 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       }
     };
     try {
-      await this.aprovacao.criarSolicitacaoInclusao(solicitacao).toPromise();
+      // Criar solicitação e registrar no lote quando aplicável (titular/dependente) e persistir estado em localStorage
+      await new Promise<void>((resolve, reject) => {
+        this.aprovacao.criarSolicitacaoInclusao(solicitacao).subscribe({
+          next: (resp: any) => {
+            try {
+              if (this.modoLote && this.grupoLoteId) {
+                const gid = this.grupoLoteId;
+                const id = resp?.id || resp?.solicitacaoId || null;
+                if (id) {
+                  // Persistir lote ativo
+                  localStorage.setItem('loteAtivo', JSON.stringify({ grupoId: gid, cpfTitular: this.cpfTitular }));
+                  this.aprovacao.iniciarLote(gid, this.cpfTitular || solicitacao.beneficiarioCpf);
+                  if (this.form.relacaoDep === 'titular') {
+                    this.aprovacao.registrarSolicitacaoTitular(gid, id);
+                  } else {
+                    this.aprovacao.registrarSolicitacaoDependente(gid, id);
+                  }
+                }
+              }
+            } catch {}
+            resolve();
+          },
+          error: (e) => reject(e)
+        });
+      });
       this.showToast('Sucesso', 'Solicitação de inclusão criada com sucesso', 'success');
       this.limparForm();
       this.router.navigate(['/cadastro-caring/beneficiarios/solicitacao-cadastro']);
@@ -507,7 +553,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benEmpId: this.empresaSelecionada?.id || 0,
       benNomeSegurado: this.form.nomeSegurado || '',
       benCpf: cpfNumeros,
-      benRelacaoDep: await this.mapearRelacaoDependencia(this.form.relacaoDep || ''),
+      // Quando em modo lote e for dependente, manter rótulo e adiar código numérico (usar string vazia para tipagem)
+      benRelacaoDep: (this.modoLote && this.form.relacaoDep !== 'titular') ? '' : await this.mapearRelacaoDependencia(this.form.relacaoDep || ''),
       benRelacaoDepLabel: this.form.relacaoDep || '',
       benDtaNasc: this.form.dataNascimento ? this.formatarDataParaAPI(this.form.dataNascimento) : undefined,
       benSexo: this.form.sexo ? this.converterSexo(this.form.sexo) : undefined,
@@ -521,7 +568,8 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benComplemento: this.form.complemento || undefined,
       benBairro: this.form.bairro || undefined,
       benCep: this.form.cep || undefined,
-      benMatricula: this.form.matricula || undefined,
+      // Em modo lote, não preencher matrícula para dependente (será preenchida após aprovação do titular)
+      benMatricula: (this.modoLote && this.form.relacaoDep !== 'titular') ? undefined : (this.form.matricula || undefined),
       benDddCel: celularNumeros,
       benEmail: this.form.email || undefined,
       benDataCasamento: this.form.dataCasamento ? this.formatarDataParaAPI(this.form.dataCasamento) : undefined,
@@ -529,9 +577,10 @@ export class InclusaoBeneficiarioComponent implements OnInit {
       benNomeSocial: this.form.nomeSocial || undefined,
       benIdentGenero: this.form.identidadeGenero || undefined,
       benDtaInclusao: this.form.dataInclusaoExclusao ? this.formatarDataParaAPI(this.form.dataInclusaoExclusao) : undefined,
-      benTitularId: this.form.relacaoDep !== 'titular' ? this.titularEncontrado?.id : undefined,
-      benTitularCpf: this.form.relacaoDep !== 'titular' ? (this.titularEncontrado?.cpf || undefined) : undefined,
-      benTitularNome: this.form.relacaoDep !== 'titular' ? (this.titularEncontrado?.nome || undefined) : undefined,
+      // Em modo lote para dependente: placeholders com CPF do titular informado; id/matrícula preenchidos após aprovação
+      benTitularId: (this.form.relacaoDep !== 'titular') ? ((this.modoLote) ? undefined : this.titularEncontrado?.id) : undefined,
+      benTitularCpf: (this.form.relacaoDep !== 'titular') ? ((this.modoLote) ? this.cpfTitular || undefined : (this.titularEncontrado?.cpf || undefined)) : undefined,
+      benTitularNome: (this.form.relacaoDep !== 'titular') ? (this.titularEncontrado?.nome || undefined) : undefined,
       benTipoMotivo: 'I',
       benCodUnimedSeg: undefined,
       benDtaExclusao: undefined,
@@ -851,10 +900,36 @@ export class InclusaoBeneficiarioComponent implements OnInit {
     this.router.navigate(['/cadastro-caring/beneficiarios']);
   }
 
+  // Alterna modo lote e cria/recupera grupo
+  alternarModoLote(ativar: boolean) {
+    this.modoLote = ativar;
+    if (ativar) {
+      if (!this.grupoLoteId) {
+        this.grupoLoteId = this.aprovacao.gerarGrupoLoteId();
+      }
+      localStorage.setItem('loteAtivo', JSON.stringify({ grupoId: this.grupoLoteId, cpfTitular: this.cpfTitular }));
+      this.loteMensagem = 'Modo lote ativo';
+    } else {
+      this.grupoLoteId = null;
+      localStorage.removeItem('loteAtivo');
+      this.loteMensagem = '';
+    }
+  }
+ 
 
 
   // Buscar titular por CPF
   async buscarTitular() {
+    if (this.modoLote && (this.form.relacaoDep || '').toLowerCase() !== 'titular') {
+      const cpfTitularNumeros = (this.cpfTitular || '').replace(/\D/g, '');
+      if (!cpfTitularNumeros || cpfTitularNumeros.length < 11) {
+        this.showToast('Aviso', 'Digite um CPF válido', 'error');
+        return;
+      }
+      this.titularEncontrado = null;
+      this.showToast('Aviso', 'Modo lote: busca de titular não necessária', 'success');
+      return;
+    }
     const cpfTitularNumeros = (this.cpfTitular || '').replace(/\D/g, '');
     if (!cpfTitularNumeros || cpfTitularNumeros.length < 11) {
       this.showToast('Aviso', 'Digite um CPF válido', 'error');

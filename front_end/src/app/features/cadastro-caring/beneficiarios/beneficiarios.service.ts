@@ -8,7 +8,7 @@ export interface AlteracaoCadastralRequest {
   observacoesSolicitacao?: string;
 }
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { EmpresaContextService } from '../../../shared/services/empresa-context.service';
@@ -98,6 +98,10 @@ export class BeneficiariosService {
     private http: HttpClient,
     private empresaContextService: EmpresaContextService
   ) {}
+  // Cache em memória para lista bruta da API
+  private rawSubject = new BehaviorSubject<any[]>([]);
+  private cachedEmpresaId: number | null = null;
+  public raw$ = this.rawSubject.asObservable();
   /**
    * Atualiza uma solicitação rejeitada (correção) - PUT /api/cadastro/v1/solicitacoes/{id}
    */
@@ -274,6 +278,30 @@ export class BeneficiariosService {
     const params = new HttpParams().set('empresaId', id.toString());
     const url = `${this.apiUrl}/beneficiarios`;
     return this.http.get<any[]>(url, { params });
+  }
+
+  // Retorna dados brutos atualmente em cache (sincrono)
+  getRawCached(): any[] {
+    return this.rawSubject.value;
+  }
+
+  // Atualiza cache e emite pelo stream raw$
+  refreshRaw(empresaId?: number): Observable<any[]> {
+    const empresa = this.empresaContextService.getEmpresaSelecionada();
+    const id = empresaId ?? empresa?.id;
+    if (!id) {
+      console.error('❌ Empresa não selecionada para atualizar beneficiários');
+      return of([]);
+    }
+    const params = new HttpParams().set('empresaId', id.toString());
+    const url = `${this.apiUrl}/beneficiarios`;
+    return this.http.get<any[]>(url, { params }).pipe(
+      map((lista) => {
+        this.cachedEmpresaId = id;
+        this.rawSubject.next(Array.isArray(lista) ? lista : []);
+        return Array.isArray(lista) ? lista : [];
+      })
+    );
   }
 
   buscarTitularPorCpf(cpf: string): Observable<Beneficiario | null> {

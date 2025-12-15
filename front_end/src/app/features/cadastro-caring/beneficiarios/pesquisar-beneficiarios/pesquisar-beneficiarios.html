@@ -155,7 +155,7 @@
   <div class="modal-footer">
     <button class="btn-secondary" (click)="openExclusao()" [disabled]="!canOpenExclusao(selectedRow)">Exclusão</button>
     <button class="btn-primary" (click)="goAlteracaoFromDetails()">Alteração de Cadastro</button>
-    <button class="btn-info" (click)="gerarCarterinha()">Gerar Carterinha Virtual</button>
+    <button class="btn-info" (click)="gerarCarterinha()" [disabled]="!selectedRow || (statusOf(selectedRow) || '').toLowerCase() !== 'ativo'">Gerar Carterinha Virtual</button>
   </div>
 </div>
 

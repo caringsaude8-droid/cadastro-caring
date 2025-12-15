@@ -345,26 +345,14 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       observacoes
     ).subscribe({
       next: (response: any) => {
-        
-        
-        // Marcar beneficiário como Pendente
-        this.service.alterarBeneficiario(this.selectedRow!.id, { 
-          benStatus: 'Pendente' 
-        }).subscribe({
-          next: () => {
-            
-            this.carregarBeneficiarios();
-            
-            const cardCode = (this.selectedRow?.codigo_carterinha || ((this.selectedRow?.benCodUnimedSeg || '') + (this.selectedRow?.benCodCartao || '')) || '');
-            this.openSolicConfirm(
-              'Solicitação criada',
-              'Solicitação de exclusão criada com sucesso! O beneficiário foi marcado como pendente e aguarda aprovação.',
-              response.numeroSolicitacao,
-              cardCode
-            );
-          },
-          error: (error: any) => console.error('❌ Erro ao marcar como pendente:', error)
-        });
+        this.carregarBeneficiarios();
+        const cardCode = (this.selectedRow?.codigo_carterinha || ((this.selectedRow?.benCodUnimedSeg || '') + (this.selectedRow?.benCodCartao || '')) || '');
+        this.openSolicConfirm(
+          'Solicitação criada',
+          'Solicitação de exclusão criada com sucesso! Aguardando aprovação.',
+          response.numeroSolicitacao,
+          cardCode
+        );
 
         // Limpar formulário e fechar modais
         this.exMotivo = '';
@@ -451,11 +439,23 @@ export class PesquisarBeneficiariosComponent implements OnInit {
   carregarBeneficiarios(): void {
     this.loading = true;
     this.error = null;
-    
-    this.service.listRaw(this.empresaSelecionada.id).subscribe({
+    const empresaId = this.empresaSelecionada.id;
+    const codigoEmpresaSelecionada = this.empresaSelecionada.codigoEmpresa;
+    const cached = this.service.getRawCached();
+    if (Array.isArray(cached) && cached.length > 0) {
+      const filtradosCached = cached.filter((raw: any) => {
+        const empId = raw.benEmpId ?? raw.empId ?? raw.empresaId ?? raw.ben_emp_id ?? raw.emp_id;
+        const empCod = raw.codigoEmpresa ?? raw.empCodigo ?? raw.codigo_empresa;
+        if (empId != null) return Number(empId) === Number(empresaId);
+        if (empCod != null) return String(empCod) === String(codigoEmpresaSelecionada);
+        return true;
+      });
+      this.data = filtradosCached.map(raw => this.mapearDadosBrutos(raw));
+      this.preencherNomeEMatriculaTitular(this.data);
+      // Mantém loading true para indicar atualização em andamento
+    }
+    this.service.refreshRaw(this.empresaSelecionada.id).subscribe({
       next: (beneficiariosRaw) => {
-        const empresaId = this.empresaSelecionada.id;
-        const codigoEmpresaSelecionada = this.empresaSelecionada.codigoEmpresa;
         const filtradosRaw = (beneficiariosRaw || []).filter((raw: any) => {
           const empId = raw.benEmpId ?? raw.empId ?? raw.empresaId ?? raw.ben_emp_id ?? raw.emp_id;
           const empCod = raw.codigoEmpresa ?? raw.empCodigo ?? raw.codigo_empresa;
@@ -469,15 +469,10 @@ export class PesquisarBeneficiariosComponent implements OnInit {
       },
       error: (error) => {
         console.error('❌ Erro ao carregar beneficiários:', error);
-        
-        // Não exibir mensagens de erro de autenticação - deixar interceptor lidar
         if (error.status === 401 || error.status === 403) {
-          
           this.loading = false;
           return;
         }
-        
-        // Determinar tipo de erro e mensagem apropriada
         if (error.status === 0) {
           this.error = 'Servidor indisponível. Verifique sua conexão com a internet.';
         } else if (error.status === 404) {
@@ -487,8 +482,9 @@ export class PesquisarBeneficiariosComponent implements OnInit {
         } else {
           this.error = 'Erro ao carregar lista de beneficiários. Tente novamente.';
         }
-        
-        this.data = [];
+        if (!Array.isArray(cached) || cached.length === 0) {
+          this.data = [];
+        }
         this.loading = false;
       }
     });

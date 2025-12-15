@@ -109,22 +109,6 @@ export class ExclusaoCadastralComponent implements OnInit {
     store[this.beneficiario.matricula] = { status: statusFinal, motivo: this.motivo, dataExclusao: this.dataExclusao };
     localStorage.setItem(key, JSON.stringify(store));
 
-    // Marcar beneficiário como Pendente até aprovação (via API)
-    if (this.beneficiario.cpf) {
-      this.beneficiarios.buscarPorFiltros({ cpf: this.beneficiario.cpf }).subscribe({
-        next: (beneficiarios) => {
-          const beneficiario = beneficiarios.find(b => b.cpf === this.beneficiario.cpf);
-          if (beneficiario) {
-            this.beneficiarios.alterarBeneficiario(beneficiario.id, { benStatus: 'Pendente' }).subscribe({
-              next: () => {},
-              error: (error) => console.error('❌ Erro ao marcar status pendente:', error)
-            });
-          }
-        },
-        error: (error) => console.error('❌ Erro ao buscar beneficiário:', error)
-      });
-    }
-
     this.salvarExclusao();
 
     this.successMessage = 'Status atualizado com sucesso';

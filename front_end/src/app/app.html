@@ -18,4 +18,10 @@
       <span class="global-info-text">Sessão renovada</span>
     </div>
   </div>
+  <div class="global-loading-overlay" *ngIf="loadingVisible">
+    <div class="global-loading-card">
+      <div class="global-loading-spinner"></div>
+      <div class="global-loading-text">{{ loadingMessage }}</div>
+    </div>
+  </div>
 </div>
