@@ -132,6 +132,7 @@ export class AlteracaoCadastralComponent implements OnInit {
   anexos: { tipo: string; nome: string; size: number; dataUrl: string }[] = [];
   docTipo = '';
   docTipos = ['RG', 'CPF', 'Comprovante de residência', 'Declaração', 'Contrato', 'Outros'];
+  private readonly MAX_FILE_SIZE = 5242880;
 
   saving = false;
   showNotification = false;
@@ -314,7 +315,8 @@ export class AlteracaoCadastralComponent implements OnInit {
         observacoesSolicitacao: this.form.observacoesSolicitacao || '',
         observacoes: '',
         observacoesAprovacao: '',
-        empresaId: empresa.id
+        empresaId: empresa.id,
+        anexos: this.mapAnexosPayload()
       };
 
       this.saving = true;
@@ -325,7 +327,8 @@ export class AlteracaoCadastralComponent implements OnInit {
         beneficiario,
         dadosPropostos,
         solicitacao.observacoesSolicitacao,
-        empresa.id
+        empresa.id,
+        solicitacao.anexos
       ).subscribe({
         next: (response: any) => {
           
@@ -505,6 +508,11 @@ export class AlteracaoCadastralComponent implements OnInit {
       alert('Selecione o tipo e o arquivo.');
       return;
     }
+    if (file.size > this.MAX_FILE_SIZE) {
+      alert('Arquivo excede 5 MB. Selecione um arquivo menor.');
+      input.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = typeof reader.result === 'string' ? reader.result : '';
@@ -526,6 +534,19 @@ export class AlteracaoCadastralComponent implements OnInit {
     link.href = a.dataUrl;
     link.download = a.nome;
     link.click();
+  }
+  private mapAnexosPayload(): { nomeOriginal: string; base64: string; tipoMime: string; tamanho: number }[] {
+    return (this.anexos || []).map(a => {
+      const m = (a.dataUrl || '').match(/^data:([^;]+);base64,(.*)$/);
+      const mime = m ? m[1] : 'application/octet-stream';
+      const base64 = m ? m[2] : (a.dataUrl || '');
+      return {
+        nomeOriginal: a.nome || 'arquivo',
+        base64,
+        tipoMime: mime,
+        tamanho: a.size || 0
+      };
+    });
   }
 
   private showCard(type: 'success' | 'error' | 'loading', message: string) {

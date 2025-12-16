@@ -9,7 +9,9 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 import { EmpresaContextService } from '../../../../shared/services/empresa-context.service';
 import { BeneficiariosService } from '../beneficiarios.service';
 
-type Anexo = { tipo: string; nome: string; size: number; dataUrl: string };
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
+type Anexo = { id?: number; tipo: string; nome: string; size: number; dataUrl: string };
 
 @Component({
   selector: 'app-solicitacao-cadastro',
@@ -33,6 +35,11 @@ export class SolicitacaoCadastroComponent implements OnInit {
   benefDetalhes: any = null;
   showInclusaoDetails = false;
   dadosDetalhes: any = null;
+  private readonly MAX_FILE_SIZE = 5242880;
+  showAnexoPreview = false;
+  anexoPreviewUrl: SafeResourceUrl | string = '';
+  anexoPreviewNome = '';
+  anexoPreviewTipo = '';
 
   constructor(
     private aprovacao: AprovacaoService, 
@@ -40,7 +47,8 @@ export class SolicitacaoCadastroComponent implements OnInit {
     private empresaContextService: EmpresaContextService,
     private beneficiariosService: BeneficiariosService,
     private solicitacaoBeneficiarioService: SolicitacaoBeneficiarioService,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -229,6 +237,46 @@ export class SolicitacaoCadastroComponent implements OnInit {
       this.solicitacaoBeneficiarioService.buscarPorId(idNum).subscribe({
         next: (resp: any) => {
           try {
+            // Tenta recuperar anexos do JSON se não vierem estruturados ou estiverem incompletos
+            let anexosDoJson: any[] = [];
+            try {
+              const dadosObj = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
+              if (dadosObj && Array.isArray(dadosObj.anexos)) {
+                anexosDoJson = dadosObj.anexos;
+              }
+            } catch (e) { console.warn('Erro ao parsear anexos do JSON:', e); }
+
+            if (this.selected) {
+              // Prioriza anexos da API estruturada se tiverem ID, senão tenta completar com os do JSON (base64)
+              const anexosApi = (resp.anexos && Array.isArray(resp.anexos)) ? resp.anexos : [];
+              
+              if (anexosApi.length > 0) {
+                this.selected.anexos = anexosApi.map((a: any) => {
+                  // Tenta encontrar o correspondente no JSON para pegar o base64 se o ID estiver faltando
+                  const matchJson = anexosDoJson.find((aj: any) => aj.nomeOriginal === (a.nomeOriginal || a.nome));
+                  
+                  return {
+                    id: a.id || a.anexoId || a.codigo || a.arquivoId,
+                    tipo: a.tipoMime || a.tipo || 'Desconhecido',
+                    nome: a.nomeOriginal || a.nome || 'Anexo',
+                    size: a.tamanho || a.size || 0,
+                    dataUrl: a.dataUrl || (a.base64 ? `data:${a.tipoMime || 'application/octet-stream'};base64,${a.base64}` : '') 
+                             || (matchJson && matchJson.base64 ? `data:${matchJson.tipoMime || 'application/octet-stream'};base64,${matchJson.base64}` : '')
+                             || ''
+                  };
+                });
+              } else if (anexosDoJson.length > 0) {
+                 // Fallback: usa anexos do JSON se a API não retornou nada na lista estruturada
+                 this.selected.anexos = anexosDoJson.map((a: any) => ({
+                    id: undefined, // Geralmente não tem ID no JSON
+                    tipo: a.tipoMime || 'Desconhecido',
+                    nome: a.nomeOriginal || 'Anexo',
+                    size: a.tamanho || 0,
+                    dataUrl: a.base64 ? `data:${a.tipoMime || 'application/octet-stream'};base64,${a.base64}` : ''
+                 }));
+              }
+            }
+            
             const dadosObj = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
             const propostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
             this.dadosDetalhes = propostos || this.dadosDetalhes;
@@ -272,8 +320,9 @@ export class SolicitacaoCadastroComponent implements OnInit {
       dadosPropostos = {};
     }
     // Garante que o objeto passado é { dadosPropostos: { ... } }
-    const payload = { dadosPropostos };
-    
+    const anexosPayload = this.convertAnexosToBase64(state.anexos);
+    const payload: any = { dadosPropostos, observacoesSolicitacao: obs };
+    if (anexosPayload.length > 0) payload.anexos = anexosPayload;
     this.aprovacao.updateStatus(s.id, 'pendente', obs, payload);
     localStorage.setItem(this.keyFor(s.id), JSON.stringify(state));
   }
@@ -289,6 +338,7 @@ export class SolicitacaoCadastroComponent implements OnInit {
     const file = input.files && input.files[0];
     const state = this.ensureAjusteState(s.id);
     if (!file || !state.docTipo) { alert('Selecione o tipo e o arquivo.'); return; }
+    if (file.size > this.MAX_FILE_SIZE) { alert('Arquivo excede 5MB'); input.value = ''; return; }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = typeof reader.result === 'string' ? reader.result : '';
@@ -395,6 +445,107 @@ export class SolicitacaoCadastroComponent implements OnInit {
   }
 
   private keyFor(id: string) { return `solicitacaoAjustes:${id}`; }
+  private convertAnexosToBase64(anexos: Anexo[]): { nomeOriginal: string; base64: string; tipoMime: string; tamanho: number }[] {
+    const out: { nomeOriginal: string; base64: string; tipoMime: string; tamanho: number }[] = [];
+    for (const a of anexos) {
+      if (!a?.dataUrl) continue;
+      if (a.size > this.MAX_FILE_SIZE) continue;
+      const parts = a.dataUrl.split(',');
+      const meta = parts[0] || '';
+      const base64 = parts[1] || '';
+      const tipoMime = meta.split(';')[0].split(':')[1] || 'application/octet-stream';
+      out.push({ nomeOriginal: a.nome, base64, tipoMime, tamanho: a.size });
+    }
+    return out;
+  }
+
+  visualizarAnexoItem(a: any) {
+    // Prioridade 1: Buscar do endpoint de stream se tiver ID
+    if (a.id !== undefined && a.id !== null && a.id !== 0) {
+      this.solicitacaoBeneficiarioService.downloadAnexo(a.id).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const tipo = (a.tipo || blob.type || '').toLowerCase();
+          const isPdf = tipo === 'application/pdf' || tipo.includes('pdf');
+          const isImage = tipo.startsWith('image/');
+          
+          if (isImage || isPdf) {
+            this.anexoPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+            this.anexoPreviewNome = a.nome;
+            this.anexoPreviewTipo = isPdf ? 'pdf' : 'image';
+            this.showAnexoPreview = true;
+          } else {
+            // Abre em nova aba para visualização (o navegador decide se exibe ou baixa)
+            window.open(url, '_blank');
+            // Revoga a URL depois de um tempo seguro
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }
+        },
+        error: (err) => {
+          console.error('Erro ao baixar anexo via stream:', err);
+          // Tenta fallback para dataUrl se falhar o stream
+          if (a.dataUrl) {
+            this.abrirDataUrl(a);
+          } else {
+            alert('Erro ao carregar anexo da API.');
+          }
+        }
+      });
+      return;
+    }
+
+    // Prioridade 2: Usar conteúdo local (base64) se disponível
+    if (a.dataUrl) {
+      this.abrirDataUrl(a);
+      return;
+    }
+
+    console.warn('Falha ao visualizar anexo (sem ID e sem dataUrl):', a);
+    alert('Visualização não disponível. O anexo não possui conteúdo local nem ID para busca na API.');
+  }
+
+  private abrirDataUrl(a: any) {
+    const tipo = (a.tipo || '').toLowerCase(); 
+    const isPdf = tipo === 'application/pdf' || tipo.includes('pdf');
+    const isImage = tipo.startsWith('image/');
+    
+    if (isImage || isPdf) {
+        this.anexoPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(a.dataUrl);
+        this.anexoPreviewNome = a.nome;
+        this.anexoPreviewTipo = isPdf ? 'pdf' : 'image';
+        this.showAnexoPreview = true;
+    } else {
+        try {
+          const parts = a.dataUrl.split(',');
+          const base64 = parts[1];
+          const mime = parts[0].split(':')[1].split(';')[0];
+          const byteCharacters = atob(base64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], {type: mime});
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } catch (e) {
+          const win = window.open();
+          if (win) {
+             win.document.write('<iframe src="' + a.dataUrl + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+          }
+        }
+    }
+  }
+
+  visualizarAnexo(s: Solicitacao, idx: number) {
+    const state = this.ensureAjusteState(s.id);
+    this.visualizarAnexoItem(state.anexos[idx]);
+  }
+  closeAnexoPreview() {
+    this.showAnexoPreview = false;
+    this.anexoPreviewUrl = '';
+    this.anexoPreviewNome = '';
+  }
 
   // Abre o formulário de inclusão para correção de solicitação rejeitada
   corrigirSolicitacao(s: Solicitacao) {

@@ -184,12 +184,6 @@
     color: #374151;
 }
 
-.history-item.solicitante {
-    background: #fff7ed;
-    border: 1px solid #fdba74;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-}
 
 .history-date {
     color: #64748b;

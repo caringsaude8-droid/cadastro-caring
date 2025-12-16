@@ -111,6 +111,28 @@
       </div>
     </div>
 
+    <!-- Anexos enviados (Sempre visível) -->
+    <div>
+      <div class="section-subtitle">Anexos enviados</div>
+      <div class="anexos-list" *ngIf="(d.anexos && d.anexos.length > 0)">
+        <div class="anexo" *ngFor="let a of d.anexos">
+          <div class="anexo-info">
+            <span class="tipo">{{ a.tipo }}</span>
+            <span class="nome">{{ a.nome }}</span>
+            <span class="size">{{ a.size / 1024 | number:'1.0-1' }} KB</span>
+          </div>
+          <div class="anexo-actions">
+            <button class="btn btn-secondary btn-sm" (click)="visualizarAnexoItem(a)"><i class="icon-eye"></i> Visualizar</button>
+          </div>
+        </div>
+      </div>
+      <div class="history-list" *ngIf="(!d.anexos || d.anexos.length === 0)">
+        <div class="history-item">
+          <span>Nenhum anexo enviado</span>
+        </div>
+      </div>
+    </div>
+    
     
 
       <div *ngIf="d.status === 'concluida'" class="blocked-msg">
@@ -151,18 +173,20 @@
             <button class="btn btn-primary btn-sm" (click)="salvarAjustesSelecionado()"><i class="icon-upload"></i> Enviar ajustes</button>
           </div>
         </div>
-
-        <div class="anexos-list" *ngIf="ajustes[d.id].anexos.length > 0">
+        
+        <div *ngIf="ajustes[d.id].anexos.length > 0">
           <div class="section-subtitle">Documentos anexados</div>
-          <div class="anexo" *ngFor="let a of ajustes[d.id].anexos; let i = index">
-            <div class="anexo-info">
-              <span class="tipo">{{ a.tipo }}</span>
-              <span class="nome">{{ a.nome }}</span>
-              <span class="size">{{ a.size / 1024 | number:'1.0-1' }} KB</span>
-            </div>
-            <div class="anexo-actions">
-              <button class="btn btn-secondary btn-sm" (click)="baixarAnexo(d, i)"><i class="icon-download"></i> Baixar</button>
-              <button class="btn btn-secondary btn-sm" (click)="removerAnexo(d, i)"><i class="icon-trash"></i> Remover</button>
+          <div class="anexos-list">
+            <div class="anexo" *ngFor="let a of ajustes[d.id].anexos; let i = index">
+              <div class="anexo-info">
+                <span class="tipo">{{ a.tipo }}</span>
+                <span class="nome">{{ a.nome }}</span>
+                <span class="size">{{ a.size / 1024 | number:'1.0-1' }} KB</span>
+              </div>
+              <div class="anexo-actions">
+                <button class="btn btn-secondary btn-sm" (click)="visualizarAnexo(d, i)"><i class="icon-eye"></i> Visualizar</button>
+                <button class="btn btn-secondary btn-sm" (click)="removerAnexo(d, i)"><i class="icon-trash"></i> Remover</button>
+              </div>
             </div>
           </div>
         </div>
@@ -247,3 +271,25 @@
     <button class="btn btn-secondary btn-sm" (click)="closeInclusaoDetails()">Fechar</button>
   </div>
 </div>
+
+<div *ngIf="showAnexoPreview" class="modal-backdrop" (click)="closeAnexoPreview()"></div>
+<div *ngIf="showAnexoPreview" class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-header">
+    <h3>Pré-visualização</h3>
+    <button class="modal-close" (click)="closeAnexoPreview()">×</button>
+  </div>
+  <div class="modal-body">
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div class="section-subtitle">{{ anexoPreviewNome }}</div>
+      
+      <!-- Renderização de Imagem -->
+      <img *ngIf="anexoPreviewTipo === 'image'" [src]="anexoPreviewUrl" alt="preview" style="max-width:100%; border:1px solid #ddd; border-radius:6px;">
+      
+      <!-- Renderização de PDF -->
+      <iframe *ngIf="anexoPreviewTipo === 'pdf'" [src]="anexoPreviewUrl" style="width:100%; height:600px; border:1px solid #ddd; border-radius:6px;" frameborder="0"></iframe>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" (click)="closeAnexoPreview()">Fechar</button>
+  </div>
+  </div>

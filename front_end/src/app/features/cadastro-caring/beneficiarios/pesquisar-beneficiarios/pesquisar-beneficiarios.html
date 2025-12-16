@@ -4,6 +4,8 @@
   [icon]="'users'">
 </app-page-header>
 
+<div class="beneficiarios-container">
+
 <!-- Informações da Empresa -->
 <div class="empresa-info" *ngIf="empresaSelecionada">
   <div class="empresa-card">
@@ -14,7 +16,6 @@
       <span class="empresa-codigo">Código: {{empresaSelecionada.codigoEmpresa}}</span>
     </div>
   </div>
-  
 </div>
 
 <div class="filters-section">
@@ -104,6 +105,8 @@
       <button (click)="goTo(totalPages)">»»</button>
     </div>
   </div>
+</div>
+
 </div>
 
 <!-- Card de Detalhes -->

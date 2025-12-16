@@ -35,7 +35,7 @@
 }
 
 /* Card da Empresa (padronizado) */
-.empresa-info { margin: 0 1.5rem 1rem 1.5rem; }
+.empresa-info { margin: 0 0 1rem 0; }
 .empresa-card {
   background: linear-gradient(135deg, #0b5fa4 0%, #0891b2 100%);
   color: white;
@@ -427,4 +427,8 @@
 .btn-info:disabled:hover {
     background: #c2111a;
     transform: none;
+}
+
+.beneficiarios-container {
+    padding: 1.5rem;
 }

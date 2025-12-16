@@ -169,43 +169,66 @@
 
 .anexos-list {
     margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .anexo {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     background: #f8fafc;
-    margin-bottom: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.anexo:hover {
+    background: #f1f5f9;
 }
 
 .anexo-info {
     display: flex;
-    gap: 0.5rem;
+    flex-direction: row;
+    gap: 0.75rem;
     align-items: center;
     color: #1e293b;
+    flex: 1;
+    min-width: 0;
 }
 
 .anexo-info .tipo {
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
     color: #0b5fa4;
+    background: rgba(11, 95, 164, 0.1);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    white-space: nowrap;
 }
 
 .anexo-info .nome {
     font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .anexo-info .size {
     color: #64748b;
     font-size: 0.8rem;
+    white-space: nowrap;
 }
 
 .anexo-actions {
     display: flex;
     gap: 0.5rem;
+    margin-left: 1rem;
+    flex-shrink: 0;
 }
 
 .empty-state {

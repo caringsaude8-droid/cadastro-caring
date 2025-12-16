@@ -59,37 +59,43 @@
         </div>
         <!-- Toggle Modo Lote sempre visível -->
         <div class="form-group third">
-          <label style="display:block;">Modo Lote</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" [checked]="modoLote" (change)="alternarModoLote($event.target.checked)" style="transform: scale(2); transform-origin: left center;">
-            <span>.   Inclusão em lote </span>
-          </div>
-          <div *ngIf="modoLote && loteMensagem" style="margin-top:6px; font-size:1.05rem; font-weight:600; color:#2563eb;">
-            {{loteMensagem}}
-          </div>
+          <!-- Visibilidade controlada pela variável mostrarOpcaoLote (padrão false) para facilitar manutenção -->
+          <ng-container *ngIf="mostrarOpcaoLote">
+            <label style="display:block;">Modo Lote</label>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="checkbox" [checked]="modoLote" (change)="alternarModoLote($event.target.checked)" style="transform: scale(2); transform-origin: left center;">
+              <span>.   Inclusão em lote </span>
+            </div>
+            <div *ngIf="modoLote && loteMensagem" style="margin-top:6px; font-size:1.05rem; font-weight:600; color:#2563eb;">
+              {{loteMensagem}}
+            </div>
+          </ng-container>
         </div>
         <!-- CPF do titular para dependente em modo lote -->
         <div class="form-group third" *ngIf="form.relacaoDep && form.relacaoDep !== 'titular'">
           <div class="selection-card">
             <div class="selection-header">
               <span>CPF do Titular *</span>
-              <button type="button" class="btn-search" (click)="buscarTitular()" [disabled]="buscandoTitular">
-                <span *ngIf="!buscandoTitular">🔍 Buscar</span>
-                <span *ngIf="buscandoTitular">⏳ Buscando...</span>
-              </button>
             </div>
             <div class="selection-body">
-              <div class="selection-row">
+              <div class="selection-row" style="display: flex; align-items: center; gap: 8px;">
                 <ui-input 
                   [(ngModel)]="cpfTitular" 
                   name="cpfTitular" 
                   placeholder="000.000.000-00" 
-                  [onlyDigits]="true" [maxlength]="11">
+                  [onlyDigits]="true" [maxlength]="11"
+                  (ngModelChange)="onCpfTitularChange($event)">
                 </ui-input>
+                <span *ngIf="buscandoTitular" style="font-size: 0.85rem; color: #64748b; white-space: nowrap;">⏳ Buscando...</span>
               </div>
-              <div class="selection-row" *ngIf="titularEncontrado">
-                <div class="selection-result titular-encontrado">
-                  ✓ {{titularEncontrado.nome}}
+              <div class="selection-row" *ngIf="titularEncontrado || (modoLote && cpfTitular && cpfTitular.length >= 11)">
+                <div class="selection-result" [ngClass]="modoLote ? 'titular-lote' : 'titular-encontrado'">
+                  <ng-container *ngIf="modoLote">
+                    ✓ DEPENDENTE EM LOTE
+                  </ng-container>
+                  <ng-container *ngIf="!modoLote && titularEncontrado">
+                    ✓ {{titularEncontrado.nome}}
+                  </ng-container>
                 </div>
               </div>
             </div>

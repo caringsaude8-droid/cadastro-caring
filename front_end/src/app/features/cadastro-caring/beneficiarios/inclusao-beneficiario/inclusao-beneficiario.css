@@ -431,3 +431,10 @@ ui-input[readonly] input {
     border: 1px solid #10b981;
     font-weight: 500;
 }
+
+.titular-lote {
+    background: #fffbe6;
+    color: #b45309;
+    border: 1px solid #f59e0b;
+    font-weight: 500;
+}

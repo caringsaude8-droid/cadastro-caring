@@ -40,6 +40,12 @@ export interface SolicitacaoRequest {
   observacoes?: string;
   observacoesAprovacao?: string;
   empresaId?: number;
+  anexos?: {
+    nomeOriginal: string;
+    base64: string;
+    tipoMime: string;
+    tamanho: number;
+  }[];
 }
 
 export interface ProcessarSolicitacaoRequest {
@@ -209,6 +215,15 @@ export class SolicitacaoBeneficiarioService {
     );
   }
 
+  atualizarSolicitacao(id: number, request: Partial<SolicitacaoRequest>): Observable<SolicitacaoBeneficiario> {
+    return this.http.put<SolicitacaoBeneficiario>(`${this.baseUrl}/${id}`, request).pipe(
+      catchError(error => {
+        console.error('❌ Erro ao atualizar solicitação:', error);
+        throw error;
+      })
+    );
+  }
+
   listarHistorico(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/${id}/historico`).pipe(
       catchError(error => {
@@ -233,6 +248,20 @@ export class SolicitacaoBeneficiarioService {
         const arr = Array.isArray(lista) ? lista : [];
         this.solicitacoesSubject.next(arr);
         return arr;
+      })
+    );
+  }
+
+  /**
+   * Baixar anexo - GET /api/cadastro/v1/solicitacoes/anexos/{anexoId}/stream
+   */
+  downloadAnexo(anexoId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/anexos/${anexoId}/stream`, {
+      responseType: 'blob'
+    }).pipe(
+      catchError(error => {
+        console.error('❌ Erro ao baixar anexo:', error);
+        throw error;
       })
     );
   }

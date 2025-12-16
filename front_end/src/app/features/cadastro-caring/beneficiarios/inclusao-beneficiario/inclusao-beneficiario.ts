@@ -68,8 +68,11 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
 
   // Campos para dependente
   cpfTitular = '';
-  titularEncontrado: any = null;
-  buscandoTitular = false;
+  public titularEncontrado: any = null;
+  public buscandoTitular: boolean = false;
+
+  // Controle de visibilidade do checkbox Modo Lote (debug/manutenção)
+  public mostrarOpcaoLote: boolean = false;
 
   // Controle do ViaCEP
   cepInvalido = false;
@@ -79,6 +82,7 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
   anexos: { tipo: string; nome: string; size: number; dataUrl: string }[] = [];
   docTipo = '';
   docTipos = ['RG', 'CPF', 'Comprovante de residência', 'Declaração', 'Contrato', 'Outros'];
+  private readonly MAX_FILE_SIZE = 5242880;
 
   sexos = [
     { value: 'M', label: 'Masculino' },
@@ -286,6 +290,10 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
       // chama acultação de planoProd
       this.ajustarPlanoSelecionado();
     }
+    const rel = (this.form.relacaoDep || '').toLowerCase();
+    if (rel === 'titular') {
+      this.alternarModoLote(true);
+    }
 
     // Carregar titulares via Observable
     this.service.list().subscribe({
@@ -316,6 +324,11 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
       this.titularCpfSearch = '';
       this.selectedTitularCpf = '';
       this.selectedTitular = null;
+    }
+    if ((this.form.relacaoDep || '').toLowerCase() === 'titular') {
+      this.alternarModoLote(true);
+    } else {
+      this.alternarModoLote(false);
     }
   }
 
@@ -463,7 +476,8 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
       observacoesAprovacao: '',
       dadosPropostos: {
         ...request
-      }
+      },
+      anexos: this.mapAnexosPayload()
     };
     try {
       // Criar solicitação e registrar no lote quando aplicável (titular/dependente) e persistir estado em localStorage
@@ -829,7 +843,7 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
     }
   }
 
-  showToast(title: string, message: string, type: 'success' | 'error') {
+  showToast(title: string, message: string, type: 'success' | 'error' | 'warning' | 'info') {
     this.toastTitle = title;
     this.toastMessage = message;
     this.toastType = type;
@@ -902,6 +916,11 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
 
   // Alterna modo lote e cria/recupera grupo
   alternarModoLote(ativar: boolean) {
+    // Se a relação for titular, força modo lote sempre ativo
+    if ((this.form.relacaoDep || '').toLowerCase() === 'titular') {
+      ativar = true;
+    }
+
     this.modoLote = ativar;
     if (ativar) {
       if (!this.grupoLoteId) {
@@ -915,21 +934,21 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
       this.loteMensagem = '';
     }
   }
+
+  onCpfTitularChange(valor: string) {
+    const numeros = (valor || '').replace(/\D/g, '');
+    if (numeros.length === 11) {
+      this.buscarTitular();
+    } else {
+      // Limpa estado se o CPF for alterado e ficar incompleto
+      this.titularEncontrado = null;
+    }
+  }
  
 
 
   // Buscar titular por CPF
   async buscarTitular() {
-    if (this.modoLote && (this.form.relacaoDep || '').toLowerCase() !== 'titular') {
-      const cpfTitularNumeros = (this.cpfTitular || '').replace(/\D/g, '');
-      if (!cpfTitularNumeros || cpfTitularNumeros.length < 11) {
-        this.showToast('Aviso', 'Digite um CPF válido', 'error');
-        return;
-      }
-      this.titularEncontrado = null;
-      this.showToast('Aviso', 'Modo lote: busca de titular não necessária', 'success');
-      return;
-    }
     const cpfTitularNumeros = (this.cpfTitular || '').replace(/\D/g, '');
     if (!cpfTitularNumeros || cpfTitularNumeros.length < 11) {
       this.showToast('Aviso', 'Digite um CPF válido', 'error');
@@ -941,21 +960,56 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
     try {
       const titular = await this.service.buscarTitularPorCpf(cpfTitularNumeros).toPromise();
       
-      if (titular && titular.benRelacaoDep === '00') {
-        this.titularEncontrado = titular;
-        this.showToast('Sucesso', `Titular encontrado: ${titular.nome}`, 'success');
-        if ((this.form.relacaoDep || '').toLowerCase() !== 'titular') {
-          this.form.matricula = titular.matricula_beneficiario || '';
+      if (titular) {
+        // Verifica se é titular (00) ou se a API retornou explicitamente como titular
+        if (titular.benRelacaoDep === '00' || (titular.tipo_dependencia || '').toLowerCase() === 'titular') {
+          this.titularEncontrado = titular;
+          this.showToast('Sucesso', `Titular encontrado: ${titular.nome}. Seguindo em modo normal.`, 'success');
+          
+          // Se encontrou, desativa modo lote (segue modo normal)
+          if (this.modoLote) {
+            this.alternarModoLote(false);
+          }
+
+          if ((this.form.relacaoDep || '').toLowerCase() !== 'titular') {
+            this.form.matricula = titular.matricula_beneficiario || '';
+          }
+        } else {
+          // É dependente -> Bloqueia
+          this.titularEncontrado = null;
+          this.showToast('Erro', 'Este CPF pertence a um dependente já cadastrado. Não pode ser usado como titular.', 'error');
         }
       } else {
-        this.titularEncontrado = null;
-        this.showToast('Erro', 'Titular não encontrado ou não é do tipo titular', 'error');
+        await this.tratarTitularNaoEncontrado(cpfTitularNumeros);
       }
     } catch (error) {
       this.titularEncontrado = null;
-      this.showToast('Erro', 'Erro ao buscar titular', 'error');
+      await this.tratarTitularNaoEncontrado(cpfTitularNumeros);
     } finally {
       this.buscandoTitular = false;
+    }
+  }
+
+  async tratarTitularNaoEncontrado(cpf: string) {
+    this.titularEncontrado = null;
+    
+    // Antes de ativar o modo lote, verifica se o CPF já existe como dependente
+    try {
+      const existentes = await this.service.buscarPorFiltros({ cpf: cpf }).toPromise();
+      if (existentes && existentes.length > 0) {
+        this.showToast('Erro', 'Este CPF já pertence a um dependente cadastrado.', 'error');
+        return;
+      }
+    } catch (e) {
+      console.error('Erro ao verificar dependentes', e);
+    }
+
+    // Se não existe, aí sim ativa modo lote
+    if (!this.modoLote) {
+      this.alternarModoLote(true);
+      this.showToast('Aviso', 'Titular não encontrado. Modo Lote ativado para inclusão conjunta.', 'warning');
+    } else {
+      this.showToast('Aviso', 'Titular não encontrado. Mantendo Modo Lote.', 'warning');
     }
   }
 
@@ -1027,6 +1081,11 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
       alert('Selecione o tipo e o arquivo.');
       return;
     }
+    if (file.size > this.MAX_FILE_SIZE) {
+      alert('Arquivo excede 5 MB. Selecione um arquivo menor.');
+      input.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = typeof reader.result === 'string' ? reader.result : '';
@@ -1048,6 +1107,19 @@ export class InclusaoBeneficiarioComponent implements OnInit, OnDestroy {
     link.href = a.dataUrl;
     link.download = a.nome;
     link.click();
+  }
+  private mapAnexosPayload(): { nomeOriginal: string; base64: string; tipoMime: string; tamanho: number }[] {
+    return (this.anexos || []).map(a => {
+      const m = (a.dataUrl || '').match(/^data:([^;]+);base64,(.*)$/);
+      const mime = m ? m[1] : 'application/octet-stream';
+      const base64 = m ? m[2] : (a.dataUrl || '');
+      return {
+        nomeOriginal: a.nome || 'arquivo',
+        base64,
+        tipoMime: mime,
+        tamanho: a.size || 0
+      };
+    });
   }
 
   private obterCodigoFixo(tipoParentesco: string): string {

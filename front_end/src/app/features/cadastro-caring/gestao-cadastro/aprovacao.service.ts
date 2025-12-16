@@ -24,6 +24,7 @@ export interface Solicitacao {
   historico?: { data: string; status: SolicitacaoStatus; observacao?: string }[];
   observacoesAprovacao?: string;
   dadosPropostos?: any;
+  anexos?: any[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -155,29 +156,25 @@ export class AprovacaoService {
     // Tentar processar na nova API primeiro
     const idNumerico = parseInt(id);
     if (!isNaN(idNumerico)) {
-      let request: any;
-      if (status === 'pendente' && dadosAprovacao && dadosAprovacao.dadosPropostos) {
-        // Para correção, enviar exatamente o objeto recebido (já está no formato correto)
-        request = {
-          observacoesSolicitacao: observacao,
-          dadosPropostos: dadosAprovacao.dadosPropostos
-        };
-        // Se o objeto já veio pronto, use diretamente:
-        if (Object.keys(dadosAprovacao).length === 2 && 'observacoesSolicitacao' in dadosAprovacao && 'dadosPropostos' in dadosAprovacao) {
-          request = dadosAprovacao;
+      if (status === 'pendente') {
+        const request: any = {};
+        if (observacao) request.observacoesSolicitacao = observacao;
+        if (dadosAprovacao?.dadosPropostos) request.dadosPropostos = dadosAprovacao.dadosPropostos;
+        if (dadosAprovacao?.anexos && Array.isArray(dadosAprovacao.anexos) && dadosAprovacao.anexos.length > 0) {
+          request.anexos = dadosAprovacao.anexos;
         }
-      } else {
-        // Fluxo antigo para aprovação/rejeição
-        const acao = status === 'concluida' ? 'APROVAR' : 'REJEITAR';
-        request = {
-          acao,
-          observacoesAprovacao: observacao
-        };
-        if (dadosAprovacao) {
-          request.dadosAprovacao = dadosAprovacao;
-        }
+        this.solicitacaoService.atualizarSolicitacao(idNumerico, request).subscribe({
+          next: () => {},
+          error: () => {
+            this.updateStatusLocal(id, status, observacao);
+          }
+        });
+        return;
       }
-      
+      const acao = status === 'concluida' ? 'APROVAR' : 'REJEITAR';
+      const request: any = { acao };
+      if (observacao) request.observacoesAprovacao = observacao;
+      if (dadosAprovacao) request.dadosAprovacao = dadosAprovacao;
       this.solicitacaoService.processarSolicitacao(idNumerico, request).subscribe({
         next: (response) => {
           // Lista será atualizada manualmente ou via timer
@@ -565,7 +562,8 @@ export class AprovacaoService {
     beneficiario: any, 
     dadosPropostos: any, 
     observacoes?: string,
-    empresaId?: number
+    empresaId?: number,
+    anexos?: { nomeOriginal: string; base64: string; tipoMime: string; tamanho: number }[]
   ): Observable<any> {
     // Helper para criar solicitação de alteração no novo endpoint
     const request: SolicitacaoRequest = {
@@ -576,7 +574,8 @@ export class AprovacaoService {
       dadosPropostos: dadosPropostos,
       observacoesSolicitacao: typeof observacoes === 'string' ? observacoes : '',
       observacoesAprovacao: '',
-      empresaId
+      empresaId,
+      anexos: Array.isArray(anexos) ? anexos : undefined
     };
     return this.solicitacaoService.criarSolicitacao(request);
   }

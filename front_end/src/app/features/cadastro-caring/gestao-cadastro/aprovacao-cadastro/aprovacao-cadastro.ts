@@ -5,8 +5,10 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 import { AprovacaoService, Solicitacao } from '../aprovacao.service';
 import { BeneficiariosService } from '../../beneficiarios/beneficiarios.service';
 import { SolicitacaoBeneficiarioService } from '../solicitacao-beneficiario.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
-type Anexo = { tipo: string; nome: string; size: number; dataUrl: string };
+type Anexo = { id?: number; tipo: string; nome: string; size: number; dataUrl: string };
 
 @Component({
   selector: 'app-aprovacao-cadastro',
@@ -33,6 +35,12 @@ export class AprovacaoCadastroComponent {
   showToastMessage = false;
   toastMessage = '';
 
+  showAnexoPreview = false;
+  anexoPreviewUrl: SafeResourceUrl | string = '';
+  anexoPreviewNome = '';
+  anexoPreviewTipo = '';
+  previewAnexo: any = null;
+
   // Modal de aprovação para inclusão
   showApprovalModal = false;
   approvalSolicitacao: Solicitacao | null = null;
@@ -43,7 +51,13 @@ export class AprovacaoCadastroComponent {
   showRejectModal = false;
   rejectSolicitacao: Solicitacao | null = null;
 
-  constructor(private aprovacao: AprovacaoService, private beneficiarios: BeneficiariosService, private solicitacoesService: SolicitacaoBeneficiarioService) {
+  constructor(
+    private aprovacao: AprovacaoService, 
+    private beneficiarios: BeneficiariosService, 
+    private solicitacoesService: SolicitacaoBeneficiarioService, 
+    private auth: AuthService,
+    private sanitizer: DomSanitizer
+  ) {
     // Carregar todas as solicitações ao inicializar
     this.aprovacao.atualizarSolicitacoes();
     this.aprovacao.completar$.subscribe(ev => {
@@ -73,6 +87,7 @@ export class AprovacaoCadastroComponent {
       }
     });
   }
+  get isAdmin(): boolean { return this.auth.isAdmin(); }
 
   get lista(): Solicitacao[] {
     const filtered = this.aprovacao.list().filter(s => {
@@ -274,26 +289,6 @@ export class AprovacaoCadastroComponent {
     }
   }
 
-  pendente(id: string) {
-    const s = this.aprovacao.list().find(x => x.id === id);
-    this.aprovacao.updateStatus(id, 'pendente');
-    if (s && s.entidade === 'beneficiario' && s.identificador) {
-      // Buscar beneficiário e marcar como pendente via API
-      this.beneficiarios.buscarPorFiltros({ cpf: s.identificador }).subscribe({
-        next: (beneficiarios) => {
-          const beneficiario = beneficiarios.find(b => b.cpf === s.identificador);
-          if (beneficiario) {
-            // Atualizar status para 'Pendente' via API de alteração
-            this.beneficiarios.alterarBeneficiario(beneficiario.id, { benStatus: 'Pendente' }).subscribe({
-              next: () => {},
-              error: (error) => console.error('❌ Erro ao marcar como pendente:', error)
-            });
-          }
-        },
-        error: (error) => console.error('❌ Erro ao buscar beneficiário:', error)
-      });
-    }
-  }
 
   // Abre modal de detalhes da solicitação; carrega histórico e normaliza datas para o DatePipe
   openDetails(s: Solicitacao) {
@@ -355,12 +350,56 @@ export class AprovacaoCadastroComponent {
       this.solicitacoesService.buscarPorId(idNum).subscribe({
         next: (resp: any) => {
           try {
-            const dadosObj = resp?.dadosJson ? JSON.parse(resp.dadosJson) : null;
+            // Tenta recuperar anexos do JSON se não vierem estruturados ou estiverem incompletos
+            let anexosDoJson: any[] = [];
+            try {
+              let dadosObj = null;
+              if (resp?.dadosJson) {
+                  dadosObj = typeof resp.dadosJson === 'string' ? JSON.parse(resp.dadosJson) : resp.dadosJson;
+              }
+              if (dadosObj && Array.isArray(dadosObj.anexos)) {
+                anexosDoJson = dadosObj.anexos;
+              }
+            } catch (e) { console.warn('Erro ao parsear anexos do JSON:', e); }
+
+            // Prioriza anexos da API estruturada se tiverem ID, senão tenta completar com os do JSON (base64)
+            const anexosApi = (resp.anexos && Array.isArray(resp.anexos)) ? resp.anexos : [];
+            
+            if (anexosApi.length > 0) {
+              this.anexosSelecionado = anexosApi.map((a: any) => {
+                // Tenta encontrar o correspondente no JSON para pegar o base64 se o ID estiver faltando
+                const matchJson = anexosDoJson.find((aj: any) => aj.nomeOriginal === (a.nomeOriginal || a.nome));
+                
+                return {
+                  id: a.id || a.anexoId || a.codigo || a.arquivoId,
+                  tipo: a.tipoMime || a.tipo || 'Desconhecido',
+                  nome: a.nomeOriginal || a.nome || 'Anexo',
+                  size: a.tamanho || a.size || 0,
+                  dataUrl: a.dataUrl || (a.base64 ? `data:${a.tipoMime || 'application/octet-stream'};base64,${a.base64}` : '') 
+                           || (matchJson && matchJson.base64 ? `data:${matchJson.tipoMime || 'application/octet-stream'};base64,${matchJson.base64}` : '')
+                           || ''
+                };
+              });
+            } else if (anexosDoJson.length > 0) {
+                // Fallback: usa anexos do JSON se a API não retornou nada na lista estruturada
+                this.anexosSelecionado = anexosDoJson.map((a: any) => ({
+                  id: undefined, // Geralmente não tem ID no JSON
+                  tipo: a.tipoMime || 'Desconhecido',
+                  nome: a.nomeOriginal || 'Anexo',
+                  size: a.tamanho || 0,
+                  dataUrl: a.base64 ? `data:${a.tipoMime || 'application/octet-stream'};base64,${a.base64}` : ''
+                }));
+            } else {
+                this.anexosSelecionado = [];
+            }
+
+            let dadosObj = null;
+            if (resp?.dadosJson) {
+                dadosObj = typeof resp.dadosJson === 'string' ? JSON.parse(resp.dadosJson) : resp.dadosJson;
+            }
             const propostos = dadosObj && dadosObj.dadosPropostos ? dadosObj.dadosPropostos : dadosObj;
             this.dadosDetalhes = propostos || this.dadosDetalhes;
             this.enriquecerTitularInfo();
-
-            
           } catch {}
         },
         error: () => {}
@@ -592,13 +631,124 @@ export class AprovacaoCadastroComponent {
     return !this.isRelacaoDepMissingFor(this.approvalSolicitacao);
   }
 
-  baixarAnexo(idx: number) {
-    const a = this.anexosSelecionado[idx];
+
+  private baixarDataUrl(a: any) {
     if (!a?.dataUrl) return;
     const link = document.createElement('a');
     link.href = a.dataUrl;
     link.download = a.nome;
     link.click();
+  }
+
+  visualizarAnexoItem(a: any) {
+    this.previewAnexo = a;
+    // Prioridade 1: Buscar do endpoint de stream se tiver ID
+    if (a.id !== undefined && a.id !== null && a.id !== 0) {
+      this.solicitacoesService.downloadAnexo(a.id).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const tipo = (a.tipo || blob.type || '').toLowerCase();
+          const isPdf = tipo === 'application/pdf' || tipo.includes('pdf');
+          const isImage = tipo.startsWith('image/');
+          
+          if (isImage || isPdf) {
+            this.anexoPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+            this.anexoPreviewNome = a.nome;
+            this.anexoPreviewTipo = isPdf ? 'pdf' : 'image';
+            this.showAnexoPreview = true;
+          } else {
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }
+        },
+        error: (err) => {
+          console.error('Erro ao baixar anexo via stream:', err);
+          if (a.dataUrl) {
+            this.abrirDataUrl(a);
+          } else {
+            alert('Erro ao carregar anexo da API.');
+          }
+        }
+      });
+      return;
+    }
+
+    // Prioridade 2: Usar conteúdo local (base64) se disponível
+    if (a.dataUrl) {
+      this.abrirDataUrl(a);
+      return;
+    }
+
+    alert('Visualização não disponível.');
+  }
+
+  private abrirDataUrl(a: any) {
+    const tipo = (a.tipo || '').toLowerCase(); 
+    const isPdf = tipo === 'application/pdf' || tipo.includes('pdf');
+    const isImage = tipo.startsWith('image/');
+    
+    if (isImage || isPdf) {
+        this.anexoPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(a.dataUrl);
+        this.anexoPreviewNome = a.nome;
+        this.anexoPreviewTipo = isPdf ? 'pdf' : 'image';
+        this.showAnexoPreview = true;
+    } else {
+        try {
+          const parts = a.dataUrl.split(',');
+          const base64 = parts[1];
+          const mime = parts[0].split(':')[1].split(';')[0];
+          const byteCharacters = atob(base64);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], {type: mime});
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } catch (e) {
+          const win = window.open();
+          if (win) {
+             win.document.write('<iframe src="' + a.dataUrl + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
+          }
+        }
+    }
+  }
+
+  closeAnexoPreview() {
+    this.showAnexoPreview = false;
+    this.anexoPreviewUrl = '';
+    this.anexoPreviewNome = '';
+    this.anexoPreviewTipo = '';
+    this.previewAnexo = null;
+  }
+
+  baixarAnexoPreview() {
+    if (!this.previewAnexo) return;
+    const a = this.previewAnexo;
+    
+    if (a.id !== undefined && a.id !== null && a.id !== 0) {
+      this.solicitacoesService.downloadAnexo(a.id).subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = a.nome;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+        error: (err) => {
+          console.error('Erro ao baixar anexo via stream:', err);
+          if (a.dataUrl) {
+            this.baixarDataUrl(a);
+          } else {
+            alert('Erro ao baixar anexo da API.');
+          }
+        }
+      });
+      return;
+    }
+    this.baixarDataUrl(a);
   }
 
   /**

@@ -95,16 +95,23 @@
       </div>
     </div>
 
-    <div class="section-subtitle" *ngIf="anexosSelecionado.length > 0">Anexos enviados pelo solicitante</div>
-    <div class="anexos-list" *ngIf="anexosSelecionado.length > 0">
-      <div class="anexo" *ngFor="let a of anexosSelecionado; let i = index">
-        <div class="anexo-info">
-          <span class="tipo">{{ a.tipo }}</span>
-          <span class="nome">{{ a.nome }}</span>
-          <span class="size">{{ a.size / 1024 | number:'1.0-1' }} KB</span>
+    <div *ngIf="isAdmin">
+      <div class="section-subtitle">Anexos enviados pelo solicitante</div>
+      <div class="anexos-list" *ngIf="anexosSelecionado.length > 0">
+        <div class="anexo" *ngFor="let a of anexosSelecionado; let i = index">
+          <div class="anexo-info" style="cursor:pointer" (click)="visualizarAnexoItem(a)" title="Visualizar Anexo">
+            <span class="tipo">{{ a.tipo }}</span>
+            <span class="nome" style="text-decoration:underline; color:#007bff;">{{ a.nome }}</span>
+            <span class="size">{{ a.size / 1024 | number:'1.0-1' }} KB</span>
+          </div>
+          <div class="anexo-actions">
+            <button class="btn btn-secondary btn-sm" (click)="visualizarAnexoItem(a)"><i class="fas fa-eye"></i> Visualizar</button>
+          </div>
         </div>
-        <div class="anexo-actions">
-          <button class="btn btn-secondary btn-sm" (click)="baixarAnexo(i)"><i class="icon-download"></i> Baixar</button>
+      </div>
+      <div class="history-list" *ngIf="anexosSelecionado.length === 0">
+        <div class="history-item">
+          <span class="history-status">Nenhum anexo enviado</span>
         </div>
       </div>
     </div>
@@ -256,5 +263,29 @@
   </div>
   <div class="modal-footer">
     <button class="btn btn-secondary btn-sm" (click)="closeBenefDetails()">Fechar</button>
+  </div>
+</div>
+
+<!-- Modal de Pré-visualização de Anexo -->
+<div *ngIf="showAnexoPreview" class="modal-backdrop" (click)="closeAnexoPreview()" style="z-index: 10000;"></div>
+<div *ngIf="showAnexoPreview" class="modal-card" (click)="$event.stopPropagation()" style="z-index: 10001; max-width: 800px; width: 90%;">
+  <div class="modal-header">
+    <h3>Visualizar Anexo</h3>
+    <button class="modal-close" (click)="closeAnexoPreview()">×</button>
+  </div>
+  <div class="modal-body">
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div class="section-subtitle">{{ anexoPreviewNome }}</div>
+      
+      <!-- Renderização de Imagem -->
+      <img *ngIf="anexoPreviewTipo === 'image'" [src]="anexoPreviewUrl" alt="preview" style="max-width:100%; border:1px solid #ddd; border-radius:6px;">
+      
+      <!-- Renderização de PDF -->
+      <iframe *ngIf="anexoPreviewTipo === 'pdf'" [src]="anexoPreviewUrl" style="width:100%; height:600px; border:1px solid #ddd; border-radius:6px;" frameborder="0"></iframe>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" (click)="baixarAnexoPreview()"><i class="fas fa-download"></i> Baixar</button>
+    <button class="btn btn-secondary" (click)="closeAnexoPreview()">Fechar</button>
   </div>
 </div>
